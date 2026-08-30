@@ -4,6 +4,17 @@ const container = `
     <div class="splide__track">
       <div is="emby-itemscontainer" class="editorsChoiceItemsContainer splide__list animatedScrollX"></div>
     </div>
+    <div class="editorsChoiceMobilePagination" aria-label="Carousel pages">
+      <button type="button" class="editorsChoiceMobilePageButton editorsChoiceMobilePagePrev" aria-label="Previous item">
+        <span class="material-icons chevron_left" aria-hidden="true"></span>
+      </button>
+      <span class="editorsChoiceMobilePageStatus">
+        <span class="editorsChoiceMobilePageCurrent">1</span><span aria-hidden="true"> / </span><span class="editorsChoiceMobilePageTotal">1</span>
+      </span>
+      <button type="button" class="editorsChoiceMobilePageButton editorsChoiceMobilePageNext" aria-label="Next item">
+        <span class="material-icons chevron_right" aria-hidden="true"></span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -72,6 +83,52 @@ const container = `
     outline-offset: 3px;
   }
 
+  .editorsChoiceMobilePagination {
+    display: none;
+    position: absolute;
+    z-index: 4;
+    bottom: 1.1rem;
+    left: 50%;
+    align-items: center;
+    gap: 0.15rem;
+    min-height: 2.75rem;
+    padding: 0.18rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(16, 18, 22, 0.48);
+    box-shadow: 0 8px 28px rgba(4, 9, 15, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(14px) saturate(145%);
+    -webkit-backdrop-filter: blur(14px) saturate(145%);
+    transform: translateX(-50%);
+    touch-action: manipulation;
+  }
+
+  .editorsChoiceMobilePageButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    color: #fff;
+    background: transparent;
+  }
+
+  .editorsChoiceMobilePageButton:active { transform: scale(0.94); }
+  .editorsChoiceMobilePageButton:focus-visible { outline: 2px solid #fff; }
+  .editorsChoiceMobilePageButton .material-icons { font-size: 1.35rem; }
+
+  .editorsChoiceMobilePageStatus {
+    min-width: 3.25rem;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .editorsChoiceContainer .splide__pagination__page { transition: none; }
   }
@@ -80,6 +137,11 @@ const container = `
 
   .editorsChoiceContainer .splide {
     isolation: isolate;
+  }
+
+  @media screen and (max-width: 500px) {
+    .editorsChoiceContainer .splide__pagination { display: none; }
+    .editorsChoiceMobilePagination { display: flex; }
   }
 
   /* ===== Banner ===== */
@@ -150,12 +212,18 @@ const container = `
 
   .editorsChoiceInfo {
     width: min(650px, 100%);
-    max-height: 75%;
+    height: 75%;
     min-width: 0;
     min-height: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    position: relative;
+  }
+
+  .editorsChoiceInfo--withAction {
+    padding-bottom: 3.25rem;
+    box-sizing: border-box;
   }
 
   .editorsChoiceContentMain {
@@ -168,17 +236,20 @@ const container = `
 
   .editorsChoiceItemLogo {
     display: block;
-    max-width: 300px;
-    max-height: calc(50% - 45px);
-    min-height: 0;
-    flex-shrink: 1;
+    width: min(300px, 100%);
+    height: 5rem;
+    flex: none;
     object-fit: contain;
     object-position: left center;
   }
 
   .editorsChoiceItemTitle {
+    display: flex;
+    align-items: center;
+    height: 5rem;
     max-width: 100%;
     margin: 0 60px 0 0;
+    line-height: 1.08;
     font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -277,8 +348,10 @@ const container = `
   }
 
   .editorsChoiceItemActions {
-    flex: none;
-    margin-top: 0.9rem;
+    position: absolute;
+    z-index: 3;
+    left: 0;
+    bottom: 0;
   }
 
   .editorsChoiceItemButton {
@@ -314,47 +387,43 @@ const container = `
     }
 
     .editorsChoiceInfo {
-      max-height: 82%;
+      height: 82%;
     }
 
     .editorsChoiceItemLogo {
       max-width: 100%;
-      max-height: 100px;
-      height: auto;
+      height: 3.75rem;
       filter: drop-shadow(3px 3px 15px black);
+    }
+
+    .editorsChoiceItemTitle {
+      height: 3.75rem;
+      margin-right: 0;
     }
   }
 
   /* ===== Hero mode ===== */
-  #homeTab.editorsChoiceHeroMode {
-    transform: translateY(-120px);
+  .editorsChoiceHeroMode .homeSectionsContainer.editorsChoiceAdded {
+    margin-top: 0;
   }
 
-  .editorsChoiceHeroMode .editorsChoiceContainer { padding: 0 !important; }
+  .editorsChoiceHeroMode .homeSectionsContainer.editorsChoiceAdded .editorsChoiceContainer {
+    transform: translateY(-120px);
+    margin-bottom: -120px;
+    padding: 0 !important;
+  }
 
   .editorsChoiceHeroMode .splide.cardScalable {
     border-radius: unset !important;
     border: 0 !important;
     background: transparent;
     box-shadow: none !important;
-    margin-bottom: -170px;
-  }
-
-  .editorsChoiceHeroMode .editorsChoiceHeight-360 .splide.cardScalable {
-    margin-bottom: -75px;
-  }
-
-  .editorsChoiceHeroMode .editorsChoiceHeight-400 .splide.cardScalable {
-    margin-bottom: -105px;
-  }
-
-  .editorsChoiceHeroMode .editorsChoiceHeight-500 .splide.cardScalable {
-    margin-bottom: -150px;
+    margin-bottom: 0;
   }
 
 
   .editorsChoiceHeroMode .editorsChoiceItemBanner { background-position-y: 15% !important; }
-  .editorsChoiceHeroMode .editorsChoiceContainer .splide__pagination { bottom: 9rem; }
+  .editorsChoiceHeroMode .editorsChoiceContainer .splide__pagination { bottom: 1.1rem; }
 
   .editorsChoiceHeroMode  .editorsChoiceBackdropCenter {
       background-position: center;
@@ -404,7 +473,7 @@ const container = `
     position: relative;
     z-index: 2;
     height: 100%;
-    padding: 90px max(env(safe-area-inset-right), 3.3%);
+    padding: 120px max(env(safe-area-inset-right), 3.3%) 30px max(env(safe-area-inset-left), 3.3%);
     box-sizing: border-box;
     background: none !important;
   }
@@ -677,6 +746,7 @@ function renderHeroSlide(item, data) {
     const button = buildPlayButton(item, data);
     const poster = buildPoster(item, data);
     const contentClass = "editorsChoiceContent" + (poster ? " editorsChoiceContent--withPoster" : "");
+    const infoClass = "editorsChoiceInfo" + (button ? " editorsChoiceInfo--withAction" : "");
 
     const backdropSize = buildBannerSizeParam(data.reduceImageSizes);
     const backdropUrl = `../Items/${item.id}/Images/Backdrop/0${backdropSize}`;
@@ -689,7 +759,7 @@ function renderHeroSlide(item, data) {
         '<div class="editorsChoiceBackdrop ' + extraClass +
         '" style="background-image:url(\'' + backdropUrl + '\');"></div>' +
         '<div class="' + contentClass + '">' +
-        poster + '<div class="editorsChoiceInfo">' +
+        poster + '<div class="' + infoClass + '">' +
         '<div class="editorsChoiceContentMain">' +
         logoOrTitle + metadata + overview +
         '</div>' + button +
@@ -705,12 +775,13 @@ function renderNormalSlide(item, data) {
     const button = buildPlayButton(item, data);
     const poster = buildPoster(item, data);
     const contentClass = "editorsChoiceContent" + (poster ? " editorsChoiceContent--withPoster" : "");
+    const infoClass = "editorsChoiceInfo" + (button ? " editorsChoiceInfo--withAction" : "");
 
     return '<article class="editorsChoiceItemBanner splide__slide" ' +
         'role="link" tabindex="0" data-details-item-id="' + escapeHtml(item.id) + '" ' +
         'style="background-image:url(\'../Items/' + item.id + '/Images/Backdrop/0' + bannerSize + '\');">' +
         '<div class="' + contentClass + '">' +
-        poster + '<div class="editorsChoiceInfo">' +
+        poster + '<div class="' + infoClass + '">' +
         '<div class="editorsChoiceContentMain">' +
         logoOrTitle + metadata + overview +
         '</div>' + button +
@@ -773,12 +844,12 @@ async function setup() {
                     .attr("target", "_blank")
                     .attr("rel", "noopener noreferrer");
 
-                $containerElem.on("click", ".splide__pagination", function (event) {
+                $containerElem.on("click", ".splide__pagination, .editorsChoiceMobilePagination", function (event) {
                     event.stopPropagation();
                 });
 
                 $list.on("click", ".editorsChoiceItemBanner", function (event) {
-                    if ($(event.target).closest(".splide__pagination").length) return;
+                    if ($(event.target).closest(".splide__pagination, .editorsChoiceMobilePagination").length) return;
                     if ($(event.target).closest(".editorsChoiceItemOverview a").length) return;
                     if ($(event.target).closest(".editorsChoiceItemButton").length) return;
 
@@ -796,7 +867,7 @@ async function setup() {
 
                 $(elem).addClass("editorsChoiceAdded");
 
-                new Splide(`#${containerId} .splide`, {
+                const slider = new Splide(`#${containerId} .splide`, {
                     type: data.transitionEffect ?? "loop",
                     autoplay: !!data.autoplay,
                     arrows: false,
@@ -804,8 +875,30 @@ async function setup() {
                     interval: data.autoplayInterval,
                     pagination: true,
                     keyboard: true,
-                    height: `${data.bannerHeight + (data.useHeroLayout ? 180 : 0)}px`, // Add 80px to the banner image height in hero mode to compensate for navbar overlay
-                }).mount();
+                    height: `${data.bannerHeight + (data.useHeroLayout ? 120 : 0)}px`,
+                });
+
+                const updateMobilePagination = () => {
+                    $containerElem.find(".editorsChoiceMobilePageCurrent").text(slider.index + 1);
+                    $containerElem.find(".editorsChoiceMobilePageTotal").text(slider.length);
+                };
+
+                slider.on("mounted", updateMobilePagination);
+                slider.on("moved", updateMobilePagination);
+
+                $containerElem.on("click", ".editorsChoiceMobilePagePrev", function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    slider.go("<");
+                });
+
+                $containerElem.on("click", ".editorsChoiceMobilePageNext", function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    slider.go(">");
+                });
+
+                slider.mount();
             })
             .catch((e) => console.warn("Editors Choice: failed to fetch/render.", e));
     });
