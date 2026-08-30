@@ -1,11 +1,16 @@
 using System.Net.Mime;
 using System.Reflection;
 using EditorsChoicePlugin.Configuration;
+using Ganss.Xss;
 using Jellyfin.Data.Enums;
 using Jellyfin.Database.Implementations.Enums;
 using Jellyfin.Extensions;
+using Markdig;
+using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.TV;
+using MediaBrowser.Model.Querying;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -20,15 +25,33 @@ public class EditorsChoiceActivityController : ControllerBase
 
     private readonly PluginConfiguration _config;
     private readonly IUserManager _userManager;
+    private readonly IUserDataManager _userDataManager;
     private readonly ILibraryManager _libraryManager;
+    private readonly ITVSeriesManager _tvSeriesManager;
     private readonly ILogger<EditorsChoiceActivityController> _logger;
+    private readonly HtmlSanitizer _overviewSanitizer;
     private readonly string _scriptPath;
+    private static readonly MarkdownPipeline OverviewMarkdownPipeline = new MarkdownPipelineBuilder()
+        .UseEmphasisExtras()
+        .UseListExtras()
+        .UsePipeTables()
+        .UseTaskLists()
+        .DisableHtml()
+        .Build();
 
-    public EditorsChoiceActivityController(IUserManager userManager, ILibraryManager libraryManager, ILogger<EditorsChoiceActivityController> logger)
+    public EditorsChoiceActivityController(
+        IUserManager userManager,
+        IUserDataManager userDataManager,
+        ILibraryManager libraryManager,
+        ITVSeriesManager tvSeriesManager,
+        ILogger<EditorsChoiceActivityController> logger)
     {
         _userManager = userManager;
+        _userDataManager = userDataManager;
         _libraryManager = libraryManager;
+        _tvSeriesManager = tvSeriesManager;
         _logger = logger;
+        _overviewSanitizer = CreateOverviewSanitizer();
 
         _config = Plugin.Instance!.Configuration;
 
@@ -339,11 +362,13 @@ public class EditorsChoiceActivityController : ControllerBase
             // If showing random media is enabled OR the results list is currently empty, collect a random selection from the entire library
             if (_config.Mode == "RANDOM" || resultsEmpty)
             {
+                Guid[] filteredLibraryIds = GetFilteredLibraryIds();
 
                 // Get all shows and movies
                 query = new InternalItemsQuery(activeUser)
                 {
                     IncludeItemTypes = [BaseItemKind.Series, BaseItemKind.Movie],
+                    AncestorIds = filteredLibraryIds,
                     MinCommunityRating = minimumRating,
                     MinCriticRating = minimumCriticRating,
                     MaxParentalRating = parentalRatingScore,
@@ -362,20 +387,37 @@ public class EditorsChoiceActivityController : ControllerBase
             foreach (BaseItem i in result)
             {
                 BaseItem item = i;
+                BaseItemKind itemKind = item.GetBaseItemKind();
 
                 // Narrow down properties that are strictly necessary to pass through to frontend
                 Dictionary<string, object> itemObject = new Dictionary<string, object>
                 {
                     { "id", item.Id.ToString() },
                     { "name", item.Name },
-                    { "tagline", item.Tagline },
                     { "official_rating", item.OfficialRating },
-                    { "hasLogo", item.HasImage(MediaBrowser.Model.Entities.ImageType.Logo) }
+                    { "hasLogo", item.HasImage(MediaBrowser.Model.Entities.ImageType.Logo) },
+                    { "item_type", itemKind.ToString() },
+                    { "play_item_id", item.Id.ToString() },
+                    { "play_item_type", itemKind.ToString() },
+                    { "play_is_folder", item is Folder },
+                    { "playback_action", "watch" }
                 };
 
                 if (_config.ShowDescription)
                 {
-                    itemObject.Add("overview", item.Overview);
+                    itemObject.Add("overview_html", RenderOverviewMarkdown(item.Overview));
+                }
+                if (item.ProductionYear.HasValue)
+                {
+                    itemObject.Add("year", item.ProductionYear.Value);
+                }
+                if (itemKind == BaseItemKind.Movie && item.RunTimeTicks.HasValue)
+                {
+                    itemObject.Add("runtime_minutes", Math.Max(1, (int)Math.Round(TimeSpan.FromTicks(item.RunTimeTicks.Value).TotalMinutes)));
+                }
+                if (itemKind == BaseItemKind.Series && item is Folder seriesFolder)
+                {
+                    itemObject.Add("episode_count", seriesFolder.GetRecursiveChildCount(activeUser));
                 }
                 if (item.CriticRating.HasValue && _config.ShowRating)
                 {
@@ -385,6 +427,8 @@ public class EditorsChoiceActivityController : ControllerBase
                 {
                     itemObject.Add("community_rating", Math.Round(Convert.ToDecimal(item.CommunityRating), 2));
                 }
+
+                AddPlaybackState(item, itemObject, activeUser);
 
                 items.Add(itemObject);
             }
@@ -417,6 +461,134 @@ public class EditorsChoiceActivityController : ControllerBase
 
     }
 
+    private void AddPlaybackState(
+        BaseItem item,
+        Dictionary<string, object> itemObject,
+        Jellyfin.Database.Implementations.Entities.User activeUser)
+    {
+        if (item.GetBaseItemKind() == BaseItemKind.Series)
+        {
+            var nextUp = _tvSeriesManager.GetNextUp(
+                new NextUpQuery
+                {
+                    User = activeUser,
+                    SeriesId = item.Id,
+                    Limit = 1,
+                    EnableResumable = true
+                },
+                new DtoOptions(false)
+                {
+                    EnableImages = false
+                });
+            BaseItem? nextEpisode = nextUp.Items.FirstOrDefault();
+            if (nextEpisode is not null)
+            {
+                var nextEpisodeUserData = _userDataManager.GetUserData(activeUser, nextEpisode);
+                bool isResumable = nextEpisodeUserData?.PlaybackPositionTicks > 0;
+                bool hasStarted = isResumable || GetFirstPlayedEpisode(item, activeUser) is not null;
+
+                itemObject["play_item_id"] = nextEpisode.Id.ToString();
+                itemObject["play_item_type"] = BaseItemKind.Episode.ToString();
+                itemObject["play_is_folder"] = false;
+                if (hasStarted)
+                {
+                    itemObject["playback_action"] = isResumable ? "resume" : "continue";
+                    if (isResumable)
+                    {
+                        itemObject["playback_position_ticks"] = nextEpisodeUserData!.PlaybackPositionTicks;
+                    }
+                    if (nextEpisode.ParentIndexNumber.HasValue)
+                    {
+                        itemObject["progress_season"] = nextEpisode.ParentIndexNumber.Value;
+                    }
+
+                    if (nextEpisode.IndexNumber.HasValue)
+                    {
+                        itemObject["progress_episode"] = nextEpisode.IndexNumber.Value;
+                    }
+                }
+
+                return;
+            }
+
+            BaseItem? firstPlayedEpisode = GetFirstPlayedEpisode(item, activeUser);
+            if (firstPlayedEpisode is not null)
+            {
+                itemObject["playback_action"] = "replay";
+                itemObject["play_item_id"] = firstPlayedEpisode.Id.ToString();
+                itemObject["play_item_type"] = BaseItemKind.Episode.ToString();
+                itemObject["play_is_folder"] = false;
+            }
+
+            return;
+        }
+
+        var userData = _userDataManager.GetUserData(activeUser, item);
+        if (userData?.PlaybackPositionTicks > 0)
+        {
+            itemObject["playback_action"] = "resume";
+            itemObject["playback_position_ticks"] = userData.PlaybackPositionTicks;
+        }
+        else if (userData?.Played == true)
+        {
+            itemObject["playback_action"] = "replay";
+        }
+    }
+
+    private BaseItem? GetFirstPlayedEpisode(BaseItem series, Jellyfin.Database.Implementations.Entities.User activeUser)
+    {
+        var playedEpisodes = _libraryManager.GetItemList(
+            new InternalItemsQuery(activeUser)
+            {
+                IncludeItemTypes = [BaseItemKind.Episode],
+                SeriesPresentationUniqueKey = series.GetPresentationUniqueKey(),
+                IsPlayed = true,
+                Limit = 1,
+                OrderBy =
+                [
+                    (ItemSortBy.ParentIndexNumber, SortOrder.Ascending),
+                    (ItemSortBy.IndexNumber, SortOrder.Ascending)
+                ],
+                DtoOptions = new DtoOptions(false)
+                {
+                    EnableImages = false
+                }
+            });
+
+        return playedEpisodes.FirstOrDefault();
+    }
+
+    private string RenderOverviewMarkdown(string? overview)
+    {
+        if (string.IsNullOrWhiteSpace(overview))
+        {
+            return string.Empty;
+        }
+
+        string rendered = Markdown.ToHtml(overview, OverviewMarkdownPipeline);
+        return _overviewSanitizer.Sanitize(rendered);
+    }
+
+    private static HtmlSanitizer CreateOverviewSanitizer()
+    {
+        var sanitizer = new HtmlSanitizer();
+
+        sanitizer.AllowedTags.Clear();
+        sanitizer.AllowedTags.UnionWith(
+        [
+            "a", "blockquote", "br", "code", "del", "em", "h1", "h2", "h3", "h4", "h5", "h6",
+            "hr", "li", "ol", "p", "pre", "s", "strong", "table", "tbody", "td", "th", "thead", "tr", "ul"
+        ]);
+
+        sanitizer.AllowedAttributes.Clear();
+        sanitizer.AllowedAttributes.UnionWith(["href", "title"]);
+
+        sanitizer.AllowedSchemes.Clear();
+        sanitizer.AllowedSchemes.UnionWith(["http", "https", "mailto"]);
+
+        return sanitizer;
+    }
+
     private List<BaseItem> PrepareResult(InternalItemsQuery query, Jellyfin.Database.Implementations.Entities.User? activeUser)
     {
         List<BaseItem> initialResult = (List<BaseItem>)_libraryManager.GetItemList(query);
@@ -443,25 +615,8 @@ public class EditorsChoiceActivityController : ControllerBase
                 }
             }
 
-            // Check is in an allowed library
-            bool inFilteredLibrary = false;
-            if (_config.FilteredLibraries.Length == 0)
-            {
-                inFilteredLibrary = true; // If no libraries are selected, then we default to all libraries
-            }
-            else
-            {
-                foreach (String filteredLibraryId in _config.FilteredLibraries)
-                {
-                    if (shiftItem.GetAncestorIds().Contains(Guid.Parse(filteredLibraryId)))
-                    {
-                        inFilteredLibrary = true;
-                    }
-                }
-            }
-
             // Only include if active user has parental access to this item, not already in the results, if only unplayed items should be shown & this is unplayed, and if has a backdrop image
-            if (shiftItem.IsVisible(activeUser) && !result.Contains(shiftItem) && inFilteredLibrary && !(shiftItem.IsPlayed(activeUser, null) && !_config.ShowPlayed) && shiftItem.HasImage(MediaBrowser.Model.Entities.ImageType.Backdrop))
+            if (shiftItem.IsVisible(activeUser) && !result.Contains(shiftItem) && !(shiftItem.IsPlayed(activeUser, null) && !_config.ShowPlayed) && shiftItem.HasImage(MediaBrowser.Model.Entities.ImageType.Backdrop))
             {
                 result.Add(shiftItem);
             }
@@ -474,5 +629,20 @@ public class EditorsChoiceActivityController : ControllerBase
         }
 
         return result;
+    }
+
+    private Guid[] GetFilteredLibraryIds()
+    {
+        List<Guid> libraryIds = [];
+
+        foreach (string libraryId in _config.FilteredLibraries ?? [])
+        {
+            if (Guid.TryParse(libraryId, out Guid parsedId) && !libraryIds.Contains(parsedId))
+            {
+                libraryIds.Add(parsedId);
+            }
+        }
+
+        return [.. libraryIds];
     }
 }

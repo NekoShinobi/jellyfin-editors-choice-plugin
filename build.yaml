@@ -1,0 +1,19 @@
+---
+name: "Editor's Choice"
+guid: "70bb2ec1-f19e-46b5-b49a-942e6b96ebae"
+version: "1.5.2.0"
+targetAbi: "10.11.0.0"
+framework: "net9.0"
+overview: "Create a Netflix-style featured content slider on the main page."
+description: >
+  Create a Netflix-style featured content slider on the main page.
+category: "General"
+owner: "NekoShinobi"
+artifacts:
+- "EditorsChoicePlugin.dll"
+- "AngleSharp.Css.dll"
+- "AngleSharp.dll"
+- "HtmlSanitizer.dll"
+- "Markdig.dll"
+changelog: >
+  See the GitHub release notes for details.

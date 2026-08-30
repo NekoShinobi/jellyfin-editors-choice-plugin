@@ -1,25 +1,6 @@
 const container = `
 <div class="verticalSection section-1 editorsChoiceContainer">
   <div class="splide cardScalable">
-    <div class="editorsChoiceScrollButtonsContainer">
-      <div class="emby-scrollbuttons splide__arrows">
-        <button type="button" is="paper-icon-button-light" data-ripple="false" data-direction="left" title="Previous"
-          class="emby-scrollbuttons-button paper-icon-button-light splide__arrow splide__arrow--prev">
-          <span class="material-icons chevron_left" aria-hidden="true"></span>
-        </button>
-
-        <button class="splide__toggle emby-scrollbuttons-button paper-icon-button-light" type="button" id="editorsChoicePlayPause">
-          <span class="splide__toggle__play material-icons play_arrow" aria-hidden="true"></span>
-          <span class="splide__toggle__pause material-icons pause" aria-hidden="true"></span>
-        </button>
-
-        <button type="button" is="paper-icon-button-light" data-ripple="false" data-direction="right" title="Next"
-          class="emby-scrollbuttons-button paper-icon-button-light splide__arrow splide__arrow--next">
-          <span class="material-icons chevron_right" aria-hidden="true"></span>
-        </button>
-      </div>
-    </div>
-
     <div class="splide__track">
       <div is="emby-itemscontainer" class="editorsChoiceItemsContainer splide__list animatedScrollX"></div>
     </div>
@@ -43,55 +24,60 @@ const container = `
     .homeSectionsContainer.editorsChoiceAdded { margin-top: 30px; }
   }
 
-  /* ===== Controls ===== */
-  .editorsChoiceScrollButtonsContainer,
-  .editorsChoicePlayPauseContainer {
-    position: absolute;
+  /* ===== Pagination ===== */
+  .editorsChoiceContainer .splide__pagination {
     z-index: 99;
-    right: 0.15em;
-    mix-blend-mode: difference;
+    bottom: 1.25rem;
+    left: 50%;
+    right: auto;
+    width: auto;
+    min-height: 1.75rem;
+    margin: 0;
+    padding: 0.35rem 0.5rem;
+    gap: 0.35rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(16, 18, 22, 0.42);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
+    backdrop-filter: blur(14px) saturate(145%);
+    -webkit-backdrop-filter: blur(14px) saturate(145%);
+    transform: translateX(-50%);
   }
 
-  .editorsChoiceScrollButtonsContainer { width: 7em; }
-  .editorsChoicePlayPauseContainer { width: 4em; display: none; bottom: 0.83em; }
-
-  .editorsChoiceScrollButtonsContainer > .splide__arrows,
-  .editorsChoicePlayPauseContainer > .splide__toggle {
-    float: right;
+  .editorsChoiceContainer .splide__pagination__page {
+    display: block;
+    width: 0.45rem;
+    height: 0.45rem;
+    margin: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    opacity: 1;
+    transform: none;
+    transition: width 180ms ease, background-color 180ms ease, transform 180ms ease;
   }
 
-  @media screen and (max-width: 500px) {
-    .editorsChoiceScrollButtonsContainer,
-    .editorsChoicePlayPauseContainer { display: none; }
+  .editorsChoiceContainer .splide__pagination__page.is-active {
+    width: 1.6rem;
+    background: rgba(255, 255, 255, 0.96);
+    transform: none;
+  }
+
+  .editorsChoiceContainer .splide__pagination__page:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .editorsChoiceContainer .splide__pagination__page { transition: none; }
   }
 
   .splide__track { border-radius: 0.2em; }
 
-  .splide__arrow,
-  .splide__toggle {
-    position: relative;
-    display: inline-block;
-    opacity: 1;
-    top: auto;
-    transform: none;
-    width: auto;
-    height: auto;
-    padding: .556em;
-    background: transparent;
-  }
-
-  .splide__arrow--next { right: auto; }
-  .splide__arrow--prev { left: auto; }
-
-  .splide__toggle.is-active .splide__toggle__play,
-  .emby-scrollbuttons-button > .splide__toggle__pause {
-    display: none;
-  }
-
   /* ===== Banner ===== */
   .editorsChoiceItemBanner {
+    position: relative;
     width: 100%;
-    height: 360px;
+    height: 100%;
     flex: none;
     background-size: cover;
     background-position-x: center;
@@ -99,6 +85,11 @@ const container = `
     color: rgba(255, 255, 255, 0.8);
     text-decoration: none;
     background-position-y: 52%;
+  }
+
+  .editorsChoiceItemBanner:focus-visible {
+    outline: 3px solid currentColor;
+    outline-offset: -3px;
   }
 
   .editorsChoiceItemBanner:nth-child(odd) { background-position-y: 48%; }
@@ -116,19 +107,37 @@ const container = `
     animation-direction: alternate-reverse;
   }
 
-  .editorsChoiceItemBanner > div {
+  .editorsChoiceItemBanner > .editorsChoiceContent {
+    position: relative;
     width: 100%;
     height: 100%;
-    padding: 30px;
+    padding: 30px 30px 92px;
     box-sizing: border-box;
     background: linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 60%, rgba(0,0,0,0) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
   }
 
   /* ===== Content ===== */
+  .editorsChoiceContentMain {
+    width: min(650px, 100%);
+    max-height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
   .editorsChoiceItemLogo {
     display: block;
     max-width: 300px;
     max-height: calc(50% - 45px);
+    min-height: 0;
+    flex-shrink: 1;
+    object-fit: contain;
+    object-position: left center;
   }
 
   .editorsChoiceItemTitle {
@@ -139,38 +148,116 @@ const container = `
     text-overflow: ellipsis;
   }
 
+  .editorsChoiceItemMetadata {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35em 0.65em;
+    min-height: 1.6em;
+    margin-top: 0.7em;
+    font-size: 0.95em;
+    font-weight: 500;
+    flex: none;
+  }
+
+  .editorsChoiceMetadataItem {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+  }
+
+  .editorsChoiceMetadataItem + .editorsChoiceMetadataItem::before {
+    content: "•";
+    margin-right: 0.65em;
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .editorsChoiceOfficialRating {
+    padding: 0.1em 0.4em;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: 0.2em;
+    line-height: 1.2;
+  }
+
   .editorsChoiceItemOverview {
     white-space: normal;
-    width: 650px;
-    min-width: 40%;
+    width: 100%;
     max-width: 100%;
+    max-height: 5.8em;
+    margin-top: 0.75em;
+    line-height: 1.45;
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 4;
+    flex-shrink: 1;
+    min-height: 0;
     overflow: hidden;
   }
 
+  .editorsChoiceItemOverview > :first-child { margin-top: 0; }
+  .editorsChoiceItemOverview > :last-child { margin-bottom: 0; }
+  .editorsChoiceItemOverview p { margin: 0 0 0.55em; }
+  .editorsChoiceItemOverview h1,
+  .editorsChoiceItemOverview h2,
+  .editorsChoiceItemOverview h3,
+  .editorsChoiceItemOverview h4,
+  .editorsChoiceItemOverview h5,
+  .editorsChoiceItemOverview h6 {
+    margin: 0 0 0.35em;
+    font-size: 1em;
+  }
+  .editorsChoiceItemOverview ul,
+  .editorsChoiceItemOverview ol {
+    margin: 0.25em 0;
+    padding-left: 1.5em;
+  }
+  .editorsChoiceItemOverview blockquote {
+    margin: 0.25em 0;
+    padding-left: 0.75em;
+    border-left: 2px solid rgba(255, 255, 255, 0.55);
+  }
+  .editorsChoiceItemOverview pre,
+  .editorsChoiceItemOverview code {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .editorsChoiceItemOverview a {
+    position: relative;
+    z-index: 3;
+    color: inherit;
+    text-decoration: underline;
+  }
+
   .layout-tv .editorsChoiceItemOverview {
-    min-width: 55%;
+    max-height: 2.9em;
     -webkit-line-clamp: 2;
+  }
+
+  .editorsChoiceItemActions {
+    position: absolute;
+    z-index: 3;
+    left: 30px;
+    bottom: 30px;
   }
 
   .editorsChoiceItemButton {
     width: fit-content !important;
-    display: inline-block !important;
-    position: absolute;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.4em;
+    position: relative;
     margin: 0 !important;
-    bottom: 30px;
   }
-
-  .editorsChoiceItemRating { display: block !important; margin-top: 1em; }
 
   .starIcon {
     color: #f2b01e;
-    font-size: 1.4em;
-    margin-right: 0.125em;
-    vertical-align: bottom;
+    font-size: 1.25em;
+    margin-right: 0.15em;
+  }
+
+  .editorsChoicePlayIcon {
+    font-size: 1.25em;
   }
 
   @media screen and (max-width: 500px) {
@@ -208,8 +295,7 @@ const container = `
 
 
   .editorsChoiceHeroMode .editorsChoiceItemBanner { background-position-y: 15% !important; }
-  .editorsChoiceHeroMode .editorsChoiceScrollButtonsContainer { margin-right: max(env(safe-area-inset-left), 3.3%); }
-  .editorsChoiceHeroMode .editorsChoiceScrollButtonsContainer .emby-scrollbuttons { padding-top: 120px; }
+  .editorsChoiceHeroMode .editorsChoiceContainer .splide__pagination { bottom: 9rem; }
 
   .editorsChoiceHeroMode  .editorsChoiceBackdropCenter {
       background-position: center;
@@ -239,12 +325,9 @@ const container = `
     );
   }
 
-  .editorsChoiceHeroMode .editorsChoiceItemButton {
-    width: fit-content !important;
-    display: inline-flex !important;
-    position: relative;
-    margin: 0 !important;
-    bottom: unset !important;
+  .editorsChoiceHeroMode .editorsChoiceItemActions {
+    left: max(env(safe-area-inset-left), 3.3%);
+    bottom: 145px;
   }
 
   .editorsChoiceHeroMode .editorsChoiceItemBanner .editorsChoiceBackdrop::after {
@@ -267,12 +350,32 @@ const container = `
     position: relative;
     z-index: 2;
     height: 100%;
-    padding: 90px max(env(safe-area-inset-right), 3.3%) 0;
+    padding: 90px max(env(safe-area-inset-right), 3.3%) 205px max(env(safe-area-inset-left), 3.3%);
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     justify-content: center;
     background: none !important;
+  }
+
+  @media screen and (max-width: 500px) {
+    .editorsChoiceItemBanner > .editorsChoiceContent {
+      padding-right: 20px;
+      padding-left: 20px;
+    }
+
+    .editorsChoiceItemActions {
+      left: 20px;
+    }
+
+    .editorsChoiceHeroMode .editorsChoiceItemBanner .editorsChoiceContent {
+      padding-right: max(env(safe-area-inset-right), 20px);
+      padding-left: max(env(safe-area-inset-left), 20px);
+    }
+
+    .editorsChoiceHeroMode .editorsChoiceItemActions {
+      left: max(env(safe-area-inset-left), 20px);
+    }
   }
 </style>
 `;
@@ -291,8 +394,8 @@ function shuffle(input) {
 
 function getLocalizedString(key) {
     const localization = {
-        watchButton: {
-            en: "Watch",
+        watchNow: {
+            en: "Watch Now",
             fr: "Regarder",
             es: "Ver",
             de: "Ansehen",
@@ -302,35 +405,171 @@ function getLocalizedString(key) {
             ja: "見る",
             ru: "Смотреть",
         },
+        resume: {
+            en: "Resume",
+            fr: "Reprendre",
+            es: "Reanudar",
+            de: "Fortsetzen",
+            it: "Riprendi",
+            pt: "Retomar",
+            zh: "继续播放",
+            ja: "再開",
+            ru: "Продолжить",
+        },
+        continueWatching: {
+            en: "Continue",
+            fr: "Continuer",
+            es: "Continuar",
+            de: "Weiter",
+            it: "Continua",
+            pt: "Continuar",
+            zh: "继续",
+            ja: "続ける",
+            ru: "Продолжить",
+        },
+        watchAgain: {
+            en: "Watch Again",
+            fr: "Revoir",
+            es: "Ver de nuevo",
+            de: "Erneut ansehen",
+            it: "Guarda di nuovo",
+            pt: "Assistir novamente",
+            zh: "再次观看",
+            ja: "もう一度見る",
+            ru: "Смотреть снова",
+        },
+        episode: {
+            en: "episode",
+            fr: "épisode",
+            es: "episodio",
+            de: "Folge",
+            it: "episodio",
+            pt: "episódio",
+            zh: "集",
+            ja: "話",
+            ru: "эпизод",
+        },
+        episodes: {
+            en: "episodes",
+            fr: "épisodes",
+            es: "episodios",
+            de: "Folgen",
+            it: "episodi",
+            pt: "episódios",
+            zh: "集",
+            ja: "話",
+            ru: "эпизодов",
+        },
     };
 
     const lang = (navigator.language || "en").slice(0, 2);
     return (localization[key] && (localization[key][lang] || localization[key].en)) || "";
 }
 
-function getBaseUrl() {
-    let baseUrl = Emby.Page.baseUrl() + "/";
-    if (window.location.href.includes("/index.html")) baseUrl += "index.html";
-    return baseUrl;
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
 }
 
-function buildRating(item) {
+function formatRuntime(totalMinutes) {
+    if (!Number.isFinite(totalMinutes) || totalMinutes <= 0) return "";
+    const minutes = Math.round(totalMinutes);
+    const hours = Math.floor(minutes / 60);
+    const remainder = minutes % 60;
+    if (!hours) return minutes + "m";
+    return remainder ? hours + "h " + remainder + "m" : hours + "h";
+}
+
+function buildMetadata(item) {
+    const metadata = [];
     const rating = typeof item.community_rating === "number" ? Number(item.community_rating.toFixed(1)) : 0;
-    if (rating === 0) return "";
-    return `<div class="editorsChoiceItemRating starRatingContainer">
-            <span class="material-icons starIcon star"></span>${rating}
-          </div>`;
+
+    if (rating > 0) {
+        metadata.push(
+            '<span class="editorsChoiceMetadataItem">' +
+            '<span class="material-icons starIcon star" aria-hidden="true"></span>' +
+            rating +
+            '</span>'
+        );
+    }
+
+    if (Number.isInteger(item.year) && item.year > 0) {
+        metadata.push('<span class="editorsChoiceMetadataItem">' + item.year + '</span>');
+    }
+
+    if (item.item_type === "Movie") {
+        const runtime = formatRuntime(item.runtime_minutes);
+        if (runtime) metadata.push('<span class="editorsChoiceMetadataItem">' + runtime + '</span>');
+    } else if (item.item_type === "Series" && Number.isInteger(item.episode_count) && item.episode_count > 0) {
+        const episodeLabel = getLocalizedString(item.episode_count === 1 ? "episode" : "episodes");
+        metadata.push(
+            '<span class="editorsChoiceMetadataItem">' +
+            item.episode_count + " " + escapeHtml(episodeLabel) +
+            '</span>'
+        );
+    }
+
+    if (item.official_rating) {
+        metadata.push(
+            '<span class="editorsChoiceMetadataItem editorsChoiceOfficialRating">' +
+            escapeHtml(item.official_rating) +
+            '</span>'
+        );
+    }
+
+    return metadata.length
+        ? '<div class="editorsChoiceItemMetadata" role="list">' + metadata.join("") + '</div>'
+        : "";
 }
 
 function buildLogoOrTitle(item, reduceImageSizes) {
-    if (!item.hasLogo) return `<h1 class="editorsChoiceItemTitle">${item.name}</h1>`;
+    if (!item.hasLogo) return '<h1 class="editorsChoiceItemTitle">' + escapeHtml(item.name) + '</h1>';
     const logoSize = reduceImageSizes ? "?width=300" : "";
-    return `<img class="editorsChoiceItemLogo" src="../Items/${item.id}/Images/Logo/0${logoSize}" alt="${item.name}"/>`;
+    return '<img class="editorsChoiceItemLogo" src="../Items/' + item.id +
+        '/Images/Logo/0' + logoSize + '" alt="' + escapeHtml(item.name) + '"/>';
 }
 
 function buildOverview(item) {
-    const overview = (item && typeof item.overview === "string") ? item.overview : "";
-    return overview ? `<p class="editorsChoiceItemOverview">${overview}</p>` : "";
+    const overview = (item && typeof item.overview_html === "string") ? item.overview_html : "";
+    return overview ? '<div class="editorsChoiceItemOverview">' + overview + '</div>' : "";
+}
+
+function getPlayButtonLabel(item, data) {
+    const hasEpisode = Number.isInteger(item.progress_season) && Number.isInteger(item.progress_episode);
+    const episode = hasEpisode ? " S" + item.progress_season + " E" + item.progress_episode : "";
+
+    if (item.playback_action === "resume") return getLocalizedString("resume") + episode;
+    if (item.playback_action === "continue") return getLocalizedString("continueWatching") + episode;
+    if (item.playback_action === "replay") return getLocalizedString("watchAgain");
+    return data.playButtonText || getLocalizedString("watchNow");
+}
+
+function buildPlayButton(item, data) {
+    if (!data.showPlayButton) return "";
+
+    const buttonText = getPlayButtonLabel(item, data);
+    const playItemId = item.play_item_id || item.id;
+    const playItemType = item.play_item_type || item.item_type;
+    const nativeAction = item.playback_action === "resume" ? "resume" : "play";
+    const positionTicks = Number.isFinite(item.playback_position_ticks) ? item.playback_position_ticks : 0;
+    return '<div class="editorsChoiceItemActions">' +
+        '<button type="button" is="emby-button" ' +
+        'class="editorsChoiceItemButton itemAction raised button-submit emby-button" ' +
+        'data-action="' + nativeAction + '" ' +
+        'data-id="' + escapeHtml(playItemId) + '" ' +
+        'data-serverid="' + escapeHtml(ApiClient.serverId()) + '" ' +
+        'data-type="' + escapeHtml(playItemType) + '" ' +
+        'data-mediatype="Video" ' +
+        'data-isfolder="' + (item.play_is_folder ? "true" : "false") + '" ' +
+        'data-positionticks="' + positionTicks + '" ' +
+        'aria-label="' + escapeHtml(buttonText) + ': ' + escapeHtml(item.name) + '">' +
+        '<span class="material-icons editorsChoicePlayIcon play_arrow" aria-hidden="true"></span>' +
+        '<span>' + escapeHtml(buttonText) + '</span>' +
+        '</button></div>';
 }
 
 function buildBannerSizeParam(reduceImageSizes) {
@@ -369,23 +608,11 @@ function ensureSplideLoaded() {
 }
 
 /* ===== Render ===== */
-function renderHeroSlide(item, data, baseUrl) {
-    const rating = buildRating(item);
+function renderHeroSlide(item, data) {
+    const metadata = buildMetadata(item);
     const logoOrTitle = buildLogoOrTitle(item, data.reduceImageSizes);
     const overview = buildOverview(item);
-
-    let button = "";
-
-    if(data.showPlayButton) {
-        let buttonString = getLocalizedString("watchButton");
-        // Check if Custom Text is set.
-        if (data.playButtonText) {
-            buttonString = data.playButtonText;
-        }
-        button = `<button is="emby-button" class="editorsChoiceItemButton raised button-submit emby-button">
-                    <span>${buttonString}</span>
-                  </button>`;
-    }
+    const button = buildPlayButton(item, data);
 
     const backdropSize = buildBannerSizeParam(data.reduceImageSizes);
     const backdropUrl = `../Items/${item.id}/Images/Backdrop/0${backdropSize}`;
@@ -393,49 +620,33 @@ function renderHeroSlide(item, data, baseUrl) {
         data.heroBackdropPosition === "top" ? "editorsChoiceBackdropTop" :
         data.heroBackdropPosition === "bottom" ? "editorsChoiceBackdropBottom" : "";
 
-    return `
-  <a href="${baseUrl}#/details?id=${item.id}"
-     onclick="Emby.Page.showItem('${item.id}'); return false;"
-     class="editorsChoiceItemBanner splide__slide">
-    <div class="editorsChoiceBackdrop ${extraClass}" style="background-image:url('${backdropUrl}');"></div>
-    <div class="editorsChoiceContent">
-      ${logoOrTitle}
-      ${rating}
-      ${overview}
-      ${button}
-    </div>
-  </a>`;
+    return '<article class="editorsChoiceItemBanner splide__slide" ' +
+        'role="link" tabindex="0" data-details-item-id="' + escapeHtml(item.id) + '">' +
+        '<div class="editorsChoiceBackdrop ' + extraClass +
+        '" style="background-image:url(\'' + backdropUrl + '\');"></div>' +
+        '<div class="editorsChoiceContent">' +
+        '<div class="editorsChoiceContentMain">' +
+        logoOrTitle + metadata + overview +
+        '</div>' + button +
+        '</div></article>';
 }
 
-function renderNormalSlide(item, data, baseUrl) {
-    const rating = buildRating(item);
+function renderNormalSlide(item, data) {
+    const metadata = buildMetadata(item);
     const logoOrTitle = buildLogoOrTitle(item, data.reduceImageSizes);
     const overview = buildOverview(item);
 
     const bannerSize = buildBannerSizeParam(data.reduceImageSizes);
-    let button = "";
-    if(data.showPlayButton) {
-        let buttonString = getLocalizedString("watchButton");
-        // Check if Custom Text is set.
-        if (data.playButtonText) {
-            buttonString = data.playButtonText;
-        }
-        button = `<button is="emby-button" class="editorsChoiceItemButton raised button-submit emby-button">
-                    <span>${buttonString}</span>
-                  </button>`;
-    }
+    const button = buildPlayButton(item, data);
 
-    return `<a href="${baseUrl}#/details?id=${item.id}"
-                 onclick="Emby.Page.showItem('${item.id}'); return false;"
-                 class="editorsChoiceItemBanner splide__slide"
-                 style="background-image:url('../Items/${item.id}/Images/Backdrop/0${bannerSize}');">
-                <div>
-                  ${logoOrTitle}
-                  ${rating}
-                  ${overview}
-                  ${button}
-                </div>
-              </a>`;
+    return '<article class="editorsChoiceItemBanner splide__slide" ' +
+        'role="link" tabindex="0" data-details-item-id="' + escapeHtml(item.id) + '" ' +
+        'style="background-image:url(\'../Items/' + item.id + '/Images/Backdrop/0' + bannerSize + '\');">' +
+        '<div class="editorsChoiceContent">' +
+        '<div class="editorsChoiceContentMain">' +
+        logoOrTitle + metadata + overview +
+        '</div>' + button +
+        '</div></article>';
 }
 
 /* ===== Main setup ===== */
@@ -471,43 +682,53 @@ async function setup() {
                 $containerElem.first().addClass(`editorsChoiceHeight-${data.bannerHeight}`);
                 $(elem).prepend($containerElem);
 
-                // TV focus workaround
-                let focusResolved = false;
-                $(`.layout-tv #${containerId} .emby-scrollbuttons button`).on("focus", function () {
-                    if (focusResolved) return;
-                    $('[is="emby-tabs"] .emby-button').first().trigger("focus");
-                    focusResolved = true;
-                });
-
                 if (data.useHeroLayout) document.body.classList.add("editorsChoiceHeroMode");
 
                 if ("heading" in data && data.heading && !data.useHeroLayout) {
-                    $($containerElem).prepend(`<h2 class="sectionTitle sectionTitle-cards">${data.heading}</h2>`);
+                    $($containerElem).prepend(
+                        '<h2 class="sectionTitle sectionTitle-cards">' + escapeHtml(data.heading) + '</h2>'
+                    );
                 }
 
-                const baseUrl = getBaseUrl();
                 const $list = $(`#${containerId} .editorsChoiceItemsContainer`);
 
                 for (const item of favourites) {
                     const html = data.useHeroLayout
-                        ? renderHeroSlide(item, data, baseUrl)
-                        : renderNormalSlide(item, data, baseUrl);
+                        ? renderHeroSlide(item, data)
+                        : renderNormalSlide(item, data);
 
                     $list.append(html);
                 }
 
-                $(elem).addClass("editorsChoiceAdded");
+                $list.find(".editorsChoiceItemOverview a")
+                    .attr("target", "_blank")
+                    .attr("rel", "noopener noreferrer");
 
-                // Toggle autoplay control visibility (button exists: #editorsChoicePlayPause)
-                const playPauseBtn = document.getElementById("editorsChoicePlayPause");
-                if (playPauseBtn) playPauseBtn.style.display = data.autoplay ? "" : "none";
+                $list.on("click", ".editorsChoiceItemBanner", function (event) {
+                    if ($(event.target).closest(".editorsChoiceItemOverview a").length) return;
+                    if ($(event.target).closest(".editorsChoiceItemButton").length) return;
+
+                    event.preventDefault();
+                    const itemId = this.dataset.detailsItemId;
+                    if (itemId) Emby.Page.showItem(itemId);
+                });
+
+                $list.on("keydown", ".editorsChoiceItemBanner", function (event) {
+                    if (event.target !== this || (event.key !== "Enter" && event.key !== " ")) return;
+                    event.preventDefault();
+                    const itemId = this.dataset.detailsItemId;
+                    if (itemId) Emby.Page.showItem(itemId);
+                });
+
+                $(elem).addClass("editorsChoiceAdded");
 
                 new Splide(`#${containerId} .splide`, {
                     type: data.transitionEffect ?? "loop",
                     autoplay: !!data.autoplay,
+                    arrows: false,
                     rewind: true,
                     interval: data.autoplayInterval,
-                    pagination: false,
+                    pagination: true,
                     keyboard: true,
                     height: `${data.bannerHeight + (data.useHeroLayout ? 180 : 0)}px`, // Add 80px to the banner image height in hero mode to compensate for navbar overlay
                 }).mount();

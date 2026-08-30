@@ -4,22 +4,72 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
-    <AssemblyVersion>1.5.2</AssemblyVersion>
-    <FileVersion>1.5.2</FileVersion>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.11.0" />
-    <PackageReference Include="Jellyfin.Model" Version="10.11.0" />
-    <PackageReference Include="Jellyfin.Common" Version="10.11.0" />
+    <PackageReference Include="Jellyfin.Controller" Version="10.11.0" ExcludeAssets="runtime" />
+    <PackageReference Include="Jellyfin.Model" Version="10.11.0" ExcludeAssets="runtime" />
+    <PackageReference Include="Jellyfin.Common" Version="10.11.0" ExcludeAssets="runtime" />
 
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="HtmlSanitizer" Version="9.2.995" />
+    <PackageReference Include="Markdig" Version="1.3.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" ExcludeAssets="runtime" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Configuration\configPage.html" />
     <EmbeddedResource Include="Api\client.js" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <PluginDisplayName>Editor's Choice</PluginDisplayName>
+    <PluginGuid>70bb2ec1-f19e-46b5-b49a-942e6b96ebae</PluginGuid>
+    <PluginTargetAbi>10.11.0.0</PluginTargetAbi>
+    <PluginCategory>General</PluginCategory>
+    <PluginOverview>Create a Netflix-style featured content slider on the main page.</PluginOverview>
+    <PluginDescription>Create a Netflix-style featured content slider on the main page.</PluginDescription>
+    <PluginChangelog>See the GitHub release notes for details.</PluginChangelog>
+    <PluginOwner>NekoShinobi</PluginOwner>
+    <PluginPackageDir Condition="'$(PluginPackageDir)' == ''">$(MSBuildProjectDirectory)/bin/$(Configuration)/$(TargetFramework)/$(PluginDisplayName)_$(Version)</PluginPackageDir>
+  </PropertyGroup>
+
+  <Target Name="PackagePlugin" AfterTargets="Build">
+    <PropertyGroup>
+      <_Timestamp>$([System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"))</_Timestamp>
+      <_MetaJson>{
+  "category": "$(PluginCategory)",
+  "changelog": "$(PluginChangelog)",
+  "description": "$(PluginDescription)",
+  "guid": "$(PluginGuid)",
+  "imageUrl": "https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/logo.png",
+  "name": "$(PluginDisplayName)",
+  "overview": "$(PluginOverview)",
+  "owner": "$(PluginOwner)",
+  "targetAbi": "$(PluginTargetAbi)",
+  "timestamp": "$(_Timestamp)",
+  "version": "$(Version)"
+}</_MetaJson>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_PluginArtifact Include="$(OutputPath)*.dll" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(PluginPackageDir)" />
+
+    <WriteLinesToFile
+      File="$(PluginPackageDir)/meta.json"
+      Lines="$(_MetaJson)"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
+
+    <Copy
+      SourceFiles="@(_PluginArtifact)"
+      DestinationFolder="$(PluginPackageDir)"
+      SkipUnchangedFiles="true" />
+
+    <Message Importance="high" Text="Plugin packaged → $(PluginPackageDir)" />
+  </Target>
 
 </Project>

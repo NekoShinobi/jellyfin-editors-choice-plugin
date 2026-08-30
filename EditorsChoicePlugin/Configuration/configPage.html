@@ -213,6 +213,12 @@
                         </label>
                     </div>
 
+                    <div id="LibraryList-container" style="display:none;">
+                        <h3 class="checkboxListLabel">Limit random items to these libraries:</h3>
+                        <div id="LibraryList" class="checkboxList"></div>
+                        <p>If no libraries are selected, Random mode uses all movie, TV, and mixed-content libraries.</p>
+                    </div>
+
                     <div id="EditorUserId-container" class="selectContainer" style="display:none;">
                         <label class="selectLabel" for="EditorUserId">User's favourites list</label>
                         <select is="emby-select" id="EditorUserId" name="EditorUserId" class="emby-select-withcolor emby-select">
@@ -309,7 +315,7 @@
                     <div class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="PlayButtonText">Custom Play Button Text</label>
                         <input is="emby-input" type="text" id="PlayButtonText" name="PlayButtonText" />
-                        <div class="fieldDescription">Change the default Play Button Text. Leave empty for default.</div>
+                        <div class="fieldDescription">Change “Watch Now” for items with no viewing progress. Resume, next episode, and replay labels remain automatic. Leave empty for the default.</div>
                     </div>
 
                     <div class="checkboxContainer checkboxContainer-withDescription">
@@ -455,6 +461,8 @@
 
                         if (config.Mode == 'FAVOURITES') {
                             $('#EditorUserId-container').show();
+                        } else if (config.Mode == 'RANDOM') {
+                            $('#LibraryList-container').show();
                         } else if (config.Mode == 'COLLECTIONS') {
                             $('#CollectionsList-container').show();
                         } else if (config.Mode == "NEW") {
@@ -490,12 +498,14 @@
                         });
 
                         // Populate libraries and collections checkboxes
-                        const libraryTypes = ["tvshows", "movies"];
+                        const libraryTypes = ["tvshows", "movies", "mixed"];
+                        const filteredLibraries = Array.isArray(config.FilteredLibraries) ? config.FilteredLibraries : [];
+                        const selectedCollections = Array.isArray(config.SelectedCollections) ? config.SelectedCollections : [];
                         $('#LibraryList label, #CollectionsList label').remove();
                         ApiClient.getItems().then(function (data) {
                             for (var item of data.Items) {
                                 if (libraryTypes.includes(item.CollectionType)) {
-                                    var checked = config.FilteredLibraries.includes(item.Id) ? 'checked' : '';
+                                    var checked = filteredLibraries.includes(item.Id) ? 'checked' : '';
                                     var checkboxItem = '<label class="emby-checkbox-label"><input is="emby-checkbox" type="checkbox" data-id="'+item.Id+'" '+checked+'><span class="checkboxLabel">'+item.Name+'</span></label>';
                                     $('#LibraryList').append(checkboxItem);
 
@@ -508,7 +518,7 @@
                                             console.log(data);
 
                                             for (var item of data.Items) {
-                                                var checked = config.SelectedCollections.includes(item.Id) ? 'checked' : '';
+                                                var checked = selectedCollections.includes(item.Id) ? 'checked' : '';
                                                 var checkboxItem = '<label class="emby-checkbox-label"><input is="emby-checkbox" type="checkbox" data-id="'+item.Id+'" '+checked+'><span class="checkboxLabel">'+item.Name+'</span></label>';
                                                 $('#CollectionsList').append(checkboxItem);
                                             }
@@ -656,6 +666,7 @@
 
                 $('input[name="mode"], #EnableAutoplay').on('change', function() {
                     $('#EditorUserId-container').toggle($('#FavouritesMode').is(':checked'));
+                    $('#LibraryList-container').toggle($('#RandomMode').is(':checked'));
                     $('#CollectionsList-container').toggle($('#CollectionsMode').is(':checked'));
                     $('#NewTimeLimit-container').toggle($('#NewMode').is(':checked'));
                     $('#AutoplayInterval-container').toggle($('#EnableAutoplay').is(':checked'));

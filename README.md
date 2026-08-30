@@ -1,15 +1,29 @@
 ## About
 Editor's Choice is a plugin for the Jellyfin web UI that adds a full-width slider to the main page to feature selected content, similar to the main Netflix home page.
 
-The featured content list is drawn from a specified user's favourited items, or a totally random selection of shows and films. The selection can also be filtered by minimum community or critic rating.
+The featured content list is drawn from a specified user's favourited items, or a totally random selection of shows and films. Random mode can be limited to specific movie, TV, or mixed-content libraries, and the selection can also be filtered by minimum community or critic rating.
+
+Banner descriptions use the item's Jellyfin overview and support safe Markdown formatting, including emphasis, lists, headings, block quotes, code, tables, and links. Raw HTML is disabled and rendered links are sanitised.
+
+Each banner can display its community/content rating, year, and either movie runtime or series episode count. The Play button uses the active user's Jellyfin progress: resumable movies continue from their saved position, and started series show and play the current or next episode.
 
 **Default mode**
 
-![Screenshot of Jellyfin with Editor's Choice banner slider](https://github.com/lachlandcp/jellyfin-editors-choice-plugin/blob/main/example.png?raw=true)
+![Screenshot of Jellyfin with Editor's Choice banner slider](https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/blob/main/example.png?raw=true)
 
 **Hero mode**
 
-![Screenshot of Jellyfin with Editor's Choice in hero mode](https://github.com/lachlandcp/jellyfin-editors-choice-plugin/blob/main/example-hero.png?raw=true)
+![Screenshot of Jellyfin with Editor's Choice in hero mode](https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/blob/main/example-hero.png?raw=true)
+
+## Building
+
+Run `dotnet build EditorsChoicePlugin.sln --configuration Release`. A ready-to-zip package is written to `EditorsChoicePlugin/bin/Release/net9.0/Editor's Choice_<version>/`. It contains the plugin metadata and every required DLL, including the Markdown renderer and sanitizer.
+
+Pushes and pull requests build a downloadable workflow artifact. To publish a
+version, manually run the **Build and release** workflow from the `main` branch
+and enter its changelog. The manual run replaces the fourth component of the
+version in `Directory.Build.props` with the workflow run number, creates the
+GitHub release, and adds that version to `manifest.json`.
 
 Note that the plugin only works for the web UI (and therefore also the mobile app), but does not and can not work for the Android TV app or other apps due to limitations of those platforms.
 
@@ -18,7 +32,7 @@ There are three ways to install this plugin.
 
 The first step is to install this plugin by adding the repository:
 
-1. Add `https://github.com/lachlandcp/jellyfin-editors-choice-plugin/raw/main/manifest.json` as a Jellyfin plugin repository
+1. Add `https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/manifest.json` as a Jellyfin plugin repository
 2. Install **Editor's Choice** from the repository
 
 The next step is to follow one of the following three options.
