@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/logo.png",
     "versions": [
       {
+        "changelog": "Fix the usability for the pagination in the hero header.",
+        "targetAbi": "10.11.0.0",
+        "version": "1.5.2.6",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/1.5.2.6/EditorsChoicePlugin_1.5.2.6.zip",
+        "checksum": "04B697940AC871FC339AAAA6BDDA5FDA",
+        "timestamp": "2026-08-30T09:23:02Z"
+      },
+      {
         "changelog": "Hero Banner Changes",
         "targetAbi": "10.11.0.0",
         "version": "1.5.2.4",
