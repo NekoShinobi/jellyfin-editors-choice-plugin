@@ -26,7 +26,7 @@ const container = `
 
   /* ===== Pagination ===== */
   .editorsChoiceContainer .splide__pagination {
-    z-index: 99;
+    z-index: 4;
     bottom: 1.25rem;
     left: 50%;
     right: auto;
@@ -42,6 +42,8 @@ const container = `
     backdrop-filter: blur(14px) saturate(145%);
     -webkit-backdrop-filter: blur(14px) saturate(145%);
     transform: translateX(-50%);
+    pointer-events: auto;
+    touch-action: manipulation;
   }
 
   .editorsChoiceContainer .splide__pagination__page {
@@ -49,8 +51,11 @@ const container = `
     width: 0.45rem;
     height: 0.45rem;
     margin: 0;
+    padding: 0.3rem !important;
+    box-sizing: content-box;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.55);
+    background-clip: content-box;
     opacity: 1;
     transform: none;
     transition: width 180ms ease, background-color 180ms ease, transform 180ms ease;
@@ -72,6 +77,10 @@ const container = `
   }
 
   .splide__track { border-radius: 0.2em; }
+
+  .editorsChoiceContainer .splide {
+    isolation: isolate;
+  }
 
   /* ===== Banner ===== */
   .editorsChoiceItemBanner {
@@ -317,8 +326,11 @@ const container = `
   }
 
   /* ===== Hero mode ===== */
+  #homeTab.editorsChoiceHeroMode {
+    transform: translateY(-120px);
+  }
+
   .editorsChoiceHeroMode .editorsChoiceContainer { padding: 0 !important; }
-  .editorsChoiceHeroMode #homeTab { transform: translateY(-120px); }
 
   .editorsChoiceHeroMode .splide.cardScalable {
     border-radius: unset !important;
@@ -738,7 +750,8 @@ async function setup() {
                 $containerElem.first().addClass(`editorsChoiceHeight-${data.bannerHeight}`);
                 $(elem).prepend($containerElem);
 
-                if (data.useHeroLayout) document.body.classList.add("editorsChoiceHeroMode");
+                $(elem).closest("#homeTab")
+                    .toggleClass("editorsChoiceHeroMode", !!data.useHeroLayout);
 
                 if ("heading" in data && data.heading && !data.useHeroLayout) {
                     $($containerElem).prepend(
@@ -760,7 +773,12 @@ async function setup() {
                     .attr("target", "_blank")
                     .attr("rel", "noopener noreferrer");
 
+                $containerElem.on("click", ".splide__pagination", function (event) {
+                    event.stopPropagation();
+                });
+
                 $list.on("click", ".editorsChoiceItemBanner", function (event) {
+                    if ($(event.target).closest(".splide__pagination").length) return;
                     if ($(event.target).closest(".editorsChoiceItemOverview a").length) return;
                     if ($(event.target).closest(".editorsChoiceItemButton").length) return;
 

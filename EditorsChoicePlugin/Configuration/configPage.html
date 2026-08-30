@@ -556,10 +556,17 @@
                                 }
                             }
 
-                            if (config.MaximumParentRating) {
-                                $('#MaximumParentRating').val(config.MaximumParentRating);
+                            var configuredParentRating = '-2';
+                            if (Number(config.MaximumParentRating) !== -2 && config.MaximumParentRating != null) {
+                                configuredParentRating = String(config.MaximumParentRating) + ',' +
+                                    String(config.MaximumParentRatingSubscore ?? 0);
+                            }
+
+                            var parentRatingSelect = $('#MaximumParentRating').first();
+                            if (parentRatingSelect.find('option[value="' + configuredParentRating + '"]').length) {
+                                parentRatingSelect.val(configuredParentRating);
                             } else {
-                                $('#MaximumParentRating').val(-2);
+                                parentRatingSelect.val('-2');
                             }
                         });
                     });
@@ -627,8 +634,10 @@
                             config.MinimumCriticRating = minimumCriticRating;
                         }
 
-                        config.MaximumParentRating = $('#MaximumParentRating').first().val().split(',')[0];
-                        config.MaximumParentRatingSubscore = $('#MaximumParentRating').first().val().split(',')[1];
+                        var parentalRatingValue = String($('#MaximumParentRating').first().val() ?? '-2');
+                        var parentalRatingParts = parentalRatingValue.split(',');
+                        config.MaximumParentRating = Number(parentalRatingParts[0]);
+                        config.MaximumParentRatingSubscore = Number(parentalRatingParts[1] ?? 0);
 
                         var filteredLibraries = [];
                         $('#LibraryList input[is="emby-checkbox"]:checked').each(function () {
