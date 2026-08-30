@@ -37,8 +37,6 @@ public class PluginConfiguration : BasePluginConfiguration
 
     public string NewTimeLimit { get; set; } = "1month";
 
-    public bool ShowRating { get; set; } = true;
-
     public bool ShowDescription { get; set; } = true;
 
     public bool HideOnTvLayout { get; set; } = false;

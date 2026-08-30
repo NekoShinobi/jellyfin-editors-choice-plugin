@@ -396,6 +396,7 @@ public class EditorsChoiceActivityController : ControllerBase
                     { "name", item.Name },
                     { "official_rating", item.OfficialRating },
                     { "hasLogo", item.HasImage(MediaBrowser.Model.Entities.ImageType.Logo) },
+                    { "hasPoster", item.HasImage(MediaBrowser.Model.Entities.ImageType.Primary) },
                     { "item_type", itemKind.ToString() },
                     { "play_item_id", item.Id.ToString() },
                     { "play_item_type", itemKind.ToString() },
@@ -419,11 +420,7 @@ public class EditorsChoiceActivityController : ControllerBase
                 {
                     itemObject.Add("episode_count", seriesFolder.GetRecursiveChildCount(activeUser));
                 }
-                if (item.CriticRating.HasValue && _config.ShowRating)
-                {
-                    itemObject.Add("critic_rating", item.CriticRating);
-                }
-                if (item.CommunityRating.HasValue && _config.ShowRating)
+                if (item.CommunityRating.HasValue)
                 {
                     itemObject.Add("community_rating", Math.Round(Convert.ToDecimal(item.CommunityRating), 2));
                 }

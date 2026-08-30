@@ -111,19 +111,46 @@ const container = `
     position: relative;
     width: 100%;
     height: 100%;
-    padding: 30px 30px 92px;
+    padding: 0 30px;
     box-sizing: border-box;
     background: linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 60%, rgba(0,0,0,0) 100%);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: minmax(0, min(650px, 100%));
+    align-items: center;
+    justify-content: start;
+    column-gap: clamp(1.1rem, 2.5vw, 2.5rem);
     overflow: hidden;
   }
 
   /* ===== Content ===== */
-  .editorsChoiceContentMain {
+  .editorsChoiceItemBanner > .editorsChoiceContent--withPoster {
+    grid-template-columns: auto minmax(0, min(650px, 100%));
+  }
+
+  .editorsChoiceItemPoster {
+    display: block;
+    height: 75%;
+    width: auto;
+    max-width: min(24vw, 25rem);
+    aspect-ratio: 2 / 3;
+    align-self: center;
+    object-fit: cover;
+    border-radius: 0.45rem;
+    box-shadow: 0 1.1rem 2.8rem rgba(4, 9, 15, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  }
+
+  .editorsChoiceInfo {
     width: min(650px, 100%);
-    max-height: 100%;
+    max-height: 75%;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .editorsChoiceContentMain {
+    width: 100%;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -152,31 +179,37 @@ const container = `
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 0.35em 0.65em;
+    gap: 0.4rem;
     min-height: 1.6em;
     margin-top: 0.7em;
-    font-size: 0.95em;
-    font-weight: 500;
+    font-size: 0.82em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
     flex: none;
   }
 
   .editorsChoiceMetadataItem {
     display: inline-flex;
     align-items: center;
+    min-height: 1.55rem;
+    padding: 0.14rem 0.6rem;
+    box-sizing: border-box;
     white-space: nowrap;
+    line-height: 1;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    background: rgba(18, 23, 31, 0.46);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px) saturate(125%);
+    -webkit-backdrop-filter: blur(8px) saturate(125%);
   }
 
-  .editorsChoiceMetadataItem + .editorsChoiceMetadataItem::before {
-    content: "•";
-    margin-right: 0.65em;
-    color: rgba(255, 255, 255, 0.55);
+  .editorsChoiceMediaType {
+    background: rgba(255, 255, 255, 0.17);
   }
 
   .editorsChoiceOfficialRating {
-    padding: 0.1em 0.4em;
-    border: 1px solid rgba(255, 255, 255, 0.55);
-    border-radius: 0.2em;
-    line-height: 1.2;
+    letter-spacing: 0.02em;
   }
 
   .editorsChoiceItemOverview {
@@ -235,10 +268,8 @@ const container = `
   }
 
   .editorsChoiceItemActions {
-    position: absolute;
-    z-index: 3;
-    left: 30px;
-    bottom: 30px;
+    flex: none;
+    margin-top: 0.9rem;
   }
 
   .editorsChoiceItemButton {
@@ -252,8 +283,8 @@ const container = `
 
   .starIcon {
     color: #f2b01e;
-    font-size: 1.25em;
-    margin-right: 0.15em;
+    font-size: 1em;
+    margin-right: 0.25em;
   }
 
   .editorsChoicePlayIcon {
@@ -261,6 +292,22 @@ const container = `
   }
 
   @media screen and (max-width: 500px) {
+    .editorsChoiceItemBanner > .editorsChoiceContent--withPoster {
+      grid-template-columns: auto minmax(0, 1fr);
+      column-gap: 0.85rem;
+    }
+
+    .editorsChoiceItemPoster {
+      width: min(27vw, 8rem);
+      height: auto;
+      max-width: none;
+      max-height: 65%;
+    }
+
+    .editorsChoiceInfo {
+      max-height: 82%;
+    }
+
     .editorsChoiceItemLogo {
       max-width: 100%;
       max-height: 100px;
@@ -325,11 +372,6 @@ const container = `
     );
   }
 
-  .editorsChoiceHeroMode .editorsChoiceItemActions {
-    left: max(env(safe-area-inset-left), 3.3%);
-    bottom: 145px;
-  }
-
   .editorsChoiceHeroMode .editorsChoiceItemBanner .editorsChoiceBackdrop::after {
     content: "";
     position: absolute;
@@ -350,11 +392,8 @@ const container = `
     position: relative;
     z-index: 2;
     height: 100%;
-    padding: 90px max(env(safe-area-inset-right), 3.3%) 205px max(env(safe-area-inset-left), 3.3%);
+    padding: 90px max(env(safe-area-inset-right), 3.3%);
     box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
     background: none !important;
   }
 
@@ -364,17 +403,9 @@ const container = `
       padding-left: 20px;
     }
 
-    .editorsChoiceItemActions {
-      left: 20px;
-    }
-
     .editorsChoiceHeroMode .editorsChoiceItemBanner .editorsChoiceContent {
       padding-right: max(env(safe-area-inset-right), 20px);
       padding-left: max(env(safe-area-inset-left), 20px);
-    }
-
-    .editorsChoiceHeroMode .editorsChoiceItemActions {
-      left: max(env(safe-area-inset-left), 20px);
     }
   }
 </style>
@@ -488,9 +519,17 @@ function buildMetadata(item) {
     const metadata = [];
     const rating = typeof item.community_rating === "number" ? Number(item.community_rating.toFixed(1)) : 0;
 
+    if (item.item_type) {
+        metadata.push(
+            '<span role="listitem" class="editorsChoiceMetadataItem editorsChoiceMediaType">' +
+            escapeHtml(item.item_type) +
+            '</span>'
+        );
+    }
+
     if (rating > 0) {
         metadata.push(
-            '<span class="editorsChoiceMetadataItem">' +
+            '<span role="listitem" class="editorsChoiceMetadataItem">' +
             '<span class="material-icons starIcon star" aria-hidden="true"></span>' +
             rating +
             '</span>'
@@ -498,16 +537,16 @@ function buildMetadata(item) {
     }
 
     if (Number.isInteger(item.year) && item.year > 0) {
-        metadata.push('<span class="editorsChoiceMetadataItem">' + item.year + '</span>');
+        metadata.push('<span role="listitem" class="editorsChoiceMetadataItem">' + item.year + '</span>');
     }
 
     if (item.item_type === "Movie") {
         const runtime = formatRuntime(item.runtime_minutes);
-        if (runtime) metadata.push('<span class="editorsChoiceMetadataItem">' + runtime + '</span>');
+        if (runtime) metadata.push('<span role="listitem" class="editorsChoiceMetadataItem">' + runtime + '</span>');
     } else if (item.item_type === "Series" && Number.isInteger(item.episode_count) && item.episode_count > 0) {
         const episodeLabel = getLocalizedString(item.episode_count === 1 ? "episode" : "episodes");
         metadata.push(
-            '<span class="editorsChoiceMetadataItem">' +
+            '<span role="listitem" class="editorsChoiceMetadataItem">' +
             item.episode_count + " " + escapeHtml(episodeLabel) +
             '</span>'
         );
@@ -515,7 +554,7 @@ function buildMetadata(item) {
 
     if (item.official_rating) {
         metadata.push(
-            '<span class="editorsChoiceMetadataItem editorsChoiceOfficialRating">' +
+            '<span role="listitem" class="editorsChoiceMetadataItem editorsChoiceOfficialRating">' +
             escapeHtml(item.official_rating) +
             '</span>'
         );
@@ -531,6 +570,17 @@ function buildLogoOrTitle(item, reduceImageSizes) {
     const logoSize = reduceImageSizes ? "?width=300" : "";
     return '<img class="editorsChoiceItemLogo" src="../Items/' + item.id +
         '/Images/Logo/0' + logoSize + '" alt="' + escapeHtml(item.name) + '"/>';
+}
+
+function buildPoster(item, data) {
+    if (!item.hasPoster) return "";
+
+    const configuredHeight = Number(data.bannerHeight) || 360;
+    const posterSize = data.reduceImageSizes ? "?height=" + Math.ceil(configuredHeight * 0.75) : "";
+
+    return '<img class="editorsChoiceItemPoster" src="../Items/' + item.id +
+        '/Images/Primary/0' + posterSize + '" alt="' + escapeHtml(item.name) +
+        ' poster" loading="lazy" decoding="async"/>';
 }
 
 function buildOverview(item) {
@@ -613,6 +663,8 @@ function renderHeroSlide(item, data) {
     const logoOrTitle = buildLogoOrTitle(item, data.reduceImageSizes);
     const overview = buildOverview(item);
     const button = buildPlayButton(item, data);
+    const poster = buildPoster(item, data);
+    const contentClass = "editorsChoiceContent" + (poster ? " editorsChoiceContent--withPoster" : "");
 
     const backdropSize = buildBannerSizeParam(data.reduceImageSizes);
     const backdropUrl = `../Items/${item.id}/Images/Backdrop/0${backdropSize}`;
@@ -624,11 +676,12 @@ function renderHeroSlide(item, data) {
         'role="link" tabindex="0" data-details-item-id="' + escapeHtml(item.id) + '">' +
         '<div class="editorsChoiceBackdrop ' + extraClass +
         '" style="background-image:url(\'' + backdropUrl + '\');"></div>' +
-        '<div class="editorsChoiceContent">' +
+        '<div class="' + contentClass + '">' +
+        poster + '<div class="editorsChoiceInfo">' +
         '<div class="editorsChoiceContentMain">' +
         logoOrTitle + metadata + overview +
         '</div>' + button +
-        '</div></article>';
+        '</div></div></article>';
 }
 
 function renderNormalSlide(item, data) {
@@ -638,15 +691,18 @@ function renderNormalSlide(item, data) {
 
     const bannerSize = buildBannerSizeParam(data.reduceImageSizes);
     const button = buildPlayButton(item, data);
+    const poster = buildPoster(item, data);
+    const contentClass = "editorsChoiceContent" + (poster ? " editorsChoiceContent--withPoster" : "");
 
     return '<article class="editorsChoiceItemBanner splide__slide" ' +
         'role="link" tabindex="0" data-details-item-id="' + escapeHtml(item.id) + '" ' +
         'style="background-image:url(\'../Items/' + item.id + '/Images/Backdrop/0' + bannerSize + '\');">' +
-        '<div class="editorsChoiceContent">' +
+        '<div class="' + contentClass + '">' +
+        poster + '<div class="editorsChoiceInfo">' +
         '<div class="editorsChoiceContentMain">' +
         logoOrTitle + metadata + overview +
         '</div>' + button +
-        '</div></article>';
+        '</div></div></article>';
 }
 
 /* ===== Main setup ===== */

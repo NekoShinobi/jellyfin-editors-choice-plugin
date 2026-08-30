@@ -320,13 +320,6 @@
 
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label class="emby-checkbox-label">
-                            <input is="emby-checkbox" type="checkbox" id="ShowRating" name="ShowRating" />
-                            <span class="checkboxLabel">Show community rating</span>
-                        </label>
-                    </div>
-
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label class="emby-checkbox-label">
                             <input is="emby-checkbox" type="checkbox" id="ShowDesc" name="ShowDesc" />
                             <span class="checkboxLabel">Show description</span>
                         </label>
@@ -445,7 +438,6 @@
                         $('#EnableAutoplay').first().prop('checked', config.EnableAutoplay);
                         $('#AutoplayInterval').first().val(config.AutoplayInterval);
                         $("#NewTimeLimitSelect").val(config.NewTimeLimit);
-                        $('#ShowRating').first().prop('checked', config.ShowRating);
                         $('#ShowDesc').first().prop('checked', config.ShowDescription);
                         $('#ShowPlayButton').first().prop('checked', config.ShowPlayButton);
                         $('#ReduceImageSize').first().prop('checked', config.ReduceImageSize);
@@ -590,7 +582,6 @@
                         config.FileTransformation = $('#FileTransformation').first().is(':checked');
                         config.EnableAutoplay = $('#EnableAutoplay').first().is(':checked');
                         config.AutoplayInterval = $('#AutoplayInterval').first().val();
-                        config.ShowRating = $('#ShowRating').first().is(':checked');
                         config.ShowDescription =  $('#ShowDesc').first().is(':checked');
                         config.ShowPlayButton = $('#ShowPlayButton').first().is(':checked');
                         config.ReduceImageSize = $('#ReduceImageSize').first().is(':checked');
