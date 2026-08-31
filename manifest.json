@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/logo.png",
     "versions": [
       {
+        "changelog": "More efficiencies with the hero banner",
+        "targetAbi": "10.11.0.0",
+        "version": "1.5.2.10",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/1.5.2.10/EditorsChoicePlugin_1.5.2.10.zip",
+        "checksum": "0830F26AE298C23C9FE4A631B50EBB55",
+        "timestamp": "2026-08-31T08:41:12Z"
+      },
+      {
         "changelog": "Mobile fixes, Hero banner fixes.",
         "targetAbi": "10.11.0.0",
         "version": "1.5.2.8",
