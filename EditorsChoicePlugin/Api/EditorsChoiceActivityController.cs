@@ -492,7 +492,7 @@ public class EditorsChoiceActivityController : ControllerBase
                     itemObject["playback_action"] = isResumable ? "resume" : "continue";
                     if (isResumable)
                     {
-                        itemObject["playback_position_ticks"] = nextEpisodeUserData!.PlaybackPositionTicks;
+                        AddPlaybackProgress(itemObject, nextEpisode, nextEpisodeUserData!.PlaybackPositionTicks);
                     }
                     if (nextEpisode.ParentIndexNumber.HasValue)
                     {
@@ -524,11 +524,37 @@ public class EditorsChoiceActivityController : ControllerBase
         if (userData?.PlaybackPositionTicks > 0)
         {
             itemObject["playback_action"] = "resume";
-            itemObject["playback_position_ticks"] = userData.PlaybackPositionTicks;
+            AddPlaybackProgress(itemObject, item, userData.PlaybackPositionTicks);
         }
         else if (userData?.Played == true)
         {
             itemObject["playback_action"] = "replay";
+        }
+    }
+
+    private static void AddPlaybackProgress(
+        Dictionary<string, object> itemObject,
+        BaseItem playbackItem,
+        long positionTicks)
+    {
+        itemObject["playback_position_ticks"] = positionTicks;
+
+        if (!playbackItem.RunTimeTicks.HasValue || playbackItem.RunTimeTicks.Value <= 0)
+        {
+            return;
+        }
+
+        long runtimeTicks = playbackItem.RunTimeTicks.Value;
+        long remainingTicks = Math.Max(0, runtimeTicks - positionTicks);
+        itemObject["playback_progress_percent"] = Math.Round(
+            Math.Clamp(positionTicks * 100d / runtimeTicks, 0d, 100d),
+            1);
+
+        if (remainingTicks > 0)
+        {
+            itemObject["playback_remaining_minutes"] = Math.Max(
+                1,
+                (int)Math.Ceiling(TimeSpan.FromTicks(remainingTicks).TotalMinutes));
         }
     }
 

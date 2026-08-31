@@ -8,12 +8,22 @@ const container = `
       <button type="button" class="editorsChoiceMobilePageButton editorsChoiceMobilePagePrev" aria-label="Previous item">
         <span class="material-icons chevron_left" aria-hidden="true"></span>
       </button>
-      <span class="editorsChoiceMobilePageStatus">
+      <span class="editorsChoiceMobilePageStatus" aria-live="polite" aria-atomic="true">
         <span class="editorsChoiceMobilePageCurrent">1</span><span aria-hidden="true"> / </span><span class="editorsChoiceMobilePageTotal">1</span>
       </span>
       <button type="button" class="editorsChoiceMobilePageButton editorsChoiceMobilePageNext" aria-label="Next item">
         <span class="material-icons chevron_right" aria-hidden="true"></span>
       </button>
+    </div>
+    <div class="editorsChoiceSkeleton" aria-hidden="true">
+      <div class="editorsChoiceSkeletonPoster"></div>
+      <div class="editorsChoiceSkeletonCopy">
+        <span class="editorsChoiceSkeletonLogo"></span>
+        <span class="editorsChoiceSkeletonMeta"></span>
+        <span class="editorsChoiceSkeletonLine"></span>
+        <span class="editorsChoiceSkeletonLine editorsChoiceSkeletonLineShort"></span>
+        <span class="editorsChoiceSkeletonButton"></span>
+      </div>
     </div>
   </div>
 </div>
@@ -59,6 +69,7 @@ const container = `
 
   .editorsChoiceContainer .splide__pagination__page {
     display: block;
+    position: relative;
     width: 0.45rem;
     height: 0.45rem;
     margin: 0;
@@ -74,8 +85,22 @@ const container = `
 
   .editorsChoiceContainer .splide__pagination__page.is-active {
     width: 1.6rem;
-    background: rgba(255, 255, 255, 0.96);
+    background: rgba(255, 255, 255, 0.34);
     transform: none;
+  }
+
+  .editorsChoiceContainer .splide__pagination__page.is-active::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0.3rem;
+    width: calc(100% - 0.6rem);
+    height: 0.45rem;
+    border-radius: inherit;
+    background: rgba(255, 255, 255, 0.96);
+    transform: translateY(-50%) scaleX(var(--editors-choice-autoplay-progress, 0));
+    transform-origin: left center;
+    transition: transform 100ms linear;
   }
 
   .editorsChoiceContainer .splide__pagination__page:focus-visible {
@@ -121,12 +146,40 @@ const container = `
   .editorsChoiceMobilePageButton .material-icons { font-size: 1.35rem; }
 
   .editorsChoiceMobilePageStatus {
+    position: relative;
+    overflow: hidden;
     min-width: 3.25rem;
+    padding: 0.7rem 0.15rem;
+    border-radius: 999px;
     text-align: center;
     color: rgba(255, 255, 255, 0.92);
     font-size: 0.82rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+  }
+
+  .editorsChoiceMobilePageStatus::after {
+    content: "";
+    position: absolute;
+    right: 0.25rem;
+    bottom: 0.15rem;
+    left: 0.25rem;
+    height: 2px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    transform: scaleX(var(--editors-choice-autoplay-progress, 0));
+    transform-origin: left center;
+    transition: transform 100ms linear;
+  }
+
+  .editorsChoiceContainer:not(.editorsChoiceHasAutoplayProgress) .splide__pagination__page.is-active::after,
+  .editorsChoiceContainer:not(.editorsChoiceHasAutoplayProgress) .editorsChoiceMobilePageStatus::after {
+    transform: scaleX(1);
+  }
+
+  .editorsChoiceSingleSlide .splide__pagination,
+  .editorsChoiceSingleSlide .editorsChoiceMobilePagination {
+    display: none !important;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -139,9 +192,86 @@ const container = `
     isolation: isolate;
   }
 
+  .editorsChoiceSkeleton {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: grid;
+    grid-template-columns: auto minmax(0, 32rem);
+    align-items: center;
+    justify-content: start;
+    gap: clamp(1rem, 2.5vw, 2.5rem);
+    padding: 120px max(env(safe-area-inset-right), 3.3%) 30px max(env(safe-area-inset-left), 3.3%);
+    box-sizing: border-box;
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.12);
+    background: #101319;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 240ms ease, visibility 0s linear 240ms;
+  }
+
+  .editorsChoiceSkeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 25%, rgba(255, 255, 255, 0.08) 42%, transparent 60%);
+    transform: translateX(-100%);
+    animation: editorsChoiceSkeletonSweep 1.45s ease-in-out infinite;
+  }
+
+  .editorsChoiceIsLoading .editorsChoiceSkeleton {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .editorsChoiceSkeletonPoster {
+    height: 75%;
+    max-height: 25rem;
+    aspect-ratio: 2 / 3;
+    border-radius: 0.45rem;
+    background: currentColor;
+  }
+
+  .editorsChoiceSkeletonCopy {
+    display: flex;
+    width: min(100%, 32rem);
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .editorsChoiceSkeletonCopy span {
+    display: block;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  .editorsChoiceSkeletonLogo { width: 52%; height: 4.5rem; border-radius: 0.35rem !important; }
+  .editorsChoiceSkeletonMeta { width: 44%; height: 1.5rem; }
+  .editorsChoiceSkeletonLine { width: 92%; height: 0.8rem; }
+  .editorsChoiceSkeletonLineShort { width: 68%; }
+  .editorsChoiceSkeletonButton { width: 8.5rem; height: 2.6rem; margin-top: 0.6rem; }
+
+  @keyframes editorsChoiceSkeletonSweep {
+    to { transform: translateX(100%); }
+  }
+
   @media screen and (max-width: 500px) {
     .editorsChoiceContainer .splide__pagination { display: none; }
     .editorsChoiceMobilePagination { display: flex; }
+
+    .editorsChoiceSkeleton {
+      grid-template-columns: min(27vw, 8rem) minmax(0, 1fr);
+      gap: 0.85rem;
+      padding-right: max(env(safe-area-inset-right), 20px);
+      padding-left: max(env(safe-area-inset-left), 20px);
+    }
+
+    .editorsChoiceSkeletonPoster { width: 100%; height: auto; }
+    .editorsChoiceSkeletonLogo { width: 72%; height: 3.75rem; }
+    .editorsChoiceSkeletonLine { display: none !important; }
   }
 
   /* ===== Banner ===== */
@@ -352,6 +482,9 @@ const container = `
     z-index: 3;
     left: 0;
     bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .editorsChoiceItemButton {
@@ -361,6 +494,23 @@ const container = `
     gap: 0.4em;
     position: relative;
     margin: 0 !important;
+  }
+
+  .editorsChoicePlaybackProgress {
+    display: block;
+    width: 100%;
+    height: 0.18rem;
+    margin-top: 0.38rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.24);
+  }
+
+  .editorsChoicePlaybackProgressFill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: rgba(255, 255, 255, 0.92);
   }
 
   .starIcon {
@@ -400,6 +550,20 @@ const container = `
       height: 3.75rem;
       margin-right: 0;
     }
+
+    .editorsChoiceInfo--withAction {
+      padding-bottom: 3.75rem;
+    }
+
+    .editorsChoiceItemActions {
+      left: 50%;
+      align-items: center;
+      transform: translateX(-50%);
+    }
+
+    .editorsChoiceContent--withPoster .editorsChoiceItemActions {
+      left: calc(50% - min(13.5vw, 4rem) - 0.425rem);
+    }
   }
 
   /* ===== Hero mode ===== */
@@ -423,6 +587,7 @@ const container = `
 
 
   .editorsChoiceHeroMode .editorsChoiceItemBanner { background-position-y: 15% !important; }
+  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-visible { animation: none; }
   .editorsChoiceHeroMode .editorsChoiceContainer .splide__pagination { bottom: 1.1rem; }
 
   .editorsChoiceHeroMode  .editorsChoiceBackdropCenter {
@@ -442,8 +607,10 @@ const container = `
     inset: 0;
     z-index: 0;
     background-size: cover;
-
     background-repeat: no-repeat;
+    opacity: 0;
+    transform: scale(1.018);
+    transition: opacity 360ms ease, transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
     mask-image: linear-gradient(
       to bottom,
       rgba(0,0,0,1) 40%,
@@ -460,13 +627,62 @@ const container = `
     z-index: 1;
     background: linear-gradient(
       135deg,
-      rgba(0,0,0,0.95) 0%,
-      rgba(0,0,0,0.85) 15%,
-      rgba(0,0,0,0.55) 30%,
-      rgba(0,0,0,0.25) 50%,
+      rgba(0,0,0,var(--editors-choice-scrim-strong, 0.95)) 0%,
+      rgba(0,0,0,var(--editors-choice-scrim-mid, 0.85)) 15%,
+      rgba(0,0,0,var(--editors-choice-scrim-soft, 0.55)) 30%,
+      rgba(0,0,0,var(--editors-choice-scrim-faint, 0.25)) 50%,
       rgba(0,0,0,0.08) 65%,
       rgba(0,0,0,0) 80%
     );
+  }
+
+  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceBackdrop {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .editorsChoiceHeroMode .editorsChoiceItemPoster,
+  .editorsChoiceHeroMode .editorsChoiceItemLogo,
+  .editorsChoiceHeroMode .editorsChoiceItemTitle,
+  .editorsChoiceHeroMode .editorsChoiceItemMetadata,
+  .editorsChoiceHeroMode .editorsChoiceItemOverview {
+    opacity: 0;
+    transform: translateY(0.7rem);
+  }
+
+  .editorsChoiceHeroMode .editorsChoiceItemActions {
+    opacity: 0;
+  }
+
+  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemPoster {
+    animation: editorsChoiceContentReveal 420ms 70ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemLogo,
+  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemTitle {
+    animation: editorsChoiceContentReveal 420ms 120ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemMetadata {
+    animation: editorsChoiceContentReveal 420ms 175ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemOverview {
+    animation: editorsChoiceContentReveal 420ms 225ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemActions {
+    animation: editorsChoiceActionReveal 360ms 275ms ease both;
+  }
+
+  @keyframes editorsChoiceContentReveal {
+    from { opacity: 0; transform: translateY(0.7rem); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes editorsChoiceActionReveal {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   .editorsChoiceHeroMode .editorsChoiceItemBanner .editorsChoiceContent {
@@ -487,6 +703,36 @@ const container = `
     .editorsChoiceHeroMode .editorsChoiceItemBanner .editorsChoiceContent {
       padding-right: max(env(safe-area-inset-right), 20px);
       padding-left: max(env(safe-area-inset-left), 20px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .editorsChoiceSkeleton::after,
+    .editorsChoiceHeroMode .editorsChoiceItemPoster,
+    .editorsChoiceHeroMode .editorsChoiceItemLogo,
+    .editorsChoiceHeroMode .editorsChoiceItemTitle,
+    .editorsChoiceHeroMode .editorsChoiceItemMetadata,
+    .editorsChoiceHeroMode .editorsChoiceItemOverview,
+    .editorsChoiceHeroMode .editorsChoiceItemActions {
+      animation: none !important;
+    }
+
+    .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemPoster,
+    .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemLogo,
+    .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemTitle,
+    .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemMetadata,
+    .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemOverview {
+      opacity: 1;
+      transform: none;
+    }
+
+    .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemActions {
+      opacity: 1;
+    }
+
+    .editorsChoiceHeroMode .editorsChoiceItemBanner .editorsChoiceBackdrop {
+      transform: none;
+      transition: opacity 120ms linear;
     }
   }
 </style>
@@ -549,6 +795,17 @@ function getLocalizedString(key) {
             zh: "再次观看",
             ja: "もう一度見る",
             ru: "Смотреть снова",
+        },
+        left: {
+            en: "left",
+            fr: "restantes",
+            es: "restantes",
+            de: "übrig",
+            it: "rimanenti",
+            pt: "restantes",
+            zh: "剩余",
+            ja: "残り",
+            ru: "осталось",
         },
         episode: {
             en: "episode",
@@ -672,8 +929,11 @@ function buildOverview(item) {
 function getPlayButtonLabel(item, data) {
     const hasEpisode = Number.isInteger(item.progress_season) && Number.isInteger(item.progress_episode);
     const episode = hasEpisode ? " S" + item.progress_season + " E" + item.progress_episode : "";
+    const remaining = Number.isInteger(item.playback_remaining_minutes) && item.playback_remaining_minutes > 0
+        ? " · " + formatRuntime(item.playback_remaining_minutes) + " " + getLocalizedString("left")
+        : "";
 
-    if (item.playback_action === "resume") return getLocalizedString("resume") + episode;
+    if (item.playback_action === "resume") return getLocalizedString("resume") + episode + remaining;
     if (item.playback_action === "continue") return getLocalizedString("continueWatching") + episode;
     if (item.playback_action === "replay") return getLocalizedString("watchAgain");
     return data.playButtonText || getLocalizedString("watchNow");
@@ -687,6 +947,14 @@ function buildPlayButton(item, data) {
     const playItemType = item.play_item_type || item.item_type;
     const nativeAction = item.playback_action === "resume" ? "resume" : "play";
     const positionTicks = Number.isFinite(item.playback_position_ticks) ? item.playback_position_ticks : 0;
+    const progress = Number.isFinite(item.playback_progress_percent)
+        ? Math.max(0, Math.min(100, item.playback_progress_percent))
+        : 0;
+    const progressBar = progress > 0
+        ? '<span class="editorsChoicePlaybackProgress" role="progressbar" aria-label="Playback progress" ' +
+            'aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + progress + '">' +
+            '<span class="editorsChoicePlaybackProgressFill" style="width:' + progress + '%"></span></span>'
+        : "";
     return '<div class="editorsChoiceItemActions">' +
         '<button type="button" is="emby-button" ' +
         'class="editorsChoiceItemButton itemAction raised button-submit emby-button" ' +
@@ -700,13 +968,98 @@ function buildPlayButton(item, data) {
         'aria-label="' + escapeHtml(buttonText) + ': ' + escapeHtml(item.name) + '">' +
         '<span class="material-icons editorsChoicePlayIcon play_arrow" aria-hidden="true"></span>' +
         '<span>' + escapeHtml(buttonText) + '</span>' +
-        '</button></div>';
+        '</button>' + progressBar + '</div>';
 }
 
 function buildBannerSizeParam(reduceImageSizes) {
     if (!reduceImageSizes) return "";
     const w = Math.max(window.screen.width, window.screen.height);
     return `?width=${w}`;
+}
+
+const backdropLoadCache = new Map();
+
+function measureBackdropScrim(image) {
+    const fallback = { strong: 0.95, mid: 0.85, soft: 0.55, faint: 0.25 };
+
+    try {
+        const canvas = document.createElement("canvas");
+        const width = 48;
+        const height = 27;
+        canvas.width = width;
+        canvas.height = height;
+
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        if (!context) return fallback;
+
+        context.drawImage(image, 0, 0, width, height);
+        const pixels = context.getImageData(0, 0, width, height).data;
+        const sampleWidth = Math.floor(width * 0.625);
+        let luminance = 0;
+        let samples = 0;
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < sampleWidth; x++) {
+                const offset = (y * width + x) * 4;
+                if (pixels[offset + 3] < 32) continue;
+                luminance += (0.2126 * pixels[offset]) + (0.7152 * pixels[offset + 1]) + (0.0722 * pixels[offset + 2]);
+                samples++;
+            }
+        }
+
+        const brightness = samples ? luminance / samples / 255 : 0.7;
+        return {
+            strong: 0.7 + (brightness * 0.28),
+            mid: 0.58 + (brightness * 0.3),
+            soft: 0.3 + (brightness * 0.3),
+            faint: 0.08 + (brightness * 0.18),
+        };
+    } catch (error) {
+        console.debug("Editors Choice: backdrop brightness analysis unavailable.", error);
+        return fallback;
+    }
+}
+
+function loadBackdropAsset(url) {
+    if (backdropLoadCache.has(url)) return backdropLoadCache.get(url);
+
+    const loadPromise = new Promise((resolve) => {
+        const image = new Image();
+        image.decoding = "async";
+        image.onload = () => resolve({ image, scrim: measureBackdropScrim(image) });
+        image.onerror = () => resolve({ image: null, scrim: null });
+        image.src = url;
+    });
+
+    backdropLoadCache.set(url, loadPromise);
+    return loadPromise;
+}
+
+function prepareHeroBackdrop($containerElem, slide) {
+    const backdrop = slide && slide.querySelector(".editorsChoiceBackdrop");
+    const url = backdrop && backdrop.dataset.backdropUrl;
+    if (!url) return Promise.resolve();
+
+    return loadBackdropAsset(url).then((asset) => {
+        const backdrops = $containerElem[0].querySelectorAll(".editorsChoiceBackdrop[data-backdrop-url]");
+
+        for (const target of backdrops) {
+            if (target.dataset.backdropUrl !== url) continue;
+
+            target.style.backgroundImage = 'url("' + url.replace(/"/g, "%22") + '")';
+            const targetSlide = target.closest(".editorsChoiceItemBanner");
+            if (!targetSlide) continue;
+
+            if (asset.scrim) {
+                targetSlide.style.setProperty("--editors-choice-scrim-strong", asset.scrim.strong.toFixed(3));
+                targetSlide.style.setProperty("--editors-choice-scrim-mid", asset.scrim.mid.toFixed(3));
+                targetSlide.style.setProperty("--editors-choice-scrim-soft", asset.scrim.soft.toFixed(3));
+                targetSlide.style.setProperty("--editors-choice-scrim-faint", asset.scrim.faint.toFixed(3));
+            }
+
+            targetSlide.classList.add("editorsChoiceSlideReady");
+        }
+    });
 }
 
 function ensureSplideLoaded() {
@@ -757,7 +1110,7 @@ function renderHeroSlide(item, data) {
     return '<article class="editorsChoiceItemBanner splide__slide" ' +
         'role="link" tabindex="0" data-details-item-id="' + escapeHtml(item.id) + '">' +
         '<div class="editorsChoiceBackdrop ' + extraClass +
-        '" style="background-image:url(\'' + backdropUrl + '\');"></div>' +
+        '" data-backdrop-url="' + escapeHtml(backdropUrl) + '"></div>' +
         '<div class="' + contentClass + '">' +
         poster + '<div class="' + infoClass + '">' +
         '<div class="editorsChoiceContentMain">' +
@@ -816,9 +1169,13 @@ async function setup() {
                 const favourites = shuffle(data.favourites || []);
                 const $containerElem = $(container);
                 const containerId = `editorsChoice-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+                const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                const autoplayEnabled = !!data.autoplay && !prefersReducedMotion && favourites.length > 1;
 
                 $containerElem.first().attr("id", containerId);
                 $containerElem.first().addClass(`editorsChoiceHeight-${data.bannerHeight}`);
+                $containerElem.toggleClass("editorsChoiceIsLoading", !!data.useHeroLayout);
+                $containerElem.toggleClass("editorsChoiceHasAutoplayProgress", autoplayEnabled);
                 $(elem).prepend($containerElem);
 
                 $(elem).closest("#homeTab")
@@ -869,22 +1226,69 @@ async function setup() {
 
                 const slider = new Splide(`#${containerId} .splide`, {
                     type: data.transitionEffect ?? "loop",
-                    autoplay: !!data.autoplay,
+                    autoplay: autoplayEnabled,
                     arrows: false,
                     rewind: true,
                     interval: data.autoplayInterval,
+                    pauseOnHover: true,
+                    pauseOnFocus: true,
                     pagination: true,
                     keyboard: true,
+                    speed: data.useHeroLayout ? 650 : 400,
+                    easing: "cubic-bezier(0.22, 1, 0.36, 1)",
                     height: `${data.bannerHeight + (data.useHeroLayout ? 120 : 0)}px`,
                 });
 
                 const updateMobilePagination = () => {
                     $containerElem.find(".editorsChoiceMobilePageCurrent").text(slider.index + 1);
                     $containerElem.find(".editorsChoiceMobilePageTotal").text(slider.length);
+                    $containerElem[0].style.setProperty("--editors-choice-autoplay-progress", "0");
                 };
 
-                slider.on("mounted", updateMobilePagination);
-                slider.on("moved", updateMobilePagination);
+                const getOriginalSlides = () => Array.from($list[0].children)
+                    .filter((slide) => !slide.classList.contains("splide__slide--clone"));
+
+                const prepareSlideAt = (index) => {
+                    if (!data.useHeroLayout) return Promise.resolve();
+                    const slides = getOriginalSlides();
+                    if (!slides.length) return Promise.resolve();
+                    const normalizedIndex = ((index % slides.length) + slides.length) % slides.length;
+                    return prepareHeroBackdrop($containerElem, slides[normalizedIndex]);
+                };
+
+                const preloadFollowingSlide = () => {
+                    if (slider.length > 1) prepareSlideAt(slider.index + 1);
+                };
+
+                slider.on("mounted", () => {
+                    updateMobilePagination();
+                    $containerElem.toggleClass("editorsChoiceSingleSlide", slider.length <= 1);
+
+                    if (data.useHeroLayout) {
+                        prepareSlideAt(slider.index).then(() => {
+                            $containerElem.removeClass("editorsChoiceIsLoading");
+                        });
+                        preloadFollowingSlide();
+                    } else {
+                        $containerElem.removeClass("editorsChoiceIsLoading");
+                    }
+                });
+
+                slider.on("move", (newIndex) => {
+                    prepareSlideAt(newIndex);
+                });
+
+                slider.on("moved", () => {
+                    updateMobilePagination();
+                    preloadFollowingSlide();
+                });
+
+                slider.on("autoplay:playing", (rate) => {
+                    $containerElem[0].style.setProperty(
+                        "--editors-choice-autoplay-progress",
+                        String(Math.max(0, Math.min(1, rate)))
+                    );
+                });
 
                 $containerElem.on("click", ".editorsChoiceMobilePagePrev", function (event) {
                     event.preventDefault();
