@@ -69,7 +69,6 @@ const container = `
 
   .editorsChoiceContainer .splide__pagination__page {
     display: block;
-    position: relative;
     width: 0.45rem;
     height: 0.45rem;
     margin: 0;
@@ -85,22 +84,8 @@ const container = `
 
   .editorsChoiceContainer .splide__pagination__page.is-active {
     width: 1.6rem;
-    background: rgba(255, 255, 255, 0.34);
-    transform: none;
-  }
-
-  .editorsChoiceContainer .splide__pagination__page.is-active::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 0.3rem;
-    width: calc(100% - 0.6rem);
-    height: 0.45rem;
-    border-radius: inherit;
     background: rgba(255, 255, 255, 0.96);
-    transform: translateY(-50%) scaleX(var(--editors-choice-autoplay-progress, 0));
-    transform-origin: left center;
-    transition: transform 100ms linear;
+    transform: none;
   }
 
   .editorsChoiceContainer .splide__pagination__page:focus-visible {
@@ -146,35 +131,12 @@ const container = `
   .editorsChoiceMobilePageButton .material-icons { font-size: 1.35rem; }
 
   .editorsChoiceMobilePageStatus {
-    position: relative;
-    overflow: hidden;
     min-width: 3.25rem;
-    padding: 0.7rem 0.15rem;
-    border-radius: 999px;
     text-align: center;
     color: rgba(255, 255, 255, 0.92);
     font-size: 0.82rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
-  }
-
-  .editorsChoiceMobilePageStatus::after {
-    content: "";
-    position: absolute;
-    right: 0.25rem;
-    bottom: 0.15rem;
-    left: 0.25rem;
-    height: 2px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.92);
-    transform: scaleX(var(--editors-choice-autoplay-progress, 0));
-    transform-origin: left center;
-    transition: transform 100ms linear;
-  }
-
-  .editorsChoiceContainer:not(.editorsChoiceHasAutoplayProgress) .splide__pagination__page.is-active::after,
-  .editorsChoiceContainer:not(.editorsChoiceHasAutoplayProgress) .editorsChoiceMobilePageStatus::after {
-    transform: scaleX(1);
   }
 
   .editorsChoiceSingleSlide .splide__pagination,
@@ -1175,7 +1137,6 @@ async function setup() {
                 $containerElem.first().attr("id", containerId);
                 $containerElem.first().addClass(`editorsChoiceHeight-${data.bannerHeight}`);
                 $containerElem.toggleClass("editorsChoiceIsLoading", !!data.useHeroLayout);
-                $containerElem.toggleClass("editorsChoiceHasAutoplayProgress", autoplayEnabled);
                 $(elem).prepend($containerElem);
 
                 $(elem).closest("#homeTab")
@@ -1242,7 +1203,6 @@ async function setup() {
                 const updateMobilePagination = () => {
                     $containerElem.find(".editorsChoiceMobilePageCurrent").text(slider.index + 1);
                     $containerElem.find(".editorsChoiceMobilePageTotal").text(slider.length);
-                    $containerElem[0].style.setProperty("--editors-choice-autoplay-progress", "0");
                 };
 
                 const getOriginalSlides = () => Array.from($list[0].children)
@@ -1281,13 +1241,6 @@ async function setup() {
                 slider.on("moved", () => {
                     updateMobilePagination();
                     preloadFollowingSlide();
-                });
-
-                slider.on("autoplay:playing", (rate) => {
-                    $containerElem[0].style.setProperty(
-                        "--editors-choice-autoplay-progress",
-                        String(Math.max(0, Math.min(1, rate)))
-                    );
                 });
 
                 $containerElem.on("click", ".editorsChoiceMobilePagePrev", function (event) {
