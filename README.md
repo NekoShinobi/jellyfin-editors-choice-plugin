@@ -1,3 +1,10 @@
+## Details about Fork
+
+Mostly addressing the hero banner to make it more pretty.
+
+<img width="1783" height="696" alt="image" src="https://github.com/user-attachments/assets/30d2c493-9be0-4a9d-b500-8388d7653432" />
+
+
 ## About
 Editor's Choice is a plugin for the Jellyfin web UI that adds a full-width slider to the main page to feature selected content, similar to the main Netflix home page.
 
@@ -28,6 +35,7 @@ GitHub release, and adds that version to `manifest.json`.
 Note that the plugin only works for the web UI (and therefore also the mobile app), but does not and can not work for the Android TV app or other apps due to limitations of those platforms.
 
 ## Installation
+
 There are three ways to install this plugin.
 
 The first step is to install this plugin by adding the repository:
