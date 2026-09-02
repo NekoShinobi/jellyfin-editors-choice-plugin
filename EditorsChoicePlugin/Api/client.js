@@ -294,7 +294,7 @@ const container = `
     object-fit: cover;
     border-radius: 0.45rem;
     box-shadow: 0 1.1rem 2.8rem rgba(4, 9, 15, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
-    transition: transform 180ms ease;
+    transition: transform 180ms ease, filter 180ms ease;
   }
 
   .editorsChoicePosterButton {
@@ -320,9 +320,26 @@ const container = `
     max-width: none;
   }
 
+  .editorsChoicePosterButton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(0, 0, 0, 0.34);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease;
+  }
+
   .editorsChoicePosterButton:hover .editorsChoiceItemPoster,
   .editorsChoicePosterButton:focus-visible .editorsChoiceItemPoster {
+    filter: brightness(0.72);
     transform: scale(1.025);
+  }
+
+  .editorsChoicePosterButton:hover::after,
+  .editorsChoicePosterButton:focus-visible::after {
+    opacity: 1;
   }
 
   .editorsChoicePosterButton:focus-visible {
@@ -332,13 +349,24 @@ const container = `
 
   .editorsChoiceTrailerIcon {
     position: absolute;
-    right: 0.55rem;
-    bottom: 0.55rem;
-    padding: 0.3rem;
+    z-index: 1;
+    top: 50%;
+    left: 50%;
+    padding: 0.38rem;
     border-radius: 50%;
-    font-size: 1.65rem;
-    background: rgba(0, 0, 0, 0.68);
+    font-size: 2.25rem;
+    opacity: 0;
+    background: rgba(0, 0, 0, 0.72);
     backdrop-filter: blur(8px);
+    pointer-events: none;
+    transform: translate(-50%, -50%) scale(0.82);
+    transition: opacity 180ms ease, transform 180ms ease;
+  }
+
+  .editorsChoicePosterButton:hover .editorsChoiceTrailerIcon,
+  .editorsChoicePosterButton:focus-visible .editorsChoiceTrailerIcon {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
 
   .editorsChoiceInfo {
@@ -667,6 +695,20 @@ const container = `
       overflow: hidden;
       opacity: 0;
       clip-path: polygon(14% 0, 100% 0, 100% 100%, 0 100%);
+      -webkit-mask-image: linear-gradient(
+        99deg,
+        transparent 0%,
+        rgba(0, 0, 0, 0.14) 9%,
+        rgba(0, 0, 0, 0.68) 19%,
+        #000 30%
+      );
+      mask-image: linear-gradient(
+        99deg,
+        transparent 0%,
+        rgba(0, 0, 0, 0.14) 9%,
+        rgba(0, 0, 0, 0.68) 19%,
+        #000 30%
+      );
       background: #07090d;
       pointer-events: none;
       transition: opacity 360ms ease;
@@ -998,7 +1040,13 @@ function buildPoster(item, data) {
 
     if (!item.has_trailer) return image;
 
-    return `<button type="button" class="editorsChoicePosterButton itemAction" data-action="playtrailer" data-id="${escapeHtml(item.id)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(item.item_type)}" aria-label="Play trailer: ${escapeHtml(item.name)}">${image}<span class="material-icons editorsChoiceTrailerIcon play_circle_filled" aria-hidden="true"></span></button>`;
+    const hasLocalTrailer = !!item.trailer_item_id;
+    const trailerAction = hasLocalTrailer ? "play" : "playtrailer";
+    const trailerItemId = item.trailer_item_id || item.id;
+    const trailerItemType = item.trailer_item_type || item.item_type;
+    const trailerIsFolder = hasLocalTrailer ? false : !!item.play_is_folder;
+
+    return `<button type="button" is="emby-button" class="editorsChoicePosterButton itemAction emby-button" data-action="${trailerAction}" data-id="${escapeHtml(trailerItemId)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(trailerItemType)}" data-mediatype="Video" data-isfolder="${trailerIsFolder ? "true" : "false"}" data-positionticks="0" title="Play trailer" aria-label="Play trailer: ${escapeHtml(item.name)}">${image}<span class="material-icons editorsChoiceTrailerIcon play_circle_filled" aria-hidden="true"></span></button>`;
 }
 
 function buildThemeVideo(item) {

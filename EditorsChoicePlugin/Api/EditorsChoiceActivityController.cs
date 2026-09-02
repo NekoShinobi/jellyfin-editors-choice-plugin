@@ -392,7 +392,9 @@ public class EditorsChoiceActivityController : ControllerBase
                 BaseItem? themeVideo = _config.UseHeroLayout
                     ? extras.FirstOrDefault(extra => extra.ExtraType == MediaBrowser.Model.Entities.ExtraType.ThemeVideo)
                     : null;
-                bool hasTrailer = extras.Any(extra => extra.ExtraType == MediaBrowser.Model.Entities.ExtraType.Trailer)
+                BaseItem? localTrailer = extras.FirstOrDefault(
+                    extra => extra.ExtraType == MediaBrowser.Model.Entities.ExtraType.Trailer);
+                bool hasTrailer = localTrailer is not null
                     || (item is IHasTrailers itemWithTrailers && itemWithTrailers.RemoteTrailers?.Count > 0);
 
                 // Narrow down properties that are strictly necessary to pass through to frontend
@@ -414,6 +416,12 @@ public class EditorsChoiceActivityController : ControllerBase
                 if (themeVideo is not null)
                 {
                     itemObject.Add("theme_video_id", themeVideo.Id.ToString());
+                }
+
+                if (localTrailer is not null)
+                {
+                    itemObject.Add("trailer_item_id", localTrailer.Id.ToString());
+                    itemObject.Add("trailer_item_type", localTrailer.GetBaseItemKind().ToString());
                 }
 
                 if (_config.ShowDescription)
