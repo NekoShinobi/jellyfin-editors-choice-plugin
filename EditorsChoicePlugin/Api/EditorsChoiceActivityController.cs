@@ -388,9 +388,12 @@ public class EditorsChoiceActivityController : ControllerBase
             {
                 BaseItem item = i;
                 BaseItemKind itemKind = item.GetBaseItemKind();
-                BaseItem? themeVideo = _config.UseHeroLayout ? item.GetThemeVideos(activeUser).FirstOrDefault() : null;
-                bool hasTrailer = item.GetExtras([MediaBrowser.Model.Entities.ExtraType.Trailer]).Any()
-                    || (item is IHasTrailers itemWithTrailers && itemWithTrailers.RemoteTrailers.Count > 0);
+                IReadOnlyList<BaseItem> extras = GetOptionalExtras(item);
+                BaseItem? themeVideo = _config.UseHeroLayout
+                    ? extras.FirstOrDefault(extra => extra.ExtraType == MediaBrowser.Model.Entities.ExtraType.ThemeVideo)
+                    : null;
+                bool hasTrailer = extras.Any(extra => extra.ExtraType == MediaBrowser.Model.Entities.ExtraType.Trailer)
+                    || (item is IHasTrailers itemWithTrailers && itemWithTrailers.RemoteTrailers?.Count > 0);
 
                 // Narrow down properties that are strictly necessary to pass through to frontend
                 Dictionary<string, object> itemObject = new Dictionary<string, object>
@@ -538,6 +541,22 @@ public class EditorsChoiceActivityController : ControllerBase
         else if (userData?.Played == true)
         {
             itemObject["playback_action"] = "replay";
+        }
+    }
+
+    private IReadOnlyList<BaseItem> GetOptionalExtras(BaseItem item)
+    {
+        try
+        {
+            return item.GetExtras().ToList();
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(
+                exception,
+                "Unable to load optional media for Editors Choice item {ItemId}; rendering the banner without it.",
+                item.Id);
+            return [];
         }
     }
 

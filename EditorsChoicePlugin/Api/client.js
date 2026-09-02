@@ -1107,9 +1107,21 @@ function loadBackdropAsset(url) {
 
     const loadPromise = new Promise((resolve) => {
         const image = new Image();
+        let settled = false;
+        const finish = (asset) => {
+            if (settled) return;
+            settled = true;
+            window.clearTimeout(timeoutId);
+            resolve(asset);
+        };
+        const timeoutId = window.setTimeout(() => {
+            console.warn("Editors Choice: backdrop preload timed out; displaying it without brightness analysis.");
+            finish({ image: null, scrim: null });
+        }, 8000);
+
         image.decoding = "async";
-        image.onload = () => resolve({ image, scrim: measureBackdropScrim(image) });
-        image.onerror = () => resolve({ image: null, scrim: null });
+        image.onload = () => finish({ image, scrim: measureBackdropScrim(image) });
+        image.onerror = () => finish({ image: null, scrim: null });
         image.src = url;
     });
 
@@ -1327,13 +1339,13 @@ async function setup() {
                 const getOriginalSlides = () => Array.from($list[0].children)
                     .filter((slide) => !slide.classList.contains("splide__slide--clone"));
 
-                const prepareSlideAt = (index) => {
+                const prepareSlideAt = async (index) => {
                     if (!data.useHeroLayout) return Promise.resolve();
                     const slides = getOriginalSlides();
                     if (!slides.length) return Promise.resolve();
                     const normalizedIndex = ((index % slides.length) + slides.length) % slides.length;
                     const slide = slides[normalizedIndex];
-                    return Promise.all([
+                    await Promise.all([
                         prepareHeroBackdrop($containerElem, slide),
                         prepareThemeVideo(slide, false),
                     ]);
@@ -1359,7 +1371,11 @@ async function setup() {
                 };
 
                 const preloadFollowingSlide = () => {
-                    if (slider.length > 1) prepareSlideAt(slider.index + 1);
+                    if (slider.length > 1) {
+                        prepareSlideAt(slider.index + 1).catch((error) => {
+                            console.debug("Editors Choice: following hero media preload unavailable.", error);
+                        });
+                    }
                 };
 
                 slider.on("mounted", () => {
@@ -1367,10 +1383,17 @@ async function setup() {
                     $containerElem.toggleClass("editorsChoiceSingleSlide", slider.length <= 1);
 
                     if (data.useHeroLayout) {
-                        prepareSlideAt(slider.index).then(() => {
-                            $containerElem.removeClass("editorsChoiceIsLoading");
-                            activateThemeVideoAt(slider.index);
-                        });
+                        prepareSlideAt(slider.index)
+                            .catch((error) => {
+                                console.warn("Editors Choice: initial hero media preparation failed.", error);
+                            })
+                            .then(() => {
+                                $containerElem.removeClass("editorsChoiceIsLoading");
+                                return Promise.resolve().then(() => activateThemeVideoAt(slider.index));
+                            })
+                            .catch((error) => {
+                                console.debug("Editors Choice: theme video activation unavailable.", error);
+                            });
                         preloadFollowingSlide();
                     } else {
                         $containerElem.removeClass("editorsChoiceIsLoading");
@@ -1379,7 +1402,9 @@ async function setup() {
 
                 slider.on("move", (newIndex) => {
                     pauseThemeVideos($containerElem[0]);
-                    prepareSlideAt(newIndex);
+                    prepareSlideAt(newIndex).catch((error) => {
+                        console.debug("Editors Choice: hero media preparation unavailable.", error);
+                    });
                 });
 
                 slider.on("moved", () => {
