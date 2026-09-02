@@ -244,15 +244,9 @@ const container = `
     flex: none;
     background-size: cover;
     background-position-x: center;
-    cursor: pointer;
     color: rgba(255, 255, 255, 0.8);
     text-decoration: none;
     background-position-y: 52%;
-  }
-
-  .editorsChoiceItemBanner:focus-visible {
-    outline: 3px solid currentColor;
-    outline-offset: -3px;
   }
 
   .editorsChoiceItemBanner:nth-child(odd) { background-position-y: 48%; }
@@ -300,6 +294,51 @@ const container = `
     object-fit: cover;
     border-radius: 0.45rem;
     box-shadow: 0 1.1rem 2.8rem rgba(4, 9, 15, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    transition: transform 180ms ease;
+  }
+
+  .editorsChoicePosterButton {
+    position: relative;
+    display: block;
+    width: auto;
+    height: 75%;
+    max-width: min(24vw, 25rem);
+    aspect-ratio: 2 / 3;
+    align-self: center;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0.45rem;
+    color: #fff;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .editorsChoicePosterButton .editorsChoiceItemPoster {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+  }
+
+  .editorsChoicePosterButton:hover .editorsChoiceItemPoster,
+  .editorsChoicePosterButton:focus-visible .editorsChoiceItemPoster {
+    transform: scale(1.025);
+  }
+
+  .editorsChoicePosterButton:focus-visible {
+    outline: 3px solid currentColor;
+    outline-offset: 4px;
+  }
+
+  .editorsChoiceTrailerIcon {
+    position: absolute;
+    right: 0.55rem;
+    bottom: 0.55rem;
+    padding: 0.3rem;
+    border-radius: 50%;
+    font-size: 1.65rem;
+    background: rgba(0, 0, 0, 0.68);
+    backdrop-filter: blur(8px);
   }
 
   .editorsChoiceInfo {
@@ -445,17 +484,36 @@ const container = `
     left: 0;
     bottom: 0;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: flex-start;
+    gap: 0.55rem;
   }
 
-  .editorsChoiceItemButton {
+  .editorsChoicePlayAction {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .editorsChoiceItemButton,
+  .editorsChoiceInfoButton {
     width: fit-content !important;
     display: inline-flex !important;
     align-items: center;
     gap: 0.4em;
     position: relative;
     margin: 0 !important;
+  }
+
+  .editorsChoiceInfoButton {
+    justify-content: center;
+    min-width: 2.8rem;
+    padding-right: 0.8em !important;
+    padding-left: 0.8em !important;
+  }
+
+  .editorsChoiceInfoIcon {
+    font-size: 1.25em;
   }
 
   .editorsChoicePlaybackProgress {
@@ -496,6 +554,19 @@ const container = `
       height: auto;
       max-width: none;
       max-height: 65%;
+    }
+
+    .editorsChoicePosterButton {
+      width: min(27vw, 8rem);
+      height: auto;
+      max-width: none;
+      max-height: 65%;
+    }
+
+    .editorsChoicePosterButton .editorsChoiceItemPoster {
+      width: 100%;
+      height: 100%;
+      max-height: none;
     }
 
     .editorsChoiceInfo {
@@ -580,6 +651,48 @@ const container = `
       rgba(0,0,0,0.4) 70%,
       rgba(0,0,0,0) 100%
     );
+  }
+
+  .editorsChoiceThemeVideo {
+    display: none;
+  }
+
+  @media screen and (min-width: 900px) {
+    .editorsChoiceHeroMode .editorsChoiceItemBanner--withThemeVideo .editorsChoiceThemeVideo {
+      position: absolute;
+      inset: 0 0 0 auto;
+      z-index: 1;
+      display: block;
+      width: 56%;
+      overflow: hidden;
+      opacity: 0;
+      clip-path: polygon(14% 0, 100% 0, 100% 100%, 0 100%);
+      background: #07090d;
+      pointer-events: none;
+      transition: opacity 360ms ease;
+    }
+
+    .editorsChoiceHeroMode .editorsChoiceItemBanner--withThemeVideo .editorsChoiceThemeVideo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(7, 9, 13, 0.48) 0%, rgba(7, 9, 13, 0) 22%);
+    }
+
+    .editorsChoiceHeroMode .editorsChoiceThemeVideoPlayer {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceThemeVideo:not(.editorsChoiceThemeVideoUnavailable) {
+      opacity: 1;
+    }
+
+    .editorsChoiceHeroMode .editorsChoiceItemBanner--withThemeVideo .editorsChoiceContent {
+      padding-right: max(50%, env(safe-area-inset-right));
+    }
   }
 
   .editorsChoiceHeroMode .editorsChoiceItemBanner .editorsChoiceBackdrop::after {
@@ -697,6 +810,10 @@ const container = `
       transition: opacity 120ms linear;
     }
   }
+  @media (prefers-reduced-motion: reduce) {
+    .editorsChoiceThemeVideo { display: none !important; }
+  }
+
 </style>
 `;
 
@@ -876,16 +993,25 @@ function buildPoster(item, data) {
     if (!item.hasPoster) return "";
 
     const configuredHeight = Number(data.bannerHeight) || 360;
-    const posterSize = data.reduceImageSizes ? "?height=" + Math.ceil(configuredHeight * 0.75) : "";
+    const posterSize = data.reduceImageSizes ? `?height=${Math.ceil(configuredHeight * 0.75)}` : "";
+    const image = `<img class="editorsChoiceItemPoster" src="../Items/${escapeHtml(item.id)}/Images/Primary/0${posterSize}" alt="${escapeHtml(item.name)} poster" loading="lazy" decoding="async"/>`;
 
-    return '<img class="editorsChoiceItemPoster" src="../Items/' + item.id +
-        '/Images/Primary/0' + posterSize + '" alt="' + escapeHtml(item.name) +
-        ' poster" loading="lazy" decoding="async"/>';
+    if (!item.has_trailer) return image;
+
+    return `<button type="button" class="editorsChoicePosterButton itemAction" data-action="playtrailer" data-id="${escapeHtml(item.id)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(item.item_type)}" aria-label="Play trailer: ${escapeHtml(item.name)}">${image}<span class="material-icons editorsChoiceTrailerIcon play_circle_filled" aria-hidden="true"></span></button>`;
 }
 
-function buildOverview(item) {
-    const overview = (item && typeof item.overview_html === "string") ? item.overview_html : "";
-    return overview ? '<div class="editorsChoiceItemOverview">' + overview + '</div>' : "";
+function buildThemeVideo(item) {
+    if (!item.theme_video_id) return "";
+
+    return `<div class="editorsChoiceThemeVideo" aria-hidden="true"><video class="editorsChoiceThemeVideoPlayer" muted loop playsinline preload="metadata" data-theme-video-id="${escapeHtml(item.theme_video_id)}"></video></div>`;
+}
+
+function buildOverview(item, fallback = "") {
+    const hasOverview = item && typeof item.overview_html === "string";
+    const overview = hasOverview ? item.overview_html : "";
+    const content = overview || (hasOverview ? escapeHtml(fallback) : "");
+    return content ? '<div class="editorsChoiceItemOverview">' + content + '</div>' : "";
 }
 
 function getPlayButtonLabel(item, data) {
@@ -913,24 +1039,18 @@ function buildPlayButton(item, data) {
         ? Math.max(0, Math.min(100, item.playback_progress_percent))
         : 0;
     const progressBar = progress > 0
-        ? '<span class="editorsChoicePlaybackProgress" role="progressbar" aria-label="Playback progress" ' +
-            'aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + progress + '">' +
-            '<span class="editorsChoicePlaybackProgressFill" style="width:' + progress + '%"></span></span>'
+        ? `<span class="editorsChoicePlaybackProgress" role="progressbar" aria-label="Playback progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><span class="editorsChoicePlaybackProgressFill" style="width:${progress}%"></span></span>`
         : "";
-    return '<div class="editorsChoiceItemActions">' +
-        '<button type="button" is="emby-button" ' +
-        'class="editorsChoiceItemButton itemAction raised button-submit emby-button" ' +
-        'data-action="' + nativeAction + '" ' +
-        'data-id="' + escapeHtml(playItemId) + '" ' +
-        'data-serverid="' + escapeHtml(ApiClient.serverId()) + '" ' +
-        'data-type="' + escapeHtml(playItemType) + '" ' +
-        'data-mediatype="Video" ' +
-        'data-isfolder="' + (item.play_is_folder ? "true" : "false") + '" ' +
-        'data-positionticks="' + positionTicks + '" ' +
-        'aria-label="' + escapeHtml(buttonText) + ': ' + escapeHtml(item.name) + '">' +
-        '<span class="material-icons editorsChoicePlayIcon play_arrow" aria-hidden="true"></span>' +
-        '<span>' + escapeHtml(buttonText) + '</span>' +
-        '</button>' + progressBar + '</div>';
+
+    return `<div class="editorsChoicePlayAction"><button type="button" is="emby-button" class="editorsChoiceItemButton itemAction raised button-submit emby-button" data-action="${nativeAction}" data-id="${escapeHtml(playItemId)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(playItemType)}" data-mediatype="Video" data-isfolder="${item.play_is_folder ? "true" : "false"}" data-positionticks="${positionTicks}" aria-label="${escapeHtml(buttonText)}: ${escapeHtml(item.name)}"><span class="material-icons editorsChoicePlayIcon play_arrow" aria-hidden="true"></span><span>${escapeHtml(buttonText)}</span></button>${progressBar}</div>`;
+}
+
+function buildInfoButton(item) {
+    return `<button type="button" is="emby-button" class="editorsChoiceInfoButton itemAction raised emby-button" data-action="link" data-id="${escapeHtml(item.id)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(item.item_type)}" data-mediatype="Video" data-isfolder="${item.play_is_folder ? "true" : "false"}" aria-label="More information: ${escapeHtml(item.name)}"><span class="material-icons editorsChoiceInfoIcon info" aria-hidden="true"></span></button>`;
+}
+
+function buildActions(item, data) {
+    return `<div class="editorsChoiceItemActions">${buildPlayButton(item, data)}${buildInfoButton(item)}</div>`;
 }
 
 function buildBannerSizeParam(reduceImageSizes) {
@@ -1024,6 +1144,37 @@ function prepareHeroBackdrop($containerElem, slide) {
     });
 }
 
+function pauseThemeVideos(containerElement) {
+    const videos = containerElement.querySelectorAll(".editorsChoiceThemeVideoPlayer");
+    for (const video of videos) video.pause();
+}
+
+function prepareThemeVideo(slide, shouldPlay) {
+    const video = slide && slide.querySelector(".editorsChoiceThemeVideoPlayer");
+    if (!video || !window.matchMedia("(min-width: 900px)").matches) return Promise.resolve();
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return Promise.resolve();
+
+    const frame = video.closest(".editorsChoiceThemeVideo");
+    if (!video.getAttribute("src")) {
+        const themeVideoId = video.dataset.themeVideoId;
+        if (!themeVideoId) return Promise.resolve();
+
+        video.addEventListener("error", () => {
+            if (frame) frame.classList.add("editorsChoiceThemeVideoUnavailable");
+            video.removeAttribute("src");
+        }, { once: true });
+        video.src = ApiClient.getUrl(`Videos/${themeVideoId}/stream`, {
+            Static: true,
+            ApiKey: ApiClient.accessToken(),
+        });
+    }
+
+    if (!shouldPlay) return Promise.resolve();
+    return video.play().catch((error) => {
+        console.debug("Editors Choice: theme video autoplay unavailable.", error);
+    });
+}
+
 function ensureSplideLoaded() {
     return new Promise((resolve, reject) => {
         if (window.Splide) return resolve();
@@ -1057,11 +1208,13 @@ function ensureSplideLoaded() {
 function renderHeroSlide(item, data) {
     const metadata = buildMetadata(item);
     const logoOrTitle = buildLogoOrTitle(item, data.reduceImageSizes);
-    const overview = buildOverview(item);
-    const button = buildPlayButton(item, data);
+    const overview = buildOverview(item, "No Description Found");
+    const actions = buildActions(item, data);
     const poster = buildPoster(item, data);
-    const contentClass = "editorsChoiceContent" + (poster ? " editorsChoiceContent--withPoster" : "");
-    const infoClass = "editorsChoiceInfo" + (button ? " editorsChoiceInfo--withAction" : "");
+    const themeVideo = buildThemeVideo(item);
+    const bannerClass = `editorsChoiceItemBanner splide__slide${themeVideo ? " editorsChoiceItemBanner--withThemeVideo" : ""}`;
+    const contentClass = `editorsChoiceContent${poster ? " editorsChoiceContent--withPoster" : ""}`;
+    const infoClass = "editorsChoiceInfo editorsChoiceInfo--withAction";
 
     const backdropSize = buildBannerSizeParam(data.reduceImageSizes);
     const backdropUrl = `../Items/${item.id}/Images/Backdrop/0${backdropSize}`;
@@ -1069,38 +1222,20 @@ function renderHeroSlide(item, data) {
         data.heroBackdropPosition === "top" ? "editorsChoiceBackdropTop" :
         data.heroBackdropPosition === "bottom" ? "editorsChoiceBackdropBottom" : "";
 
-    return '<article class="editorsChoiceItemBanner splide__slide" ' +
-        'role="link" tabindex="0" data-details-item-id="' + escapeHtml(item.id) + '">' +
-        '<div class="editorsChoiceBackdrop ' + extraClass +
-        '" data-backdrop-url="' + escapeHtml(backdropUrl) + '"></div>' +
-        '<div class="' + contentClass + '">' +
-        poster + '<div class="' + infoClass + '">' +
-        '<div class="editorsChoiceContentMain">' +
-        logoOrTitle + metadata + overview +
-        '</div>' + button +
-        '</div></div></article>';
+    return `<article class="${bannerClass}"><div class="editorsChoiceBackdrop ${extraClass}" data-backdrop-url="${escapeHtml(backdropUrl)}"></div>${themeVideo}<div class="${contentClass}">${poster}<div class="${infoClass}"><div class="editorsChoiceContentMain">${logoOrTitle}${metadata}${overview}</div>${actions}</div></div></article>`;
 }
 
 function renderNormalSlide(item, data) {
     const metadata = buildMetadata(item);
     const logoOrTitle = buildLogoOrTitle(item, data.reduceImageSizes);
     const overview = buildOverview(item);
-
     const bannerSize = buildBannerSizeParam(data.reduceImageSizes);
-    const button = buildPlayButton(item, data);
+    const actions = buildActions(item, data);
     const poster = buildPoster(item, data);
-    const contentClass = "editorsChoiceContent" + (poster ? " editorsChoiceContent--withPoster" : "");
-    const infoClass = "editorsChoiceInfo" + (button ? " editorsChoiceInfo--withAction" : "");
+    const contentClass = `editorsChoiceContent${poster ? " editorsChoiceContent--withPoster" : ""}`;
+    const infoClass = "editorsChoiceInfo editorsChoiceInfo--withAction";
 
-    return '<article class="editorsChoiceItemBanner splide__slide" ' +
-        'role="link" tabindex="0" data-details-item-id="' + escapeHtml(item.id) + '" ' +
-        'style="background-image:url(\'../Items/' + item.id + '/Images/Backdrop/0' + bannerSize + '\');">' +
-        '<div class="' + contentClass + '">' +
-        poster + '<div class="' + infoClass + '">' +
-        '<div class="editorsChoiceContentMain">' +
-        logoOrTitle + metadata + overview +
-        '</div>' + button +
-        '</div></div></article>';
+    return `<article class="editorsChoiceItemBanner splide__slide" style="background-image:url(../Items/${escapeHtml(item.id)}/Images/Backdrop/0${bannerSize});"><div class="${contentClass}">${poster}<div class="${infoClass}"><div class="editorsChoiceContentMain">${logoOrTitle}${metadata}${overview}</div>${actions}</div></div></article>`;
 }
 
 /* ===== Main setup ===== */
@@ -1166,22 +1301,6 @@ async function setup() {
                     event.stopPropagation();
                 });
 
-                $list.on("click", ".editorsChoiceItemBanner", function (event) {
-                    if ($(event.target).closest(".splide__pagination, .editorsChoiceMobilePagination").length) return;
-                    if ($(event.target).closest(".editorsChoiceItemOverview a").length) return;
-                    if ($(event.target).closest(".editorsChoiceItemButton").length) return;
-
-                    event.preventDefault();
-                    const itemId = this.dataset.detailsItemId;
-                    if (itemId) Emby.Page.showItem(itemId);
-                });
-
-                $list.on("keydown", ".editorsChoiceItemBanner", function (event) {
-                    if (event.target !== this || (event.key !== "Enter" && event.key !== " ")) return;
-                    event.preventDefault();
-                    const itemId = this.dataset.detailsItemId;
-                    if (itemId) Emby.Page.showItem(itemId);
-                });
 
                 $(elem).addClass("editorsChoiceAdded");
 
@@ -1213,7 +1332,30 @@ async function setup() {
                     const slides = getOriginalSlides();
                     if (!slides.length) return Promise.resolve();
                     const normalizedIndex = ((index % slides.length) + slides.length) % slides.length;
-                    return prepareHeroBackdrop($containerElem, slides[normalizedIndex]);
+                    const slide = slides[normalizedIndex];
+                    return Promise.all([
+                        prepareHeroBackdrop($containerElem, slide),
+                        prepareThemeVideo(slide, false),
+                    ]);
+                };
+
+                const activateThemeVideoAt = (index) => {
+                    if (!data.useHeroLayout) return Promise.resolve();
+                    const slides = getOriginalSlides();
+                    if (!slides.length) return Promise.resolve();
+                    const normalizedIndex = ((index % slides.length) + slides.length) % slides.length;
+                    const originalSlide = slides[normalizedIndex];
+                    const originalVideo = originalSlide.querySelector(".editorsChoiceThemeVideoPlayer");
+                    pauseThemeVideos($containerElem[0]);
+                    if (!originalVideo) return Promise.resolve();
+
+                    const themeVideoId = originalVideo.dataset.themeVideoId;
+                    const activeSlide = Array.from($list[0].children).find((candidate) => {
+                        const candidateVideo = candidate.querySelector(".editorsChoiceThemeVideoPlayer");
+                        return candidate.classList.contains("is-active")
+                            && candidateVideo?.dataset.themeVideoId === themeVideoId;
+                    });
+                    return prepareThemeVideo(activeSlide || originalSlide, true);
                 };
 
                 const preloadFollowingSlide = () => {
@@ -1227,6 +1369,7 @@ async function setup() {
                     if (data.useHeroLayout) {
                         prepareSlideAt(slider.index).then(() => {
                             $containerElem.removeClass("editorsChoiceIsLoading");
+                            activateThemeVideoAt(slider.index);
                         });
                         preloadFollowingSlide();
                     } else {
@@ -1235,11 +1378,13 @@ async function setup() {
                 });
 
                 slider.on("move", (newIndex) => {
+                    pauseThemeVideos($containerElem[0]);
                     prepareSlideAt(newIndex);
                 });
 
                 slider.on("moved", () => {
                     updateMobilePagination();
+                    activateThemeVideoAt(slider.index);
                     preloadFollowingSlide();
                 });
 

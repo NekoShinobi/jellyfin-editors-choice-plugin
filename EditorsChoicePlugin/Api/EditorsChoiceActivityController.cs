@@ -388,6 +388,9 @@ public class EditorsChoiceActivityController : ControllerBase
             {
                 BaseItem item = i;
                 BaseItemKind itemKind = item.GetBaseItemKind();
+                BaseItem? themeVideo = _config.UseHeroLayout ? item.GetThemeVideos(activeUser).FirstOrDefault() : null;
+                bool hasTrailer = item.GetExtras([MediaBrowser.Model.Entities.ExtraType.Trailer]).Any()
+                    || (item is IHasTrailers itemWithTrailers && itemWithTrailers.RemoteTrailers.Count > 0);
 
                 // Narrow down properties that are strictly necessary to pass through to frontend
                 Dictionary<string, object> itemObject = new Dictionary<string, object>
@@ -401,8 +404,14 @@ public class EditorsChoiceActivityController : ControllerBase
                     { "play_item_id", item.Id.ToString() },
                     { "play_item_type", itemKind.ToString() },
                     { "play_is_folder", item is Folder },
-                    { "playback_action", "watch" }
+                    { "playback_action", "watch" },
+                    { "has_trailer", hasTrailer }
                 };
+
+                if (themeVideo is not null)
+                {
+                    itemObject.Add("theme_video_id", themeVideo.Id.ToString());
+                }
 
                 if (_config.ShowDescription)
                 {
