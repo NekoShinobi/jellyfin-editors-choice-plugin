@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/logo.png",
     "versions": [
       {
+        "changelog": "Adds theme in the hero to auto play on desktop. Adds info button. Adds Trailer button.",
+        "targetAbi": "10.11.0.0",
+        "version": "1.5.2.15",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/1.5.2.15/EditorsChoicePlugin_1.5.2.15.zip",
+        "checksum": "67370DA2D7085E31D4364E3723370AC2",
+        "timestamp": "2026-09-02T07:11:29Z"
+      },
+      {
         "changelog": "Remove pill animation",
         "targetAbi": "10.11.0.0",
         "version": "1.5.2.12",
