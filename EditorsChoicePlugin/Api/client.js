@@ -728,7 +728,7 @@ const container = `
       object-fit: cover;
     }
 
-    .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceThemeVideo:not(.editorsChoiceThemeVideoUnavailable) {
+    .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceThemeVideo.editorsChoiceThemeVideoReady {
       opacity: 1;
     }
 
@@ -1052,7 +1052,7 @@ function buildPoster(item, data) {
 function buildThemeVideo(item) {
     if (!item.theme_video_id) return "";
 
-    return `<div class="editorsChoiceThemeVideo" aria-hidden="true"><video class="editorsChoiceThemeVideoPlayer" muted loop playsinline preload="metadata" data-theme-video-id="${escapeHtml(item.theme_video_id)}"></video></div>`;
+    return `<div class="editorsChoiceThemeVideo" aria-hidden="true"><video class="editorsChoiceThemeVideoPlayer" muted loop playsinline preload="auto" data-theme-video-id="${escapeHtml(item.theme_video_id)}"></video></div>`;
 }
 
 function buildOverview(item, fallback = "") {
@@ -1150,7 +1150,7 @@ function measureBackdropScrim(image) {
     }
 }
 
-function loadBackdropAsset(url) {
+function loadBackdropAsset(url, fetchPriority = "auto") {
     if (backdropLoadCache.has(url)) return backdropLoadCache.get(url);
 
     const loadPromise = new Promise((resolve) => {
@@ -1168,6 +1168,7 @@ function loadBackdropAsset(url) {
         }, 8000);
 
         image.decoding = "async";
+        image.fetchPriority = fetchPriority;
         image.onload = () => finish({ image, scrim: measureBackdropScrim(image) });
         image.onerror = () => finish({ image: null, scrim: null });
         image.src = url;
@@ -1177,12 +1178,12 @@ function loadBackdropAsset(url) {
     return loadPromise;
 }
 
-function prepareHeroBackdrop($containerElem, slide) {
+function prepareHeroBackdrop($containerElem, slide, fetchPriority = "auto") {
     const backdrop = slide && slide.querySelector(".editorsChoiceBackdrop");
     const url = backdrop && backdrop.dataset.backdropUrl;
     if (!url) return Promise.resolve();
 
-    return loadBackdropAsset(url).then((asset) => {
+    return loadBackdropAsset(url, fetchPriority).then((asset) => {
         const backdrops = $containerElem[0].querySelectorAll(".editorsChoiceBackdrop[data-backdrop-url]");
 
         for (const target of backdrops) {
@@ -1209,28 +1210,53 @@ function pauseThemeVideos(containerElement) {
     for (const video of videos) video.pause();
 }
 
-function prepareThemeVideo(slide, shouldPlay) {
-    const video = slide && slide.querySelector(".editorsChoiceThemeVideoPlayer");
-    if (!video || !window.matchMedia("(min-width: 900px)").matches) return Promise.resolve();
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return Promise.resolve();
+const themeVideoLoadCache = new WeakMap();
+
+function loadThemeVideo(video) {
+    if (themeVideoLoadCache.has(video)) return themeVideoLoadCache.get(video);
 
     const frame = video.closest(".editorsChoiceThemeVideo");
-    if (!video.getAttribute("src")) {
-        const themeVideoId = video.dataset.themeVideoId;
-        if (!themeVideoId) return Promise.resolve();
+    const themeVideoId = video.dataset.themeVideoId;
+    if (!frame || !themeVideoId) return Promise.resolve(false);
 
-        video.addEventListener("error", () => {
-            if (frame) frame.classList.add("editorsChoiceThemeVideoUnavailable");
-            video.removeAttribute("src");
-        }, { once: true });
+    const loadPromise = new Promise((resolve) => {
+        let settled = false;
+        const finish = (ready) => {
+            if (settled) return;
+            settled = true;
+            video.removeEventListener("canplay", handleCanPlay);
+            video.removeEventListener("error", handleError);
+            frame.classList.toggle("editorsChoiceThemeVideoReady", ready);
+            frame.classList.toggle("editorsChoiceThemeVideoUnavailable", !ready);
+            resolve(ready);
+        };
+        const handleCanPlay = () => finish(true);
+        const handleError = () => finish(false);
+
+        video.addEventListener("canplay", handleCanPlay, { once: true });
+        video.addEventListener("error", handleError, { once: true });
         video.src = ApiClient.getUrl(`Videos/${themeVideoId}/stream`, {
             Static: true,
             ApiKey: ApiClient.accessToken(),
         });
-    }
+        video.load();
 
-    if (!shouldPlay) return Promise.resolve();
-    return video.play().catch((error) => {
+        if (video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) finish(true);
+    });
+
+    themeVideoLoadCache.set(video, loadPromise);
+    return loadPromise;
+}
+
+async function prepareThemeVideo(slide, shouldPlay) {
+    const video = slide && slide.querySelector(".editorsChoiceThemeVideoPlayer");
+    if (!video || !window.matchMedia("(min-width: 900px)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const ready = await loadThemeVideo(video);
+    if (!ready || !shouldPlay || !slide.classList.contains("is-active")) return;
+
+    await video.play().catch((error) => {
         console.debug("Editors Choice: theme video autoplay unavailable.", error);
     });
 }
@@ -1387,16 +1413,13 @@ async function setup() {
                 const getOriginalSlides = () => Array.from($list[0].children)
                     .filter((slide) => !slide.classList.contains("splide__slide--clone"));
 
-                const prepareSlideAt = async (index) => {
+                const prepareSlideAt = (index, fetchPriority = "auto") => {
                     if (!data.useHeroLayout) return Promise.resolve();
                     const slides = getOriginalSlides();
                     if (!slides.length) return Promise.resolve();
                     const normalizedIndex = ((index % slides.length) + slides.length) % slides.length;
                     const slide = slides[normalizedIndex];
-                    await Promise.all([
-                        prepareHeroBackdrop($containerElem, slide),
-                        prepareThemeVideo(slide, false),
-                    ]);
+                    return prepareHeroBackdrop($containerElem, slide, fetchPriority);
                 };
 
                 const activateThemeVideoAt = (index) => {
@@ -1420,7 +1443,7 @@ async function setup() {
 
                 const preloadFollowingSlide = () => {
                     if (slider.length > 1) {
-                        prepareSlideAt(slider.index + 1).catch((error) => {
+                        prepareSlideAt(slider.index + 1, "low").catch((error) => {
                             console.debug("Editors Choice: following hero media preload unavailable.", error);
                         });
                     }
@@ -1431,7 +1454,7 @@ async function setup() {
                     $containerElem.toggleClass("editorsChoiceSingleSlide", slider.length <= 1);
 
                     if (data.useHeroLayout) {
-                        prepareSlideAt(slider.index)
+                        prepareSlideAt(slider.index, "high")
                             .catch((error) => {
                                 console.warn("Editors Choice: initial hero media preparation failed.", error);
                             })
@@ -1450,14 +1473,22 @@ async function setup() {
 
                 slider.on("move", (newIndex) => {
                     pauseThemeVideos($containerElem[0]);
-                    prepareSlideAt(newIndex).catch((error) => {
+                    prepareSlideAt(newIndex, "high").catch((error) => {
                         console.debug("Editors Choice: hero media preparation unavailable.", error);
                     });
                 });
 
                 slider.on("moved", () => {
                     updateMobilePagination();
-                    activateThemeVideoAt(slider.index);
+                    const activeIndex = slider.index;
+                    prepareSlideAt(activeIndex, "high")
+                        .then(() => {
+                            if (slider.index !== activeIndex) return;
+                            return activateThemeVideoAt(activeIndex);
+                        })
+                        .catch((error) => {
+                            console.debug("Editors Choice: theme video activation unavailable.", error);
+                        });
                     preloadFollowingSlide();
                 });
 

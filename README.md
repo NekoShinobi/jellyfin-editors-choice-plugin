@@ -26,11 +26,13 @@ Each banner can display its community/content rating, year, and either movie run
 
 Run `dotnet build EditorsChoicePlugin.sln --configuration Release`. A ready-to-zip package is written to `EditorsChoicePlugin/bin/Release/net9.0/Editor's Choice_<version>/`. It contains the plugin metadata and every required DLL, including the Markdown renderer and sanitizer.
 
-Pushes and pull requests build a downloadable workflow artifact. To publish a
-version, manually run the **Build and release** workflow from the `main` branch
-and enter its changelog. The manual run replaces the fourth component of the
-version in `Directory.Build.props` with the workflow run number, creates the
-GitHub release, and adds that version to `manifest.json`.
+Pushes and pull requests build a downloadable workflow artifact. Every push to
+`main` also publishes a new GitHub release and adds that version to
+`manifest.json`, using the pushed commit message as its changelog. A release can
+also be started manually with a custom changelog by running the **Build and
+release** workflow from the `main` branch. Each release replaces the fourth
+component of the version in `Directory.Build.props` with the workflow run
+number.
 
 Note that the plugin only works for the web UI (and therefore also the mobile app), but does not and can not work for the Android TV app or other apps due to limitations of those platforms.
 
