@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/logo.png",
     "versions": [
       {
+        "changelog": "Load first, add video later.",
+        "targetAbi": "10.11.0.0",
+        "version": "1.5.2.20",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/1.5.2.20/EditorsChoicePlugin_1.5.2.20.zip",
+        "checksum": "30D80AF94E4B36A3A87E3E6058182023",
+        "timestamp": "2026-09-02T08:29:22Z"
+      },
+      {
         "changelog": "Trailer button improvements and smooth effect on the diagonal.",
         "targetAbi": "10.11.0.0",
         "version": "1.5.2.19",
