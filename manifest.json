@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/logo.png",
     "versions": [
       {
+        "changelog": "Fix banner not loading.",
+        "targetAbi": "10.11.0.0",
+        "version": "1.5.2.17",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/1.5.2.17/EditorsChoicePlugin_1.5.2.17.zip",
+        "checksum": "BB4AFC271CE2963B6381B2A9E525A044",
+        "timestamp": "2026-09-02T07:45:23Z"
+      },
+      {
         "changelog": "Adds theme in the hero to auto play on desktop. Adds info button. Adds Trailer button.",
         "targetAbi": "10.11.0.0",
         "version": "1.5.2.15",
