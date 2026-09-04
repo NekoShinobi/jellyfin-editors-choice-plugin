@@ -685,6 +685,10 @@ const container = `
     display: none;
   }
 
+  .editorsChoiceThemeVideoToggle {
+    display: none;
+  }
+
   @media screen and (min-width: 900px) {
     .editorsChoiceHeroMode .editorsChoiceItemBanner--withThemeVideo .editorsChoiceThemeVideo {
       position: absolute;
@@ -730,6 +734,50 @@ const container = `
 
     .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceThemeVideo.editorsChoiceThemeVideoReady {
       opacity: 1;
+    }
+
+    .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active .editorsChoiceThemeVideoToggle {
+      position: absolute;
+      right: max(1.1rem, env(safe-area-inset-right));
+      bottom: 1.1rem;
+      z-index: 5;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.75rem;
+      height: 2.75rem;
+      margin: 0;
+      padding: 0;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      color: #fff;
+      background: rgba(16, 18, 22, 0.52);
+      box-shadow: 0 8px 28px rgba(4, 9, 15, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(14px) saturate(145%);
+      -webkit-backdrop-filter: blur(14px) saturate(145%);
+      cursor: pointer;
+      transition: background-color 160ms ease, transform 160ms ease;
+    }
+
+    .editorsChoiceHeroMode .editorsChoiceThemeVideoToggle:hover {
+      background: rgba(16, 18, 22, 0.76);
+    }
+
+    .editorsChoiceHeroMode .editorsChoiceThemeVideoToggle:active {
+      transform: scale(0.94);
+    }
+
+    .editorsChoiceHeroMode .editorsChoiceThemeVideoToggle:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 3px;
+    }
+
+    .editorsChoiceHeroMode .editorsChoiceThemeVideoToggle .material-icons {
+      font-size: 1.35rem;
+    }
+
+    .editorsChoiceHeroMode .editorsChoiceThemeVideoHidden .editorsChoiceThemeVideo {
+      opacity: 0 !important;
     }
 
     .editorsChoiceHeroMode .editorsChoiceItemBanner--withThemeVideo .editorsChoiceContent {
@@ -853,7 +901,8 @@ const container = `
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .editorsChoiceThemeVideo { display: none !important; }
+    .editorsChoiceThemeVideo,
+    .editorsChoiceThemeVideoToggle { display: none !important; }
   }
 
 </style>
@@ -1052,7 +1101,7 @@ function buildPoster(item, data) {
 function buildThemeVideo(item) {
     if (!item.theme_video_id) return "";
 
-    return `<div class="editorsChoiceThemeVideo" aria-hidden="true"><video class="editorsChoiceThemeVideoPlayer" muted loop playsinline preload="auto" data-theme-video-id="${escapeHtml(item.theme_video_id)}"></video></div>`;
+    return `<div class="editorsChoiceThemeVideo" aria-hidden="true"><video class="editorsChoiceThemeVideoPlayer" muted loop playsinline preload="auto" data-theme-video-id="${escapeHtml(item.theme_video_id)}"></video></div><button type="button" is="emby-button" class="editorsChoiceThemeVideoToggle emby-button" aria-label="Hide theme video" title="Hide theme video" aria-pressed="false"><span class="material-icons videocam_off" aria-hidden="true"></span></button>`;
 }
 
 function buildOverview(item, fallback = "") {
@@ -1255,6 +1304,7 @@ async function prepareThemeVideo(slide, shouldPlay) {
 
     const ready = await loadThemeVideo(video);
     if (!ready || !shouldPlay || !slide.classList.contains("is-active")) return;
+    if (slide.closest(".editorsChoiceThemeVideoHidden")) return;
 
     await video.play().catch((error) => {
         console.debug("Editors Choice: theme video autoplay unavailable.", error);
@@ -1424,6 +1474,10 @@ async function setup() {
 
                 const activateThemeVideoAt = (index) => {
                     if (!data.useHeroLayout) return Promise.resolve();
+                    if ($containerElem.hasClass("editorsChoiceThemeVideoHidden")) {
+                        pauseThemeVideos($containerElem[0]);
+                        return Promise.resolve();
+                    }
                     const slides = getOriginalSlides();
                     if (!slides.length) return Promise.resolve();
                     const normalizedIndex = ((index % slides.length) + slides.length) % slides.length;
@@ -1502,6 +1556,29 @@ async function setup() {
                     event.preventDefault();
                     event.stopPropagation();
                     slider.go(">");
+                });
+
+                $containerElem.on("click", ".editorsChoiceThemeVideoToggle", function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const hidden = !$containerElem.hasClass("editorsChoiceThemeVideoHidden");
+                    $containerElem.toggleClass("editorsChoiceThemeVideoHidden", hidden);
+                    $containerElem.find(".editorsChoiceThemeVideoToggle")
+                        .attr("aria-label", hidden ? "Show theme video" : "Hide theme video")
+                        .attr("title", hidden ? "Show theme video" : "Hide theme video")
+                        .attr("aria-pressed", hidden ? "true" : "false")
+                        .find(".material-icons")
+                        .toggleClass("videocam_off", !hidden)
+                        .toggleClass("videocam", hidden);
+
+                    if (hidden) {
+                        pauseThemeVideos($containerElem[0]);
+                    } else {
+                        activateThemeVideoAt(slider.index).catch((error) => {
+                            console.debug("Editors Choice: theme video activation unavailable.", error);
+                        });
+                    }
                 });
 
                 slider.mount();

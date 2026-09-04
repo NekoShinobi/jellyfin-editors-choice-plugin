@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Configuration\configPage.html" />
+    <EmbeddedResource Include="Configuration\configPage.js" />
     <EmbeddedResource Include="Api\client.js" />
   </ItemGroup>
 

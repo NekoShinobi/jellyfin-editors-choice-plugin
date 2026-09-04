@@ -38,6 +38,10 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             new PluginPageInfo {
                 Name = this.Name,
                 EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.configPage.html", GetType().Namespace)
+            },
+            new PluginPageInfo {
+                Name = "EditorsChoice.Configuration.js",
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.configPage.js", GetType().Namespace)
             }
         };
     }
