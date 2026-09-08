@@ -1,7 +1,11 @@
 <Project>
   <PropertyGroup>
-    <Version>1.5.2.0</Version>
+    <JellyfinVersion Condition="'$(JellyfinVersion)' == ''">12.0.0</JellyfinVersion>
+    <Version>2.0.0.0</Version>
+    <Version Condition="'$(JellyfinVersion)' == '10.11.0'">1.5.2.0</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
+    <BaseIntermediateOutputPath>obj/$(JellyfinVersion)/</BaseIntermediateOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
   </PropertyGroup>
 </Project>

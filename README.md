@@ -24,11 +24,22 @@ Each banner can display its community/content rating, year, and either movie run
 
 ## Building
 
-Run `dotnet build EditorsChoicePlugin.sln --configuration Release`. A ready-to-zip package is written to `EditorsChoicePlugin/bin/Release/net9.0/Editor's Choice_<version>/`. It contains the plugin metadata and every required DLL, including the Markdown renderer and sanitizer.
+Install the .NET 10 SDK, then run `dotnet build EditorsChoicePlugin.sln --configuration Release` to build for Jellyfin 12. A ready-to-zip package is written to `EditorsChoicePlugin/bin/Release/net10.0/Editor's Choice_<version>/`. It contains the plugin metadata and every required DLL, including the Markdown renderer and sanitizer.
 
-Pushes and pull requests build a downloadable workflow artifact. Every push to
-`main` also publishes a new GitHub release and adds that version to
-`manifest.json`, using the pushed commit message as its changelog. A release can
+Run the regression tests with `dotnet test tests/EditorsChoicePlugin.Tests/EditorsChoicePlugin.Tests.csproj --configuration Release`. They cover array-backed library results in random, favourites, and recent-release modes.
+
+To build for Jellyfin 10.11 instead, run `dotnet build EditorsChoicePlugin.sln --configuration Release -p:JellyfinVersion=10.11.0`. That package is written under `net9.0`. Add the same `-p:JellyfinVersion=10.11.0` option to the test command to test that target (requires the .NET 9 runtime).
+
+| Jellyfin server | Plugin version series | Runtime | Package target ABI |
+| --- | --- | --- | --- |
+| 12.x | 2.0.0.x | .NET 10 | 12.0.0.0 |
+| 10.11.x | 1.5.2.x | .NET 9 | 10.11.0.0 |
+
+Install the package matching your server version. The repository manifest lets Jellyfin select the compatible build automatically. File Transformation users also need a File Transformation build compatible with their server.
+
+Pushes and pull requests build both server targets in a downloadable workflow artifact. Every push to
+`main` also publishes both packages in a new GitHub release and adds both versions to
+`manifest.json`, using the pushed commit message as their changelog. Each manifest entry takes its compatibility version from the packaged `meta.json`. A release can
 also be started manually with a custom changelog by running the **Build and
 release** workflow from the `main` branch. Each release replaces the fourth
 component of the version in `Directory.Build.props` with the workflow run
