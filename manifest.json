@@ -9,6 +9,22 @@
     "imageUrl": "https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/logo.png",
     "versions": [
       {
+        "changelog": "Add jellyfin12 support.",
+        "targetAbi": "12.0.0.0",
+        "version": "2.0.0.22",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.22/EditorsChoicePlugin_2.0.0.22.zip",
+        "checksum": "9E6E9AD85E62B239F66A0FBD65AE2C9B",
+        "timestamp": "2026-09-08T05:17:56Z"
+      },
+      {
+        "changelog": "Add jellyfin12 support.",
+        "targetAbi": "10.11.0.0",
+        "version": "1.5.2.22",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.22/EditorsChoicePlugin_1.5.2.22.zip",
+        "checksum": "5344A631B27B035A51C2DC96976D6E95",
+        "timestamp": "2026-09-08T05:17:56Z"
+      },
+      {
         "changelog": "Improve the configuration page.. hopefully it's faster.",
         "targetAbi": "10.11.0.0",
         "version": "1.5.2.21",
