@@ -226,8 +226,7 @@ export default function (view) {
     function applyConfig(config) {
         const mode = normalizeMode(config.Mode);
         config.Mode = mode;
-        field("DoScriptInject").checked = config.DoScriptInject;
-        field("FileTransformation").checked = config.FileTransformation;
+        field("FrontendInjectionMethod").value = config.FrontendInjectionMethod || "automatic";
         field("FavouritesMode").checked = mode === "FAVOURITES";
         field("RandomMode").checked = mode === "RANDOM";
         field("CollectionsMode").checked = mode === "COLLECTIONS";
@@ -236,6 +235,8 @@ export default function (view) {
         field("MinimumRating").value = config.MinimumRating;
         field("MinimumCriticRating").value = config.MinimumCriticRating;
         field("EnableAutoplay").checked = config.EnableAutoplay;
+        field("ShowAutoplayButton").checked = config.ShowAutoplayButton ?? true;
+        field("ShowNavigationArrows").checked = config.ShowNavigationArrows ?? true;
         field("AutoplayInterval").value = config.AutoplayInterval;
         field("NewTimeLimitSelect").value = config.NewTimeLimit;
         field("ShowDesc").checked = config.ShowDescription;
@@ -272,9 +273,12 @@ export default function (view) {
         if (state.rendered.users) {
             config.EditorUserId = editorUserId && editorUserId !== "none" ? editorUserId : null;
         }
-        config.DoScriptInject = field("DoScriptInject").checked;
-        config.FileTransformation = field("FileTransformation").checked;
+        config.FrontendInjectionMethod = field("FrontendInjectionMethod").value;
+        config.DoScriptInject = ["automatic", "direct"].includes(config.FrontendInjectionMethod);
+        config.FileTransformation = config.FrontendInjectionMethod === "file-transformation";
         config.EnableAutoplay = field("EnableAutoplay").checked;
+        config.ShowAutoplayButton = field("ShowAutoplayButton").checked;
+        config.ShowNavigationArrows = field("ShowNavigationArrows").checked;
         config.AutoplayInterval = boundedNumber("AutoplayInterval", 10, 1, Number.MAX_SAFE_INTEGER, true);
         config.ShowDescription = field("ShowDesc").checked;
         config.ShowPlayButton = field("ShowPlayButton").checked;
@@ -358,11 +362,5 @@ export default function (view) {
     form.addEventListener("submit", handleSubmit);
     form.querySelectorAll('input[name="mode"]').forEach((input) => input.addEventListener("change", handleModeChange));
     field("EnableAutoplay").addEventListener("change", updateConditionalVisibility);
-    field("DoScriptInject").addEventListener("change", function () {
-        if (this.checked) field("FileTransformation").checked = false;
-    });
-    field("FileTransformation").addEventListener("change", function () {
-        if (this.checked) field("DoScriptInject").checked = false;
-    });
     view.addEventListener("viewshow", handleShow);
 }

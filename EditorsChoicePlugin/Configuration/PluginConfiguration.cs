@@ -8,8 +8,12 @@ public class PluginConfiguration : BasePluginConfiguration
 
     public string EditorUserId { get; set; } = "";
 
+    public string FrontendInjectionMethod { get; set; } = FrontendInjectionMethods.Automatic;
+
+    // Retained for configuration compatibility with older plugin releases.
     public bool DoScriptInject { get; set; } = true;
 
+    // Retained for configuration compatibility with older plugin releases.
     public bool FileTransformation { get; set; } = false;
 
     public bool ShowRandomMedia { get; set; } = true;
@@ -31,9 +35,13 @@ public class PluginConfiguration : BasePluginConfiguration
 
     public bool EnableAutoplay { get; set; } = true;
 
+    public bool ShowAutoplayButton { get; set; } = true;
+
     public int AutoplayInterval { get; set; } = 10;
 
     public bool ShowPlayButton { get; set; } = true;
+
+    public bool ShowNavigationArrows { get; set; } = true;
 
     public string NewTimeLimit { get; set; } = "1month";
 
