@@ -9,6 +9,22 @@
     "imageUrl": "https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/logo.png",
     "versions": [
       {
+        "changelog": "Merge upstream/main and preserve fork features\n\nIntegrate upstream frontend injection fallbacks, Jellyfin 12 initialization fixes, and configurable slider controls. Preserve custom hero playback, cached settings, dual Jellyfin targets, and fork release metadata.",
+        "targetAbi": "12.0.0.0",
+        "version": "2.0.0.23",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.23/EditorsChoicePlugin_2.0.0.23.zip",
+        "checksum": "479AEE90AB4B41476E722CCB227BEF9D",
+        "timestamp": "2026-09-19T23:33:05Z"
+      },
+      {
+        "changelog": "Merge upstream/main and preserve fork features\n\nIntegrate upstream frontend injection fallbacks, Jellyfin 12 initialization fixes, and configurable slider controls. Preserve custom hero playback, cached settings, dual Jellyfin targets, and fork release metadata.",
+        "targetAbi": "10.11.0.0",
+        "version": "1.5.2.23",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.23/EditorsChoicePlugin_1.5.2.23.zip",
+        "checksum": "EC45E649CD0FF9609514C5287BE3B4E6",
+        "timestamp": "2026-09-19T23:33:05Z"
+      },
+      {
         "changelog": "Add jellyfin12 support.",
         "targetAbi": "12.0.0.0",
         "version": "2.0.0.22",
