@@ -9,6 +9,22 @@
     "imageUrl": "https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/logo.png",
     "versions": [
       {
+        "changelog": "feat: improving the settings menu. Default banner is no longer available as part of this fork. Added more various settings and possible options. Cache optimization.",
+        "targetAbi": "12.0.0.0",
+        "version": "2.0.0.24",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.24/EditorsChoicePlugin_2.0.0.24.zip",
+        "checksum": "508E08C99C675DA14DE2AC9CB1875736",
+        "timestamp": "2026-09-20T03:50:18Z"
+      },
+      {
+        "changelog": "feat: improving the settings menu. Default banner is no longer available as part of this fork. Added more various settings and possible options. Cache optimization.",
+        "targetAbi": "10.11.0.0",
+        "version": "1.5.2.24",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.24/EditorsChoicePlugin_1.5.2.24.zip",
+        "checksum": "F276B224C362A15E8B7F3BAAD6C74EDB",
+        "timestamp": "2026-09-20T03:50:18Z"
+      },
+      {
         "changelog": "Merge upstream/main and preserve fork features\n\nIntegrate upstream frontend injection fallbacks, Jellyfin 12 initialization fixes, and configurable slider controls. Preserve custom hero playback, cached settings, dual Jellyfin targets, and fork release metadata.",
         "targetAbi": "12.0.0.0",
         "version": "2.0.0.23",
