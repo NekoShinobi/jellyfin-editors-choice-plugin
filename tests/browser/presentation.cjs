@@ -119,7 +119,7 @@ async function expectHeight(page, expected) {
                 fs.mkdirSync(process.env.BANNER_SCREENSHOT_DIR, { recursive: true });
                 await page.locator('.splide').screenshot({ path: path.join(process.env.BANNER_SCREENSHOT_DIR, 'hero-custom-height.png') });
             }
-            const dim = await page.locator('.splide__slide.is-active').first().evaluate(el => getComputedStyle(el, '::before').backgroundColor);
+            const dim = await page.locator('.splide__slide.is-active .editorsChoiceDimming').first().evaluate(el => getComputedStyle(el).backgroundColor);
             assert.match(dim, /0\.45/);
             await page.setViewportSize({ width: 390, height: 844 });
             await expectHeight(page, 320);
@@ -128,6 +128,41 @@ async function expectHeight(page, expected) {
             await page.close();
         }
         console.log('PASS exact custom heights, mobile overrides, dimming');
+
+        const wipe = await home(browser, {
+            transitionEffect: 'wipe', transitionDurationMs: 1000,
+            enableThemeVideos: false, enableBackgroundDimming: true, backgroundDimmingPercent: 50,
+        });
+        async function inspectWipe(command, expectedStart) {
+            await wipe.evaluate(command => testSlider.go(command), command);
+            await wipe.waitForSelector('.editorsChoiceTransitionOutgoing');
+            const state = await wipe.locator('.splide__slide:not(.splide__slide--clone)').evaluateAll(slides => {
+                const slide = slides.find(candidate => candidate.style.zIndex === '2');
+                return ({
+                start: slide.getAnimations().map(animation => animation.effect.getKeyframes()[0]?.clipPath)
+                    .find(value => value?.startsWith('inset')),
+                dimming: getComputedStyle(slide.querySelector('.editorsChoiceDimming')).backgroundColor,
+                dimmingZIndex: getComputedStyle(slide.querySelector('.editorsChoiceDimming')).zIndex,
+                contentZIndex: getComputedStyle(slide.querySelector('.editorsChoiceContent')).zIndex,
+                });
+            });
+            assert.equal(state.start, expectedStart);
+            assert.match(state.dimming, /0\.5/);
+            assert.equal(state.dimmingZIndex, '2');
+            assert.equal(state.contentZIndex, '3');
+            await wipe.waitForFunction(() => testSlider.state.is(3));
+        }
+        await inspectWipe('>', 'inset(0px 0px 0px 100%)');
+        await inspectWipe('<', 'inset(0px 100% 0px 0px)');
+        await wipe.evaluate(() => testSlider.go('<'));
+        await wipe.waitForSelector('.editorsChoiceTransitionOutgoing');
+        assert.equal(await wipe.locator('.splide__slide:not(.splide__slide--clone)').evaluateAll(slides => {
+            const slide = slides.find(candidate => candidate.style.zIndex === '2');
+            return slide.getAnimations().map(animation => animation.effect.getKeyframes()[0]?.clipPath)
+                .find(value => value?.startsWith('inset'));
+        }), 'inset(0px 100% 0px 0px)');
+        await wipe.close();
+        console.log('PASS directional wipe, wraparound, and dimming layer');
 
         for (const hero of [false, true]) {
             for (const subtract of [false, true]) {
@@ -163,6 +198,48 @@ async function expectHeight(page, expected) {
         await liveMotion.waitForFunction(() => testSlider.options.speed === 0 && testSlider.Components.Autoplay.isPaused());
         await liveMotion.close();
         console.log('PASS percentage height, defaults, and reduced motion');
+
+        const messageOnly = await home(browser, {
+            openingSlide: {
+                type: 'message', continueToSelection: false, eyebrow: 'Welcome', title: 'Welcome to Harbor Media',
+                bodyHtml: '<p>Find something great or read the guide.</p>', backgroundType: 'gradient',
+                actions: [
+                    { label: 'Browse library', url: '/web/#/home.html', primary: true },
+                    { label: 'Getting started', url: 'https://example.com/help', primary: false },
+                ],
+            },
+        });
+        assert.equal(await messageOnly.locator('.splide__slide:not(.splide__slide--clone)').count(), 1);
+        assert.equal(await messageOnly.locator('.splide__slide:not(.splide__slide--clone) .editorsChoiceItemTitle').textContent(), 'Welcome to Harbor Media');
+        const originalMessage = messageOnly.locator('.splide__slide:not(.splide__slide--clone)');
+        assert.equal(await originalMessage.evaluate(el => el.classList.contains('editorsChoiceOpeningSlide--gradient')), true);
+        assert.equal(await originalMessage.evaluate(el => el.classList.contains('editorsChoiceSlideReady')), true);
+        assert.equal(await originalMessage.getByRole('link', { name: /Browse library/ }).getAttribute('href'), '/web/#/home.html');
+        assert.equal(await originalMessage.getByRole('link', { name: /Getting started/ }).getAttribute('target'), '_blank');
+        await messageOnly.close();
+
+        const messageAndSelection = await home(browser, {
+            openingSlide: {
+                type: 'message', continueToSelection: true, title: 'Server notice',
+                bodyHtml: '<p>Maintenance is complete.</p>', backgroundType: 'url',
+                backgroundUrl: 'http://banner.test/custom.jpg', actions: [],
+            },
+        });
+        assert.equal(await messageAndSelection.locator('.splide__slide:not(.splide__slide--clone)').count(), 4);
+        assert.equal(await messageAndSelection.locator('.splide__slide:not(.splide__slide--clone)').first().locator('.editorsChoiceItemTitle').textContent(), 'Server notice');
+        await messageAndSelection.close();
+
+        const pinnedMedia = await home(browser, {
+            openingSlide: {
+                type: 'media', continueToSelection: true,
+                item: { id: '2', name: 'Feature 2', item_type: 'Movie', overview_html: '<p>Pinned.</p>' },
+            },
+        });
+        assert.equal(await pinnedMedia.locator('.splide__slide:not(.splide__slide--clone)').count(), 3);
+        assert.equal(await pinnedMedia.locator('.splide__slide:not(.splide__slide--clone)').first().locator('.editorsChoiceItemTitle').textContent(), 'Feature 2');
+        assert.equal(await pinnedMedia.locator('.splide__slide:not(.splide__slide--clone) .editorsChoiceItemTitle', { hasText: 'Feature 2' }).count(), 1);
+        await pinnedMedia.close();
+        console.log('PASS custom message, message-only mode, actions, and pinned media ordering');
 
         const delayed = await home(browser, { bannerHeightMode: 'pixels', bannerCustomHeight: 720, enableThemeVideos: false,
             titleFont: 'georgia', metadataFont: 'mono', descriptionFont: 'verdana', buttonFont: 'arial' }, { defer: true });
@@ -204,7 +281,10 @@ async function expectHeight(page, expected) {
             window.config = { Mode: 'RANDOM', BannerHeight: 500, UseHeroLayout: true, EnableAutoplay: true,
                 AutoplayInterval: 10, RandomMediaCount: 5, MinimumRating: 0, MinimumCriticRating: 0 };
             window.ApiClient = { getPluginConfiguration: async () => window.config,
-                getItems: async () => ({ Items: [] }), getParentalRatings: async () => [],
+                getItems: async (_, query) => ({ Items: query?.SearchTerm
+                    ? [{ Id: 'featured-id', Name: 'Featured Example', ProductionYear: 2026 }]
+                    : [] }), getParentalRatings: async () => [],
+                getCurrentUserId: () => 'admin', getUrl: path => '/' + path,
                 updatePluginConfiguration: async (_, config) => { window.saved = structuredClone(config); return {}; } };
             window.alerts = [];
             window.Dashboard = { showLoadingMsg() {}, hideLoadingMsg() {}, alert: text => alerts.push(text), processPluginConfigurationUpdateResult() {} };
@@ -227,6 +307,23 @@ async function expectHeight(page, expected) {
         assert.equal(await settings.locator('#EnableBackgroundMotion').isChecked(), true);
         assert.equal(await settings.locator('#EnableThemeVideos').isChecked(), true);
         assert.equal(await settings.locator('#Heading, #UseHeroLayout').count(), 0);
+        assert.equal(await settings.locator('#OpeningSlideType').inputValue(), 'none');
+        assert.equal(await settings.locator('#OpeningSlideMessage-container').isVisible(), false);
+        await settings.selectOption('#OpeningSlideType', 'media');
+        await settings.fill('#OpeningSlideMediaSearch', 'Featured');
+        await settings.click('#OpeningSlideMediaSearchButton');
+        assert.equal(await settings.locator('#OpeningSlideMediaId option').count(), 2);
+        await settings.selectOption('#OpeningSlideMediaId', 'featured-id');
+        await settings.selectOption('#OpeningSlideType', 'message');
+        await settings.selectOption('#OpeningSlidePreset', 'welcome');
+        await settings.selectOption('#OpeningSlideBackgroundType', 'url');
+        await settings.fill('#OpeningSlideBackgroundUrl', 'https://example.com/welcome.jpg');
+        await settings.fill('#OpeningSlideSecondaryButtonText', 'Getting started');
+        await settings.fill('#OpeningSlideSecondaryButtonUrl', 'https://example.com/help');
+        await settings.uncheck('#OpeningSlideContinue');
+        assert.equal(await settings.locator('#OpeningSlideMessage-container').isVisible(), true);
+        assert.equal(await settings.locator('#OpeningSlideMedia-container').isVisible(), false);
+        assert.equal(await settings.locator('#OpeningSlideBackgroundUrl-container').isVisible(), true);
         await settings.selectOption('#TitleFont', 'georgia');
         await settings.selectOption('#MetadataFont', 'mono');
         await settings.selectOption('#DescriptionFont', 'verdana');
@@ -266,6 +363,14 @@ async function expectHeight(page, expected) {
         assert.equal(saved.EnableThemeVideos, false);
         assert.equal(saved.TransitionEffect, 'wipe');
         assert.equal(saved.TransitionDurationMs, 1200);
+        assert.equal(saved.OpeningSlideType, 'message');
+        assert.equal(saved.OpeningSlideContinue, false);
+        assert.equal(saved.OpeningSlideEyebrow, 'Welcome');
+        assert.equal(saved.OpeningSlideTitle, 'Welcome to our media library');
+        assert.equal(saved.OpeningSlideBackgroundType, 'url');
+        assert.equal(saved.OpeningSlideBackgroundUrl, 'https://example.com/welcome.jpg');
+        assert.equal(saved.OpeningSlideSecondaryButtonText, 'Getting started');
+        assert.equal(saved.OpeningSlideSecondaryButtonUrl, 'https://example.com/help');
         await settings.evaluate(() => {
             window.config = window.saved;
             const oldView = document.querySelector('.editorsChoiceConfigurationPage');
@@ -289,6 +394,9 @@ async function expectHeight(page, expected) {
         assert.equal(await settings.locator('#EnableThemeVideos').isChecked(), false);
         assert.equal(await settings.locator('#BackgroundDimmingPercent').inputValue(), '40');
         assert.equal(await settings.locator('#TitleFont').inputValue(), 'georgia');
+        assert.equal(await settings.locator('#OpeningSlideType').inputValue(), 'message');
+        assert.equal(await settings.locator('#OpeningSlideEyebrow').inputValue(), 'Welcome');
+        assert.equal(await settings.locator('#OpeningSlideTitle').inputValue(), 'Welcome to our media library');
         if (process.env.BANNER_SCREENSHOT_DIR) {
             await settings.locator('#BannerPreview').screenshot({ path: path.join(process.env.BANNER_SCREENSHOT_DIR, 'settings-preview.png') });
         }

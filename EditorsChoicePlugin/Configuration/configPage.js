@@ -88,6 +88,35 @@ export default function (view) {
         mono: ["Monospace", "ui-monospace, Consolas, monospace"],
     };
     const fontFields = ["TitleFont", "MetadataFont", "DescriptionFont", "ButtonFont"];
+    const openingSlidePresets = {
+        welcome: {
+            eyebrow: "Welcome",
+            title: "Welcome to our media library",
+            body: "Browse the latest additions, continue watching, or explore something new.",
+            primaryText: "Browse library",
+            primaryUrl: "#/home.html",
+            secondaryText: "",
+            secondaryUrl: "",
+        },
+        help: {
+            eyebrow: "Getting started",
+            title: "Need help getting started?",
+            body: "Choose something to watch, press Play, or open the guide for help with devices and playback.",
+            primaryText: "Getting started",
+            primaryUrl: "",
+            secondaryText: "",
+            secondaryUrl: "",
+        },
+        announcement: {
+            eyebrow: "Announcement",
+            title: "Something new is waiting",
+            body: "Take a look at the latest additions and this week's featured picks.",
+            primaryText: "Explore the library",
+            primaryUrl: "#/home.html",
+            secondaryText: "",
+            secondaryUrl: "",
+        },
+    };
     for (const id of fontFields) {
         field(id).replaceChildren(...Object.entries(fonts).map(([key, [label]]) => new Option(label, key)));
     }
@@ -115,6 +144,15 @@ export default function (view) {
     }
 
     function updateConditionalVisibility() {
+        const openingType = field("OpeningSlideType").value;
+        const backgroundType = field("OpeningSlideBackgroundType").value;
+        setVisible("OpeningSlideMessage-container", openingType === "message");
+        setVisible("OpeningSlideMedia-container", openingType === "media");
+        setVisible("OpeningSlideContinue-container", openingType !== "none");
+        setVisible("OpeningSlideBackgroundMedia-container", openingType === "message" && backgroundType === "media");
+        setVisible("OpeningSlideBackgroundUrl-container", openingType === "message" && backgroundType === "url");
+        field("OpeningSlideMediaId").required = openingType === "media";
+        field("OpeningSlideBackgroundItemId").required = openingType === "message" && backgroundType === "media";
         setVisible("SelectionRefreshMinutes-container", field("EnableSelectionCache").checked);
         const mode = getSelectedMode();
         setVisible("EditorUserId-container", mode === "FAVOURITES");
@@ -148,6 +186,39 @@ export default function (view) {
             : mode === "fullscreen" ? viewport - (field("BannerSubtractHeader").checked ? 80 : 0)
             : boundedNumber("BannerHeightSelect", 360, 1, 2160) + 120;
         const preview = field("BannerPreview");
+        const openingType = field("OpeningSlideType").value;
+        const previewTitle = preview.querySelector("strong");
+        const previewMetadata = preview.querySelector("small");
+        const previewBody = preview.querySelector("span:not(.editorsChoicePreviewButton)");
+        const previewButton = preview.querySelector(".editorsChoicePreviewButton");
+        const previewScene = preview.querySelector(".editorsChoicePreviewScene");
+        if (openingType === "message") {
+            previewTitle.textContent = field("OpeningSlideTitle").value || "Your headline";
+            previewMetadata.textContent = field("OpeningSlideEyebrow").value || "WELCOME";
+            previewBody.textContent = field("OpeningSlideBody").value || "Your message";
+            previewButton.textContent = field("OpeningSlidePrimaryButtonText").value || "Optional action";
+            previewButton.style.display = field("OpeningSlidePrimaryButtonText").value ? "" : "none";
+            const backgroundType = field("OpeningSlideBackgroundType").value;
+            const backgroundValue = backgroundType === "url" ? field("OpeningSlideBackgroundUrl").value
+                : backgroundType === "media" && field("OpeningSlideBackgroundItemId").value
+                    ? ApiClient.getUrl(`Items/${field("OpeningSlideBackgroundItemId").value}/Images/Backdrop/0`)
+                    : "";
+            previewScene.style.backgroundImage = backgroundValue
+                ? `linear-gradient(90deg, rgba(0,0,0,.85), rgba(0,0,0,.12)), url("${backgroundValue.replaceAll('"', "%22")}")`
+                : "";
+            previewScene.style.backgroundSize = backgroundValue ? "cover" : "";
+            previewScene.style.backgroundPosition = backgroundValue ? "center" : "";
+        } else {
+            const selectedTitle = field("OpeningSlideMediaId").selectedOptions[0]?.textContent;
+            previewTitle.textContent = openingType === "media" && field("OpeningSlideMediaId").value ? selectedTitle : "Featured tonight";
+            previewMetadata.textContent = "2026 · Series";
+            previewBody.textContent = openingType === "media" ? "Artwork and details come from Jellyfin." : "Your next great watch";
+            previewButton.textContent = "Watch now";
+            previewButton.style.display = "";
+            previewScene.style.backgroundImage = "";
+            previewScene.style.backgroundSize = "";
+            previewScene.style.backgroundPosition = "";
+        }
         preview.style.height = Math.round(height / 4) + "px";
         preview.style.maxWidth = mobile ? "240px" : "620px";
         const selectors = ["strong", "small", "span:not(.editorsChoicePreviewButton)", ".editorsChoicePreviewButton"];
@@ -184,6 +255,50 @@ export default function (view) {
             return `<label class="emby-checkbox-label"><input is="emby-checkbox" type="checkbox" data-id="${id}"${checked}><span class="checkboxLabel">${name}</span></label>`;
         }).join("");
         field(containerId).innerHTML = markup;
+    }
+
+    function restoreMediaOption(selectId, id, name) {
+        const select = field(selectId);
+        select.replaceChildren(new Option("Choose a title", ""));
+        if (id) {
+            select.add(new Option(name || "Previously selected title", id));
+            select.value = id;
+        }
+    }
+
+    async function searchOpeningMedia(searchId, selectId, buttonId) {
+        const query = field(searchId).value.trim();
+        if (query.length < 2) {
+            Dashboard.alert("Enter at least two characters to search.");
+            return;
+        }
+
+        const button = field(buttonId);
+        button.disabled = true;
+        try {
+            const response = await ApiClient.getItems(ApiClient.getCurrentUserId(), {
+                Recursive: true,
+                SearchTerm: query,
+                IncludeItemTypes: "Movie,Series",
+                SortBy: "SortName",
+                SortOrder: "Ascending",
+                Limit: 30,
+                Fields: "ProductionYear",
+            });
+            const items = Array.isArray(response?.Items) ? response.Items : [];
+            const select = field(selectId);
+            select.replaceChildren(new Option(items.length ? "Choose a title" : "No matching titles", ""));
+            for (const item of items) {
+                const year = item.ProductionYear ? ` (${item.ProductionYear})` : "";
+                select.add(new Option(`${item.Name}${year}`, item.Id));
+            }
+            if (items.length === 1) select.value = items[0].Id;
+            updatePreview();
+        } catch (error) {
+            showError("The media search could not be completed.", error);
+        } finally {
+            button.disabled = false;
+        }
     }
 
     function getUsers() {
@@ -347,6 +462,21 @@ export default function (view) {
         field("ShowPlayed").checked = config.ShowPlayed;
         field("PlayButtonText").value = config.PlayButtonText || "";
         field("HideOnTvLayout").checked = config.HideOnTvLayout;
+        field("OpeningSlideType").value = ["message", "media"].includes(config.OpeningSlideType) ? config.OpeningSlideType : "none";
+        field("OpeningSlideContinue").checked = config.OpeningSlideContinue ?? true;
+        field("OpeningSlidePreset").value = "custom";
+        field("OpeningSlideEyebrow").value = config.OpeningSlideEyebrow || "";
+        field("OpeningSlideTitle").value = config.OpeningSlideTitle || "";
+        field("OpeningSlideBody").value = config.OpeningSlideBody || "";
+        field("OpeningSlideBackgroundType").value = ["media", "url"].includes(config.OpeningSlideBackgroundType)
+            ? config.OpeningSlideBackgroundType : "gradient";
+        field("OpeningSlideBackgroundUrl").value = config.OpeningSlideBackgroundUrl || "";
+        field("OpeningSlidePrimaryButtonText").value = config.OpeningSlidePrimaryButtonText || "";
+        field("OpeningSlidePrimaryButtonUrl").value = config.OpeningSlidePrimaryButtonUrl || "";
+        field("OpeningSlideSecondaryButtonText").value = config.OpeningSlideSecondaryButtonText || "";
+        field("OpeningSlideSecondaryButtonUrl").value = config.OpeningSlideSecondaryButtonUrl || "";
+        restoreMediaOption("OpeningSlideMediaId", config.OpeningSlideMediaId, config.OpeningSlideMediaName);
+        restoreMediaOption("OpeningSlideBackgroundItemId", config.OpeningSlideBackgroundItemId, config.OpeningSlideBackgroundItemName);
         updateConditionalVisibility();
     }
 
@@ -411,6 +541,23 @@ export default function (view) {
         config.NewTimeLimit = field("NewTimeLimitSelect").value;
         config.BannerHeight = boundedNumber("BannerHeightSelect", 360, 1, Number.MAX_SAFE_INTEGER, true);
         config.PlayButtonText = field("PlayButtonText").value;
+        config.OpeningSlideType = field("OpeningSlideType").value;
+        config.OpeningSlideContinue = field("OpeningSlideContinue").checked;
+        config.OpeningSlideMediaId = field("OpeningSlideMediaId").value || null;
+        config.OpeningSlideMediaName = field("OpeningSlideMediaId").value
+            ? field("OpeningSlideMediaId").selectedOptions[0]?.textContent || null : null;
+        config.OpeningSlideEyebrow = field("OpeningSlideEyebrow").value.trim();
+        config.OpeningSlideTitle = field("OpeningSlideTitle").value.trim();
+        config.OpeningSlideBody = field("OpeningSlideBody").value.trim();
+        config.OpeningSlideBackgroundType = field("OpeningSlideBackgroundType").value;
+        config.OpeningSlideBackgroundItemId = field("OpeningSlideBackgroundItemId").value || null;
+        config.OpeningSlideBackgroundItemName = field("OpeningSlideBackgroundItemId").value
+            ? field("OpeningSlideBackgroundItemId").selectedOptions[0]?.textContent || null : null;
+        config.OpeningSlideBackgroundUrl = field("OpeningSlideBackgroundUrl").value.trim() || null;
+        config.OpeningSlidePrimaryButtonText = field("OpeningSlidePrimaryButtonText").value.trim() || null;
+        config.OpeningSlidePrimaryButtonUrl = field("OpeningSlidePrimaryButtonUrl").value.trim() || null;
+        config.OpeningSlideSecondaryButtonText = field("OpeningSlideSecondaryButtonText").value.trim() || null;
+        config.OpeningSlideSecondaryButtonUrl = field("OpeningSlideSecondaryButtonUrl").value.trim() || null;
         return config;
     }
 
@@ -473,6 +620,32 @@ export default function (view) {
         if (!event.target.matches('input[name="mode"]')) updateConditionalVisibility();
     });
     field("PreviewTransition").addEventListener("click", previewTransition);
+    field("OpeningSlidePreset").addEventListener("change", () => {
+        const preset = openingSlidePresets[field("OpeningSlidePreset").value];
+        if (!preset) return;
+        field("OpeningSlideEyebrow").value = preset.eyebrow;
+        field("OpeningSlideTitle").value = preset.title;
+        field("OpeningSlideBody").value = preset.body;
+        field("OpeningSlidePrimaryButtonText").value = preset.primaryText;
+        field("OpeningSlidePrimaryButtonUrl").value = preset.primaryUrl;
+        field("OpeningSlideSecondaryButtonText").value = preset.secondaryText;
+        field("OpeningSlideSecondaryButtonUrl").value = preset.secondaryUrl;
+        updateConditionalVisibility();
+    });
+    field("OpeningSlideMediaSearchButton").addEventListener("click", () =>
+        searchOpeningMedia("OpeningSlideMediaSearch", "OpeningSlideMediaId", "OpeningSlideMediaSearchButton"));
+    field("OpeningSlideBackgroundSearchButton").addEventListener("click", () =>
+        searchOpeningMedia("OpeningSlideBackgroundSearch", "OpeningSlideBackgroundItemId", "OpeningSlideBackgroundSearchButton"));
+    for (const [inputId, selectId, buttonId] of [
+        ["OpeningSlideMediaSearch", "OpeningSlideMediaId", "OpeningSlideMediaSearchButton"],
+        ["OpeningSlideBackgroundSearch", "OpeningSlideBackgroundItemId", "OpeningSlideBackgroundSearchButton"],
+    ]) {
+        field(inputId).addEventListener("keydown", (event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            searchOpeningMedia(inputId, selectId, buttonId);
+        });
+    }
     view.addEventListener("viewhide", () => previewAnimation?.cancel());
     view.addEventListener("viewshow", handleShow);
 }

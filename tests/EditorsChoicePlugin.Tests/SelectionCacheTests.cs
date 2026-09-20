@@ -178,5 +178,8 @@ public class SelectionCacheTests
         Assert.DoesNotContain("editorUserId", settings.Keys);
         Assert.DoesNotContain("favourites", settings.Keys);
         Assert.DoesNotContain("filteredLibraries", settings.Keys);
+        Assert.DoesNotContain("openingSlideTitle", settings.Keys);
+        Assert.DoesNotContain("openingSlideBody", settings.Keys);
+        Assert.DoesNotContain("openingSlideMediaId", settings.Keys);
     }
 }

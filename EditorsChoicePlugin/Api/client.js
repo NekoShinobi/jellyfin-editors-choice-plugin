@@ -309,6 +309,35 @@ const container = `
 
   .editorsChoiceItemBanner:nth-child(odd) { background-position-y: 48%; }
 
+  .editorsChoiceOpeningSlide--gradient .editorsChoiceBackdrop {
+    background:
+      radial-gradient(circle at 78% 28%, rgba(126, 87, 194, 0.48), transparent 31%),
+      radial-gradient(circle at 65% 78%, rgba(0, 164, 220, 0.3), transparent 34%),
+      linear-gradient(125deg, #0d111a 8%, #1b2030 48%, #131722 100%);
+  }
+
+  .editorsChoiceOpeningSlide .editorsChoiceItemMetadata {
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .editorsChoiceOpeningAction {
+    width: fit-content !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.4em;
+    margin: 0 !important;
+    color: inherit;
+    text-decoration: none;
+    justify-content: center;
+    white-space: normal;
+  }
+
+  .editorsChoiceOpeningSlide .editorsChoiceItemActions {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
   @keyframes banner {
     0% { background-position-y: 52%; }
     100% { background-position-y: 48%; }
@@ -964,8 +993,7 @@ const container = `
   }
 
   /* Additional dimming sits above artwork/video and below all text and controls. */
-  .editorsChoiceItemBanner::before {
-    content: "";
+  .editorsChoiceDimming {
     position: absolute;
     inset: 0;
     z-index: 2;
@@ -1005,7 +1033,7 @@ const container = `
   .editorsChoiceContainer .editorsChoiceItemTitle { font-family: var(--ec-font-title, inherit); }
   .editorsChoiceContainer .editorsChoiceItemMetadata { font-family: var(--ec-font-metadata, inherit); }
   .editorsChoiceContainer .editorsChoiceItemOverview { font-family: var(--ec-font-description, inherit); }
-  .editorsChoiceContainer :is(.editorsChoiceItemButton, .editorsChoiceInfoButton) { font-family: var(--ec-font-button, inherit); }
+  .editorsChoiceContainer :is(.editorsChoiceItemButton, .editorsChoiceInfoButton, .editorsChoiceOpeningAction) { font-family: var(--ec-font-button, inherit); }
   .editorsChoiceIsLoading .splide, .editorsChoiceMessage .splide { position: relative; visibility: visible; }
   .editorsChoiceIsLoading .editorsChoiceScrollButtonsContainer,
   .editorsChoiceIsLoading .editorsChoiceMobilePagination,
@@ -1334,7 +1362,14 @@ function loadBackdropAsset(url, fetchPriority = "auto") {
 function prepareHeroBackdrop($containerElem, slide, fetchPriority = "auto") {
     const backdrop = slide && slide.querySelector(".editorsChoiceBackdrop");
     const url = backdrop && backdrop.dataset.backdropUrl;
-    if (!url) return Promise.resolve();
+    if (!url) {
+        for (const target of $containerElem[0].querySelectorAll(".editorsChoiceBackdrop")) {
+            if (!target.dataset.backdropUrl) {
+                target.closest(".editorsChoiceItemBanner")?.classList.add("editorsChoiceSlideReady");
+            }
+        }
+        return Promise.resolve();
+    }
 
     return loadBackdropAsset(url, fetchPriority).then((asset) => {
         const backdrops = $containerElem[0].querySelectorAll(".editorsChoiceBackdrop[data-backdrop-url]");
@@ -1442,6 +1477,7 @@ function bannerHeightPixels(data, mobile, viewportHeight, headerHeight) {
 function bannerTransition(effect) {
     return (slider, components) => {
         let previous = slider.index;
+        let direction = 1;
         let animations = [];
         let outgoing;
         let incoming;
@@ -1457,8 +1493,20 @@ function bannerTransition(effect) {
         function init() {
             components.Slides.forEach((slide) => slide.style("transform", `translateX(-${100 * slide.index}%)`));
         }
+        function captureDirection(index, previousIndex, destinationIndex) {
+            let delta = (destinationIndex === previousIndex ? index : destinationIndex) - previousIndex;
+            // Fade mode reports a wrapped index rather than an out-of-range
+            // destination. Choose the shortest route so last → first remains
+            // forward and first → last remains backward.
+            if (delta > slider.length / 2) delta -= slider.length;
+            if (delta < -slider.length / 2) delta += slider.length;
+            direction = delta >= 0 ? 1 : -1;
+        }
         return {
-            mount() { slider.on("mounted refresh", init); },
+            mount() {
+                slider.on("mounted refresh", init);
+                slider.on("move", captureDirection);
+            },
             start(index, done) {
                 cancel();
                 incoming = components.Slides.getAt(index)?.slide;
@@ -1474,8 +1522,9 @@ function bannerTransition(effect) {
                 outgoing.style.zIndex = "1";
                 outgoing.classList.add("editorsChoiceTransitionOutgoing");
                 const position = `translateX(-${100 * index}%)`;
+                const wipeStart = direction > 0 ? "inset(0 0 0 100%)" : "inset(0 100% 0 0)";
                 const frames = effect === "wipe"
-                    ? [{ clipPath: "inset(0 100% 0 0)", opacity: 1 }, { clipPath: "inset(0 0% 0 0)", opacity: 1 }]
+                    ? [{ clipPath: wipeStart, opacity: 1 }, { clipPath: "inset(0 0% 0 0)", opacity: 1 }]
                     : [{ opacity: 0, transform: `${position} scale(1.08)` }, { opacity: 1, transform: `${position} scale(1)` }];
                 const options = { duration, easing: slider.options.easing, fill: "both" };
                 animations = [
@@ -1698,7 +1747,40 @@ function renderHeroSlide(item, data) {
         data.heroBackdropPosition === "top" ? "editorsChoiceBackdropTop" :
         data.heroBackdropPosition === "bottom" ? "editorsChoiceBackdropBottom" : "";
 
-    return `<article class="${bannerClass}"><div class="editorsChoiceBackdrop ${extraClass}" data-backdrop-url="${escapeHtml(backdropUrl)}"></div>${themeVideo}<div class="${contentClass}">${poster}<div class="${infoClass}"><div class="editorsChoiceContentMain">${logoOrTitle}${metadata}${overview}</div>${actions}</div></div></article>`;
+    return `<article class="${bannerClass}"><div class="editorsChoiceBackdrop ${extraClass}" data-backdrop-url="${escapeHtml(backdropUrl)}"></div>${themeVideo}<div class="editorsChoiceDimming" aria-hidden="true"></div><div class="${contentClass}">${poster}<div class="${infoClass}"><div class="editorsChoiceContentMain">${logoOrTitle}${metadata}${overview}</div>${actions}</div></div></article>`;
+}
+
+function renderOpeningActions(actions) {
+    if (!Array.isArray(actions) || !actions.length) return "";
+
+    const buttons = actions.map((action) => {
+        if (!action?.label || !action?.url) return "";
+        const primaryClass = action.primary ? " button-submit" : "";
+        const external = /^https?:\/\//i.test(action.url);
+        const externalAttributes = external ? ' target="_blank" rel="noopener noreferrer"' : "";
+        const icon = action.primary ? "arrow_forward" : "help_outline";
+        return `<a is="emby-linkbutton" class="editorsChoiceOpeningAction raised emby-button${primaryClass}" href="${escapeHtml(action.url)}"${externalAttributes}><span class="material-icons" aria-hidden="true">${icon}</span><span>${escapeHtml(action.label)}</span></a>`;
+    }).join("");
+
+    return buttons ? `<div class="editorsChoiceItemActions">${buttons}</div>` : "";
+}
+
+function renderOpeningMessage(slide, data) {
+    const backdropSize = buildBannerSizeParam(data.reduceImageSizes);
+    const backdropUrl = slide.backgroundType === "media" && slide.backgroundItemId
+        ? `../Items/${escapeHtml(slide.backgroundItemId)}/Images/Backdrop/0${backdropSize}`
+        : slide.backgroundType === "url" && slide.backgroundUrl
+            ? slide.backgroundUrl
+            : "";
+    const backgroundClass = backdropUrl ? "" : " editorsChoiceOpeningSlide--gradient";
+    const extraClass = data.heroBackdropPosition === "top" ? "editorsChoiceBackdropTop"
+        : data.heroBackdropPosition === "bottom" ? "editorsChoiceBackdropBottom"
+            : "editorsChoiceBackdropCenter";
+    const actions = renderOpeningActions(slide.actions);
+    const infoClass = `editorsChoiceInfo${actions ? " editorsChoiceInfo--withAction" : ""}`;
+    const body = slide.bodyHtml ? `<div class="editorsChoiceItemOverview">${slide.bodyHtml}</div>` : "";
+
+    return `<article class="editorsChoiceItemBanner editorsChoiceOpeningSlide${backgroundClass} splide__slide"><div class="editorsChoiceBackdrop ${extraClass}" data-backdrop-url="${escapeHtml(backdropUrl)}"></div><div class="editorsChoiceDimming" aria-hidden="true"></div><div class="editorsChoiceContent"><div class="${infoClass}"><div class="editorsChoiceContentMain"><div class="editorsChoiceItemMetadata" role="list"><span role="listitem" class="editorsChoiceMetadataItem">${escapeHtml(slide.eyebrow || "Welcome")}</span></div><h1 class="editorsChoiceItemTitle">${escapeHtml(slide.title || "Welcome")}</h1>${body}</div>${actions}</div></div></article>`;
 }
 
 /* ===== Main setup ===== */
@@ -1770,18 +1852,32 @@ async function setup() {
                     return;
                 }
 
-                const favourites = data.favourites || [];
+                const favourites = Array.isArray(data.favourites) ? data.favourites : [];
+                const openingSlide = data.openingSlide && typeof data.openingSlide === "object"
+                    ? data.openingSlide : null;
+                const slides = [];
+                if (openingSlide?.type === "message") {
+                    slides.push({ type: "message", value: openingSlide });
+                } else if (openingSlide?.type === "media" && openingSlide.item) {
+                    slides.push({ type: "media", value: openingSlide.item });
+                }
+                if (!openingSlide || openingSlide.continueToSelection !== false) {
+                    const openingMediaId = openingSlide?.type === "media" ? openingSlide.item?.id : null;
+                    for (const item of favourites) {
+                        if (item?.id !== openingMediaId) slides.push({ type: "media", value: item });
+                    }
+                }
                 const containerId = containerElem.id;
                 applyBannerFonts(data, containerElem);
                 applyBannerGeometry(data, containerElem);
                 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-                const autoplayEnabled = !!data.autoplay && !prefersReducedMotion && favourites.length > 1;
+                const autoplayEnabled = !!data.autoplay && !prefersReducedMotion && slides.length > 1;
 
                 containerElem.classList.add(`editorsChoiceHeight-${data.bannerHeight}`);
                 containerElem.style.setProperty("--ec-dimming", data.enableBackgroundDimming
                     ? bannerNumber(data.backgroundDimmingPercent, 30, 0, 100) / 100 : 0);
                 const $containerElem = $(containerElem);
-                if (!favourites.length) {
+                if (!slides.length) {
                     showBannerMessage(containerElem, "No featured items available.");
                     initializedContainers.add(elem);
                     return;
@@ -1803,9 +1899,10 @@ async function setup() {
                 const list = containerElem.querySelector(".editorsChoiceItemsContainer");
                 const $list = $(list);
 
-                for (const item of favourites) {
-                    const html = renderHeroSlide(item, data);
-
+                for (const slide of slides) {
+                    const html = slide.type === "message"
+                        ? renderOpeningMessage(slide.value, data)
+                        : renderHeroSlide(slide.value, data);
                     list.insertAdjacentHTML("beforeend", html);
                 }
 

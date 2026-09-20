@@ -110,79 +110,19 @@ public class EditorsChoiceActivityController : ControllerBase
             Jellyfin.Database.Implementations.Entities.User? activeUser = _userManager.GetUserByName(name);
             if (activeUser == null) return NotFound();
 
-            var result = _selectionCache.GetSelection(activeUser, _config);
+            var openingSlide = CreateOpeningSlide(activeUser);
+            var result = openingSlide is not null && !_config.OpeningSlideContinue
+                ? []
+                : _selectionCache.GetSelection(activeUser, _config);
 
             // Build response
             response = new Dictionary<string, object>();
             items = new List<object>();
 
-            foreach (BaseItem i in result)
-            {
-                BaseItem item = i;
-                BaseItemKind itemKind = item.GetBaseItemKind();
-                IReadOnlyList<BaseItem> extras = GetOptionalExtras(item);
-                BaseItem? themeVideo = _config.EnableThemeVideos
-                    ? extras.FirstOrDefault(extra => extra.ExtraType == MediaBrowser.Model.Entities.ExtraType.ThemeVideo)
-                    : null;
-                BaseItem? localTrailer = extras.FirstOrDefault(
-                    extra => extra.ExtraType == MediaBrowser.Model.Entities.ExtraType.Trailer);
-                bool hasTrailer = localTrailer is not null
-                    || (item is IHasTrailers itemWithTrailers && itemWithTrailers.RemoteTrailers?.Count > 0);
-
-                // Narrow down properties that are strictly necessary to pass through to frontend
-                Dictionary<string, object> itemObject = new Dictionary<string, object>
-                {
-                    { "id", item.Id.ToString() },
-                    { "name", item.Name },
-                    { "official_rating", item.OfficialRating },
-                    { "hasLogo", item.HasImage(MediaBrowser.Model.Entities.ImageType.Logo) },
-                    { "hasPoster", item.HasImage(MediaBrowser.Model.Entities.ImageType.Primary) },
-                    { "item_type", itemKind.ToString() },
-                    { "play_item_id", item.Id.ToString() },
-                    { "play_item_type", itemKind.ToString() },
-                    { "play_is_folder", item is Folder },
-                    { "playback_action", "watch" },
-                    { "has_trailer", hasTrailer }
-                };
-
-                if (themeVideo is not null)
-                {
-                    itemObject.Add("theme_video_id", themeVideo.Id.ToString());
-                }
-
-                if (localTrailer is not null)
-                {
-                    itemObject.Add("trailer_item_id", localTrailer.Id.ToString());
-                    itemObject.Add("trailer_item_type", localTrailer.GetBaseItemKind().ToString());
-                }
-
-                if (_config.ShowDescription)
-                {
-                    itemObject.Add("overview_html", RenderOverviewMarkdown(item.Overview));
-                }
-                if (item.ProductionYear.HasValue)
-                {
-                    itemObject.Add("year", item.ProductionYear.Value);
-                }
-                if (itemKind == BaseItemKind.Movie && item.RunTimeTicks.HasValue)
-                {
-                    itemObject.Add("runtime_minutes", Math.Max(1, (int)Math.Round(TimeSpan.FromTicks(item.RunTimeTicks.Value).TotalMinutes)));
-                }
-                if (itemKind == BaseItemKind.Series && item is Folder seriesFolder)
-                {
-                    itemObject.Add("episode_count", seriesFolder.GetRecursiveChildCount(activeUser));
-                }
-                if (item.CommunityRating.HasValue)
-                {
-                    itemObject.Add("community_rating", Math.Round(Convert.ToDecimal(item.CommunityRating), 2));
-                }
-
-                AddPlaybackState(item, itemObject, activeUser);
-
-                items.Add(itemObject);
-            }
+            foreach (BaseItem item in result) items.Add(CreateMediaItem(item, activeUser));
 
             response.Add("favourites", items);
+            if (openingSlide is not null) response.Add("openingSlide", openingSlide);
             foreach (var setting in BannerSettings.Create(_config)) response.Add(setting.Key, setting.Value);
 
             return Ok(response);
@@ -194,6 +134,170 @@ public class EditorsChoiceActivityController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
 
+    }
+
+    private Dictionary<string, object> CreateMediaItem(
+        BaseItem item,
+        Jellyfin.Database.Implementations.Entities.User activeUser)
+    {
+        BaseItemKind itemKind = item.GetBaseItemKind();
+        IReadOnlyList<BaseItem> extras = GetOptionalExtras(item);
+        BaseItem? themeVideo = _config.EnableThemeVideos
+            ? extras.FirstOrDefault(extra => extra.ExtraType == MediaBrowser.Model.Entities.ExtraType.ThemeVideo)
+            : null;
+        BaseItem? localTrailer = extras.FirstOrDefault(
+            extra => extra.ExtraType == MediaBrowser.Model.Entities.ExtraType.Trailer);
+        bool hasTrailer = localTrailer is not null
+            || (item is IHasTrailers itemWithTrailers && itemWithTrailers.RemoteTrailers?.Count > 0);
+
+        var itemObject = new Dictionary<string, object>
+        {
+            { "id", item.Id.ToString() },
+            { "name", item.Name },
+            { "official_rating", item.OfficialRating },
+            { "hasLogo", item.HasImage(MediaBrowser.Model.Entities.ImageType.Logo) },
+            { "hasPoster", item.HasImage(MediaBrowser.Model.Entities.ImageType.Primary) },
+            { "item_type", itemKind.ToString() },
+            { "play_item_id", item.Id.ToString() },
+            { "play_item_type", itemKind.ToString() },
+            { "play_is_folder", item is Folder },
+            { "playback_action", "watch" },
+            { "has_trailer", hasTrailer }
+        };
+
+        if (themeVideo is not null) itemObject.Add("theme_video_id", themeVideo.Id.ToString());
+        if (localTrailer is not null)
+        {
+            itemObject.Add("trailer_item_id", localTrailer.Id.ToString());
+            itemObject.Add("trailer_item_type", localTrailer.GetBaseItemKind().ToString());
+        }
+
+        if (_config.ShowDescription) itemObject.Add("overview_html", RenderOverviewMarkdown(item.Overview));
+        if (item.ProductionYear.HasValue) itemObject.Add("year", item.ProductionYear.Value);
+        if (itemKind == BaseItemKind.Movie && item.RunTimeTicks.HasValue)
+        {
+            itemObject.Add("runtime_minutes", Math.Max(1, (int)Math.Round(
+                TimeSpan.FromTicks(item.RunTimeTicks.Value).TotalMinutes)));
+        }
+
+        if (itemKind == BaseItemKind.Series && item is Folder seriesFolder)
+        {
+            itemObject.Add("episode_count", seriesFolder.GetRecursiveChildCount(activeUser));
+        }
+
+        if (item.CommunityRating.HasValue)
+        {
+            itemObject.Add("community_rating", Math.Round(Convert.ToDecimal(item.CommunityRating), 2));
+        }
+
+        AddPlaybackState(item, itemObject, activeUser);
+        return itemObject;
+    }
+
+    private Dictionary<string, object>? CreateOpeningSlide(
+        Jellyfin.Database.Implementations.Entities.User activeUser)
+    {
+        if (_config.OpeningSlideType == "media")
+        {
+            BaseItem? item = GetVisibleConfiguredItem(_config.OpeningSlideMediaId, activeUser);
+            if (item is null || !item.HasImage(MediaBrowser.Model.Entities.ImageType.Backdrop)) return null;
+
+            return new Dictionary<string, object>
+            {
+                { "type", "media" },
+                { "continueToSelection", _config.OpeningSlideContinue },
+                { "item", CreateMediaItem(item, activeUser) }
+            };
+        }
+
+        if (_config.OpeningSlideType != "message") return null;
+
+        var slide = new Dictionary<string, object>
+        {
+            { "type", "message" },
+            { "continueToSelection", _config.OpeningSlideContinue },
+            { "eyebrow", LimitedText(_config.OpeningSlideEyebrow, 40) ?? "Welcome" },
+            { "title", LimitedText(_config.OpeningSlideTitle, 120) ?? "Welcome" },
+            { "bodyHtml", RenderOverviewMarkdown(LimitedText(_config.OpeningSlideBody, 4000)) },
+            { "backgroundType", _config.OpeningSlideBackgroundType is "media" or "url"
+                ? _config.OpeningSlideBackgroundType : "gradient" }
+        };
+
+        if (_config.OpeningSlideBackgroundType == "media")
+        {
+            BaseItem? background = GetVisibleConfiguredItem(_config.OpeningSlideBackgroundItemId, activeUser);
+            if (background is not null && background.HasImage(MediaBrowser.Model.Entities.ImageType.Backdrop))
+            {
+                slide.Add("backgroundItemId", background.Id.ToString());
+            }
+            else
+            {
+                slide["backgroundType"] = "gradient";
+            }
+        }
+        else if (_config.OpeningSlideBackgroundType == "url"
+                 && NormalizeSafeUrl(_config.OpeningSlideBackgroundUrl) is { } backgroundUrl)
+        {
+            slide.Add("backgroundUrl", backgroundUrl);
+        }
+        else if (_config.OpeningSlideBackgroundType == "url")
+        {
+            slide["backgroundType"] = "gradient";
+        }
+
+        var actions = new List<object>();
+        AddOpeningAction(actions, _config.OpeningSlidePrimaryButtonText, _config.OpeningSlidePrimaryButtonUrl, true);
+        AddOpeningAction(actions, _config.OpeningSlideSecondaryButtonText, _config.OpeningSlideSecondaryButtonUrl, false);
+        slide.Add("actions", actions);
+        return slide;
+    }
+
+    private BaseItem? GetVisibleConfiguredItem(
+        string? configuredId,
+        Jellyfin.Database.Implementations.Entities.User activeUser)
+    {
+        if (!Guid.TryParse(configuredId, out Guid itemId)) return null;
+
+        return _libraryManager.GetItemList(new InternalItemsQuery(activeUser)
+        {
+            ItemIds = [itemId],
+            IncludeItemTypes = [BaseItemKind.Series, BaseItemKind.Movie]
+        }).FirstOrDefault(item => item.Id == itemId && item.IsVisible(activeUser));
+    }
+
+    private static void AddOpeningAction(
+        List<object> actions,
+        string? label,
+        string? configuredUrl,
+        bool primary)
+    {
+        string? safeLabel = LimitedText(label, 60);
+        string? safeUrl = NormalizeSafeUrl(configuredUrl);
+        if (safeLabel is null || safeUrl is null) return;
+
+        actions.Add(new Dictionary<string, object>
+        {
+            { "label", safeLabel },
+            { "url", safeUrl },
+            { "primary", primary }
+        });
+    }
+
+    private static string? LimitedText(string? value, int maximumLength)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        string trimmed = value.Trim();
+        return trimmed.Length <= maximumLength ? trimmed : trimmed[..maximumLength];
+    }
+
+    private static string? NormalizeSafeUrl(string? value)
+    {
+        string? trimmed = LimitedText(value, 2048);
+        if (trimmed is null) return null;
+        if ((trimmed.StartsWith('/') && !trimmed.StartsWith("//", StringComparison.Ordinal))
+            || trimmed.StartsWith('#')) return trimmed;
+        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out Uri? uri)) return null;
+        return uri.Scheme is "http" or "https" ? uri.AbsoluteUri : null;
     }
 
     private void AddPlaybackState(

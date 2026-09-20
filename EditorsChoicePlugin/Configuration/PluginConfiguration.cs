@@ -100,6 +100,37 @@ public class PluginConfiguration : BasePluginConfiguration
 
     public bool ShowPlayed { get; set; } = true;
 
+    // Optional administrator-authored slide shown before the automatic selection.
+    public string OpeningSlideType { get; set; } = "none";
+
+    public bool OpeningSlideContinue { get; set; } = true;
+
+    public string? OpeningSlideMediaId { get; set; }
+
+    public string? OpeningSlideMediaName { get; set; }
+
+    public string OpeningSlideEyebrow { get; set; } = "Welcome";
+
+    public string OpeningSlideTitle { get; set; } = "Welcome to our media library";
+
+    public string OpeningSlideBody { get; set; } = "Browse the latest additions, continue watching, or explore something new.";
+
+    public string OpeningSlideBackgroundType { get; set; } = "gradient";
+
+    public string? OpeningSlideBackgroundItemId { get; set; }
+
+    public string? OpeningSlideBackgroundItemName { get; set; }
+
+    public string? OpeningSlideBackgroundUrl { get; set; }
+
+    public string? OpeningSlidePrimaryButtonText { get; set; }
+
+    public string? OpeningSlidePrimaryButtonUrl { get; set; }
+
+    public string? OpeningSlideSecondaryButtonText { get; set; }
+
+    public string? OpeningSlideSecondaryButtonUrl { get; set; }
+
     // Legacy XML compatibility only; Hero banners have no section heading.
     public string? Heading { get; set; }
     public string? PlayButtonText { get; set; }

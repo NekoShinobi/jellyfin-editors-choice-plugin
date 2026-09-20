@@ -15,6 +15,14 @@ Banner descriptions use the item's Jellyfin overview and support safe Markdown f
 
 Each banner can display its community/content rating, year, and either movie runtime or series episode count. The Play button uses the active user's Jellyfin progress: resumable movies continue from their saved position, and started series show and play the current or next episode.
 
+Administrators can also add an optional opening slide before the automatic selection:
+
+- **Custom message** — write a welcome, announcement, help, or guidance message with safe Markdown, up to two link buttons, and either the built-in gradient, artwork from a library title, or an image URL.
+- **Featured title** — search for a particular movie or series and keep it first while the remaining selection rotates normally.
+- **Opening slide only** — turn off “Continue with the automatic selection” for a static home-page hero.
+
+Featured titles and library artwork are resolved separately for every viewer. If a viewer cannot access the configured title, the plugin falls back to their normal selection. Existing installations continue to use only the automatic selection until an opening slide is enabled.
+
 **Hero banner**
 
 ![Screenshot of Jellyfin with Editor's Choice in hero mode](https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/blob/main/example-hero.png?raw=true)

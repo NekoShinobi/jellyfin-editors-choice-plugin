@@ -138,6 +138,30 @@
                 border-color: #292929c2;
             }
 
+            .editorsChoiceOpeningPanel {
+                margin: 1rem 0 2rem;
+                padding: 1rem;
+                border: 1px solid rgba(255,255,255,.18);
+                border-radius: 6px;
+            }
+
+            .editorsChoiceSearchRow {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: .6rem;
+                align-items: end;
+            }
+
+            .editorsChoiceSearchRow .inputContainer {
+                margin-bottom: 0;
+            }
+
+            @media (max-width: 600px) {
+                .editorsChoiceSearchRow {
+                    grid-template-columns: 1fr;
+                }
+            }
+
           .editorsChoiceSettingsPreview {
             position: relative;
             height: 120px;
@@ -182,6 +206,124 @@
 
                     <hr />
                     <h2>Content</h2>
+                    <h3>Opening slide</h3>
+                    <p class="fieldDescription">Optionally place one administrator-authored slide before the automatic featured selection.</p>
+
+                    <div class="editorsChoiceOpeningPanel">
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="OpeningSlideType">Opening content</label>
+                            <select is="emby-select" id="OpeningSlideType" class="emby-select-withcolor emby-select">
+                                <option value="none">Automatic selection only</option>
+                                <option value="message">Custom message</option>
+                                <option value="media">Featured title</option>
+                            </select>
+                        </div>
+
+                        <div id="OpeningSlideMessage-container">
+                            <div class="selectContainer">
+                                <label class="selectLabel" for="OpeningSlidePreset">Start with a template</label>
+                                <select is="emby-select" id="OpeningSlidePreset" class="emby-select-withcolor emby-select">
+                                    <option value="custom">Custom</option>
+                                    <option value="welcome">Welcome</option>
+                                    <option value="help">Help and guidance</option>
+                                    <option value="announcement">Announcement</option>
+                                </select>
+                                <div class="fieldDescription">Templates fill the fields below; every value remains editable.</div>
+                            </div>
+
+                            <div class="inputContainer">
+                                <label class="inputLabel" for="OpeningSlideEyebrow">Small label</label>
+                                <input is="emby-input" type="text" id="OpeningSlideEyebrow" maxlength="40" placeholder="Welcome" />
+                            </div>
+
+                            <div class="inputContainer">
+                                <label class="inputLabel" for="OpeningSlideTitle">Headline</label>
+                                <input is="emby-input" type="text" id="OpeningSlideTitle" maxlength="120" />
+                            </div>
+
+                            <div class="inputContainer">
+                                <label class="inputLabel" for="OpeningSlideBody">Message</label>
+                                <textarea is="emby-input" id="OpeningSlideBody" rows="5" maxlength="4000"></textarea>
+                                <div class="fieldDescription">Supports the same safe Markdown formatting as media descriptions.</div>
+                            </div>
+
+                            <div class="selectContainer">
+                                <label class="selectLabel" for="OpeningSlideBackgroundType">Background</label>
+                                <select is="emby-select" id="OpeningSlideBackgroundType" class="emby-select-withcolor emby-select">
+                                    <option value="gradient">Built-in gradient</option>
+                                    <option value="media">Artwork from a Jellyfin title</option>
+                                    <option value="url">Image URL</option>
+                                </select>
+                            </div>
+
+                            <div id="OpeningSlideBackgroundMedia-container">
+                                <div class="editorsChoiceSearchRow">
+                                    <div class="inputContainer">
+                                        <label class="inputLabel" for="OpeningSlideBackgroundSearch">Find background artwork</label>
+                                        <input is="emby-input" type="search" id="OpeningSlideBackgroundSearch" placeholder="Search movies and series" />
+                                    </div>
+                                    <button is="emby-button" type="button" id="OpeningSlideBackgroundSearchButton" class="raised emby-button"><span>Search</span></button>
+                                </div>
+                                <div class="selectContainer">
+                                    <label class="selectLabel" for="OpeningSlideBackgroundItemId">Selected artwork</label>
+                                    <select is="emby-select" id="OpeningSlideBackgroundItemId" class="emby-select-withcolor emby-select">
+                                        <option value="">Choose a title</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div id="OpeningSlideBackgroundUrl-container" class="inputContainer">
+                                <label class="inputLabel" for="OpeningSlideBackgroundUrl">Image URL</label>
+                                <input is="emby-input" type="url" id="OpeningSlideBackgroundUrl" maxlength="2048" placeholder="https://example.com/banner.jpg" />
+                                <div class="fieldDescription">Use an HTTPS image that browsers can load directly.</div>
+                            </div>
+
+                            <h4>Actions</h4>
+                            <div class="inputContainer">
+                                <label class="inputLabel" for="OpeningSlidePrimaryButtonText">Primary button label</label>
+                                <input is="emby-input" type="text" id="OpeningSlidePrimaryButtonText" maxlength="60" placeholder="Browse library" />
+                            </div>
+                            <div class="inputContainer">
+                                <label class="inputLabel" for="OpeningSlidePrimaryButtonUrl">Primary button destination</label>
+                                <input is="emby-input" type="text" id="OpeningSlidePrimaryButtonUrl" maxlength="2048" placeholder="#/home.html" />
+                            </div>
+                            <div class="inputContainer">
+                                <label class="inputLabel" for="OpeningSlideSecondaryButtonText">Secondary button label</label>
+                                <input is="emby-input" type="text" id="OpeningSlideSecondaryButtonText" maxlength="60" placeholder="Getting started" />
+                            </div>
+                            <div class="inputContainer">
+                                <label class="inputLabel" for="OpeningSlideSecondaryButtonUrl">Secondary button destination</label>
+                                <input is="emby-input" type="text" id="OpeningSlideSecondaryButtonUrl" maxlength="2048" placeholder="https://example.com/help" />
+                                <div class="fieldDescription">Destinations may be HTTPS links or paths within this Jellyfin server. Leave either label empty to hide that button.</div>
+                            </div>
+                        </div>
+
+                        <div id="OpeningSlideMedia-container">
+                            <div class="editorsChoiceSearchRow">
+                                <div class="inputContainer">
+                                    <label class="inputLabel" for="OpeningSlideMediaSearch">Find a title</label>
+                                    <input is="emby-input" type="search" id="OpeningSlideMediaSearch" placeholder="Search movies and series" />
+                                </div>
+                                <button is="emby-button" type="button" id="OpeningSlideMediaSearchButton" class="raised emby-button"><span>Search</span></button>
+                            </div>
+                            <div class="selectContainer">
+                                <label class="selectLabel" for="OpeningSlideMediaId">Featured title</label>
+                                <select is="emby-select" id="OpeningSlideMediaId" class="emby-select-withcolor emby-select">
+                                    <option value="">Choose a title</option>
+                                </select>
+                                <div class="fieldDescription">Viewers who cannot access this title will see the normal featured selection instead.</div>
+                            </div>
+                        </div>
+
+                        <div id="OpeningSlideContinue-container" class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="OpeningSlideContinue" />
+                                <span class="checkboxLabel">Continue with the automatic selection</span>
+                            </label>
+                            <div class="fieldDescription">Turn this off to show only the opening slide.</div>
+                        </div>
+                    </div>
+
                     <h3>Selection</h3>
                     <div class="inputContainer">
                         <label class="radio-label-block mdl-radio show-focus">
