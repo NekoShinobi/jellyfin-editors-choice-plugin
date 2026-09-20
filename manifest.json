@@ -9,6 +9,22 @@
     "imageUrl": "https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/logo.png",
     "versions": [
       {
+        "changelog": "feat: adding a feature to allow administrators to customize the initial landing page.",
+        "targetAbi": "12.0.0.0",
+        "version": "2.0.0.25",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.25/EditorsChoicePlugin_2.0.0.25.zip",
+        "checksum": "85BFE7B498997B1FA063632A5AF6FBC6",
+        "timestamp": "2026-09-20T05:16:45Z"
+      },
+      {
+        "changelog": "feat: adding a feature to allow administrators to customize the initial landing page.",
+        "targetAbi": "10.11.0.0",
+        "version": "1.5.2.25",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.25/EditorsChoicePlugin_1.5.2.25.zip",
+        "checksum": "83889300E15934A44EF556C85FADD2C6",
+        "timestamp": "2026-09-20T05:16:45Z"
+      },
+      {
         "changelog": "feat: improving the settings menu. Default banner is no longer available as part of this fork. Added more various settings and possible options. Cache optimization.",
         "targetAbi": "12.0.0.0",
         "version": "2.0.0.24",
