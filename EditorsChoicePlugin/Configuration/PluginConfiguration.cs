@@ -49,9 +49,21 @@ public class PluginConfiguration : BasePluginConfiguration
 
     public bool HideOnTvLayout { get; set; } = false;
 
-    public bool UseHeroLayout { get; set; } = false;
+    // Legacy XML compatibility only; the frontend now always uses Hero layout.
+    public bool UseHeroLayout { get; set; } = true;
 
     public string TransitionEffect { get; set; } = "loop";
+
+    // Zero uses the Hero transition default of 650ms.
+    public int TransitionDurationMs { get; set; } = 0;
+
+    public bool EnableBackgroundMotion { get; set; } = true;
+
+    public bool EnableThemeVideos { get; set; } = true;
+
+    public bool EnableBackgroundDimming { get; set; } = false;
+
+    public int BackgroundDimmingPercent { get; set; } = 30;
 
     public string HeroBackdropPosition { get; set; } = "center";
 
@@ -59,8 +71,36 @@ public class PluginConfiguration : BasePluginConfiguration
 
     public int BannerHeight { get; set; } = 360;
 
+    // Preset mode preserves the legacy Hero layout's additional 120 pixels.
+    public string BannerHeightMode { get; set; } = "preset";
+
+    public int BannerCustomHeight { get; set; } = 600;
+
+    public int BannerViewportHeight { get; set; } = 75;
+
+    public bool BannerSubtractHeader { get; set; } = true;
+
+    public string MobileBannerHeightMode { get; set; } = "inherit";
+
+    public int MobileBannerCustomHeight { get; set; } = 360;
+
+    public int MobileBannerViewportHeight { get; set; } = 60;
+
+    public string TitleFont { get; set; } = "default";
+
+    public string MetadataFont { get; set; } = "default";
+
+    public string DescriptionFont { get; set; } = "default";
+
+    public string ButtonFont { get; set; } = "default";
+
+    public bool EnableSelectionCache { get; set; } = true;
+
+    public int SelectionRefreshMinutes { get; set; } = 30;
+
     public bool ShowPlayed { get; set; } = true;
 
+    // Legacy XML compatibility only; Hero banners have no section heading.
     public string? Heading { get; set; }
     public string? PlayButtonText { get; set; }
 }

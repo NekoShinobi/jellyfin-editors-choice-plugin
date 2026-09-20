@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using EditorsChoicePlugin.Api;
+using EditorsChoicePlugin.Services;
 using EditorsChoicePlugin.Configuration;
 using Jellyfin.Data.Enums;
 using Jellyfin.Database.Implementations.Entities;
@@ -18,6 +19,7 @@ using Xunit;
 
 namespace EditorsChoicePlugin.Tests;
 
+[Collection("Plugin instance")]
 public class LibraryResultTests
 {
     [Theory]
@@ -61,7 +63,8 @@ public class LibraryResultTests
             });
         var controller = new EditorsChoiceActivityController(users.Object,
             Mock.Of<IUserDataManager>(), library.Object, Mock.Of<ITVSeriesManager>(),
-            NullLogger<EditorsChoiceActivityController>.Instance)
+            NullLogger<EditorsChoiceActivityController>.Instance,
+            new HeroSelectionCache(users.Object, library.Object, new RotatingSelectionStore(), NullLogger<HeroSelectionCache>.Instance))
         {
             ControllerContext = new ControllerContext
             {
@@ -76,6 +79,78 @@ public class LibraryResultTests
         var response = Assert.IsType<OkObjectResult>(controller.GetFavourites().Result);
         var body = Assert.IsType<Dictionary<string, object>>(response.Value);
         Assert.Empty(Assert.IsType<List<object>>(body["favourites"]));
+        Assert.Equal("preset", body["bannerHeightMode"]);
+        Assert.Equal("inherit", body["mobileBannerHeightMode"]);
+        Assert.Equal(false, body["enableBackgroundDimming"]);
+        Assert.Equal(true, body["enableBackgroundMotion"]);
+        Assert.Equal(true, body["enableThemeVideos"]);
         library.Verify(l => l.GetItemList(It.IsAny<InternalItemsQuery>()), Times.AtLeastOnce());
+    }
+
+    [Fact]
+    public void PresentationResponseValidatesValuesAndHonorsDisabledMotionAndVideo()
+    {
+        var user = new User("viewer", "authentication", "password-reset");
+        var config = new PluginConfiguration
+        {
+            Mode = "RANDOM", BannerHeightMode = "invalid", MobileBannerHeightMode = "invalid",
+            BannerCustomHeight = -1, BannerViewportHeight = 200,
+            MobileBannerCustomHeight = 9000, MobileBannerViewportHeight = -1,
+            TransitionEffect = "invalid", TransitionDurationMs = 9000,
+            EnableBackgroundDimming = true, BackgroundDimmingPercent = 200,
+            EnableBackgroundMotion = false, EnableThemeVideos = false,
+        };
+        var paths = new Mock<IApplicationPaths>();
+        paths.SetupGet(p => p.PluginsPath).Returns(Path.GetTempPath());
+        paths.SetupGet(p => p.PluginConfigurationsPath).Returns(Path.GetTempPath());
+        var serializer = new Mock<IXmlSerializer>();
+        serializer.Setup(s => s.DeserializeFromFile(typeof(PluginConfiguration), It.IsAny<string>())).Returns(config);
+        _ = new Plugin(paths.Object, serializer.Object, NullLogger<Plugin>.Instance,
+            Mock.Of<IServiceProvider>(), Mock.Of<IServerConfigurationManager>());
+        var users = new Mock<IUserManager>();
+        users.Setup(u => u.GetUserByName(user.Username)).Returns(user);
+        var library = new Mock<ILibraryManager>();
+        library.Setup(l => l.GetItemList(It.IsAny<InternalItemsQuery>())).Returns(Array.Empty<BaseItem>());
+        var controller = new EditorsChoiceActivityController(users.Object, Mock.Of<IUserDataManager>(),
+            library.Object, Mock.Of<ITVSeriesManager>(), NullLogger<EditorsChoiceActivityController>.Instance,
+            new HeroSelectionCache(users.Object, library.Object, new RotatingSelectionStore(), NullLogger<HeroSelectionCache>.Instance))
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, user.Username) }, "test"))
+                }
+            }
+        };
+        var response = Assert.IsType<OkObjectResult>(controller.GetFavourites().Result);
+        var body = Assert.IsType<Dictionary<string, object>>(response.Value);
+        Assert.Equal("preset", body["bannerHeightMode"]);
+        Assert.Equal("inherit", body["mobileBannerHeightMode"]);
+        Assert.Equal(240, body["bannerCustomHeight"]);
+        Assert.Equal(100, body["bannerViewportHeight"]);
+        Assert.Equal(2160, body["mobileBannerCustomHeight"]);
+        Assert.Equal(25, body["mobileBannerViewportHeight"]);
+        Assert.Equal("loop", body["transitionEffect"]);
+        Assert.Equal(3000, body["transitionDurationMs"]);
+        Assert.Equal(100, body["backgroundDimmingPercent"]);
+        Assert.Equal(true, body["enableBackgroundDimming"]);
+        Assert.Equal(false, body["enableBackgroundMotion"]);
+        Assert.Equal(false, body["enableThemeVideos"]);
+    }
+
+    [Fact]
+    public void OlderConfigurationKeepsExistingHeightAndNewFeatureDefaults()
+    {
+        var serializer = new System.Xml.Serialization.XmlSerializer(typeof(PluginConfiguration));
+        using var xml = new StringReader("<PluginConfiguration><BannerHeight>500</BannerHeight><UseHeroLayout>true</UseHeroLayout></PluginConfiguration>");
+        var config = Assert.IsType<PluginConfiguration>(serializer.Deserialize(xml));
+        Assert.Equal(500, config.BannerHeight);
+        Assert.True(config.UseHeroLayout);
+        Assert.Equal("preset", config.BannerHeightMode);
+        Assert.Equal("inherit", config.MobileBannerHeightMode);
+        Assert.False(config.EnableBackgroundDimming);
+        Assert.True(config.EnableBackgroundMotion);
+        Assert.True(config.EnableThemeVideos);
     }
 }

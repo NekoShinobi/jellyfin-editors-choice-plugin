@@ -963,6 +963,55 @@ const container = `
     .editorsChoiceThemeVideoToggle { display: none !important; }
   }
 
+  /* Additional dimming sits above artwork/video and below all text and controls. */
+  .editorsChoiceItemBanner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: rgba(0, 0, 0, var(--ec-dimming, 0));
+  }
+  .editorsChoiceItemBanner > .editorsChoiceContent,
+  .editorsChoiceHeroMode .editorsChoiceItemBanner > .editorsChoiceContent { z-index: 3; }
+  .editorsChoiceNoBackgroundMotion .editorsChoiceItemBanner { animation: none !important; }
+  .editorsChoiceNoBackgroundMotion .editorsChoiceItemBanner .editorsChoiceBackdrop {
+    transform: none !important;
+    transition-property: opacity !important;
+  }
+  .homeSectionsContainer.editorsChoiceAdded .editorsChoiceContainer.editorsChoiceCustomHeight {
+    transform: translateY(var(--ec-fullscreen-offset, 0px));
+    margin-bottom: calc(1.8em + var(--ec-fullscreen-offset, 0px));
+  }
+  .editorsChoiceHeroMode .homeSectionsContainer.editorsChoiceAdded .editorsChoiceContainer.editorsChoiceCustomHeight {
+    margin-bottom: var(--ec-fullscreen-offset, 0px);
+  }
+  .editorsChoiceHeroMode .editorsChoiceCustomHeight .editorsChoiceItemBanner .editorsChoiceContent {
+    padding-top: 30px;
+  }
+  .editorsChoiceCustomHeight .editorsChoiceSkeleton { padding-top: 30px; }
+  .editorsChoiceHeroMode .editorsChoiceCustomHeight .editorsChoiceScrollButtonsContainer { top: .5rem; }
+  .editorsChoiceTransitionOutgoing .editorsChoiceBackdrop { opacity: 1 !important; }
+  .editorsChoiceTransitionOutgoing :is(.editorsChoiceItemPoster, .editorsChoiceItemLogo, .editorsChoiceItemTitle, .editorsChoiceItemMetadata, .editorsChoiceItemOverview, .editorsChoiceItemActions),
+  .editorsChoiceInstant .is-active.editorsChoiceSlideReady :is(.editorsChoiceItemPoster, .editorsChoiceItemLogo, .editorsChoiceItemTitle, .editorsChoiceItemMetadata, .editorsChoiceItemOverview, .editorsChoiceItemActions) {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .editorsChoiceInstant .editorsChoiceBackdrop { transition-duration: 0ms !important; }
+  @media (prefers-reduced-motion: reduce) {
+    .editorsChoiceContainer .editorsChoiceItemBanner { animation: none !important; }
+    .editorsChoiceContainer .editorsChoiceBackdrop { transform: none !important; transition: none !important; }
+  }
+  .editorsChoiceContainer .editorsChoiceItemTitle { font-family: var(--ec-font-title, inherit); }
+  .editorsChoiceContainer .editorsChoiceItemMetadata { font-family: var(--ec-font-metadata, inherit); }
+  .editorsChoiceContainer .editorsChoiceItemOverview { font-family: var(--ec-font-description, inherit); }
+  .editorsChoiceContainer :is(.editorsChoiceItemButton, .editorsChoiceInfoButton) { font-family: var(--ec-font-button, inherit); }
+  .editorsChoiceIsLoading .splide, .editorsChoiceMessage .splide { position: relative; visibility: visible; }
+  .editorsChoiceIsLoading .editorsChoiceScrollButtonsContainer,
+  .editorsChoiceIsLoading .editorsChoiceMobilePagination,
+  .editorsChoiceMessage .editorsChoiceScrollButtonsContainer,
+  .editorsChoiceMessage .editorsChoiceMobilePagination { visibility: hidden; }
+  .editorsChoiceMessageText { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
 </style>
 `;
 
@@ -974,14 +1023,6 @@ const initializingContainers = new WeakSet();
 const initializedContainers = new WeakSet();
 
 /* ===== Utils ===== */
-function shuffle(input) {
-    const array = input.slice(); // don't mutate original
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-}
 
 function getLocalizedString(key) {
     const localization = {
@@ -1374,33 +1415,269 @@ async function prepareThemeVideo(slide, shouldPlay) {
     });
 }
 
-function ensureSplideLoaded() {
-    return new Promise((resolve, reject) => {
-        if (window.Splide) return resolve();
+function bannerNumber(value, fallback, min, max) {
+    const number = Number(value);
+    return value != null && Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
+}
 
-        const existing = document.querySelector('script[data-editorschoice-splide="1"]');
-        if (existing) {
-            existing.addEventListener("load", resolve, { once: true });
-            existing.addEventListener("error", reject, { once: true });
-            return;
+function bannerHeightSettings(data, mobile) {
+    const override = mobile && ["pixels", "viewport", "fullscreen"].includes(data.mobileBannerHeightMode);
+    return {
+        mode: override ? data.mobileBannerHeightMode : data.bannerHeightMode || "preset",
+        pixels: bannerNumber(override ? data.mobileBannerCustomHeight : data.bannerCustomHeight, override ? 360 : 600, 240, 2160),
+        percent: bannerNumber(override ? data.mobileBannerViewportHeight : data.bannerViewportHeight, override ? 60 : 75, 25, 100),
+    };
+}
+
+function bannerHeightPixels(data, mobile, viewportHeight, headerHeight) {
+    const settings = bannerHeightSettings(data, mobile);
+    if (settings.mode === "pixels") return settings.pixels;
+    if (settings.mode === "viewport") return Math.max(1, viewportHeight * settings.percent / 100);
+    if (settings.mode === "fullscreen") return Math.max(1, viewportHeight - (data.bannerSubtractHeader !== false ? headerHeight : 0));
+    return bannerNumber(data.bannerHeight, 360, 1, 2160) + 120;
+}
+
+// Fade layout supplies stacked, accessible slides; this component controls the
+// animation and tells Splide when it finishes so navigation cannot overlap it.
+function bannerTransition(effect) {
+    return (slider, components) => {
+        let previous = slider.index;
+        let animations = [];
+        let outgoing;
+        let incoming;
+        let generation = 0;
+        function cancel() {
+            generation++;
+            animations.forEach((animation) => animation.cancel());
+            animations = [];
+            outgoing?.classList.remove("editorsChoiceTransitionOutgoing");
+            outgoing?.style.removeProperty("z-index");
+            incoming?.style.removeProperty("z-index");
         }
-
-        const s = document.createElement("script");
-        s.type = "text/javascript";
-        s.src = "https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js";
-        s.setAttribute("data-editorschoice-splide", "1");
-        s.addEventListener("load", resolve, { once: true });
-        s.addEventListener("error", reject, { once: true });
-        document.head.appendChild(s);
-
-        if (!document.querySelector('link[data-editorschoice-splide="1"]')) {
-            const l = document.createElement("link");
-            l.rel = "stylesheet";
-            l.href = "https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css";
-            l.setAttribute("data-editorschoice-splide", "1");
-            document.head.appendChild(l);
+        function init() {
+            components.Slides.forEach((slide) => slide.style("transform", `translateX(-${100 * slide.index}%)`));
         }
+        return {
+            mount() { slider.on("mounted refresh", init); },
+            start(index, done) {
+                cancel();
+                incoming = components.Slides.getAt(index)?.slide;
+                outgoing = components.Slides.getAt(previous)?.slide;
+                previous = index;
+                const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : slider.options.speed;
+                if (!incoming || !outgoing || incoming === outgoing || !duration || effect === "instant" || !incoming.animate) {
+                    done();
+                    return;
+                }
+                const run = generation;
+                incoming.style.zIndex = "2";
+                outgoing.style.zIndex = "1";
+                outgoing.classList.add("editorsChoiceTransitionOutgoing");
+                const position = `translateX(-${100 * index}%)`;
+                const frames = effect === "wipe"
+                    ? [{ clipPath: "inset(0 100% 0 0)", opacity: 1 }, { clipPath: "inset(0 0% 0 0)", opacity: 1 }]
+                    : [{ opacity: 0, transform: `${position} scale(1.08)` }, { opacity: 1, transform: `${position} scale(1)` }];
+                const options = { duration, easing: slider.options.easing, fill: "both" };
+                animations = [
+                    incoming.animate(frames, options),
+                    outgoing.animate([{ opacity: 1 }, { opacity: effect === "wipe" ? 1 : 0 }], options),
+                ];
+                Promise.all(animations.map((animation) => animation.finished)).then(() => {
+                    if (run !== generation) return;
+                    cancel();
+                    done();
+                }).catch(() => { /* Cancellation is handled by Splide's move lifecycle. */ });
+            },
+            cancel,
+            destroy: cancel,
+        };
+    };
+}
+
+const bannerSliders = new Map();
+
+const bannerFonts = {
+    default: "inherit", system: "system-ui, sans-serif", noto: '"Noto Sans", sans-serif',
+    arial: "Arial, Helvetica, sans-serif", verdana: "Verdana, Geneva, sans-serif",
+    trebuchet: '"Trebuchet MS", sans-serif', georgia: "Georgia, serif",
+    serif: '"Times New Roman", Times, serif', mono: "ui-monospace, Consolas, monospace",
+};
+
+function applyBannerFonts(data, element) {
+    for (const tier of ["title", "metadata", "description", "button"]) {
+        const key = data[tier + "Font"];
+        element.style.setProperty("--ec-font-" + tier, Object.hasOwn(bannerFonts, key) ? bannerFonts[key] : "inherit");
+    }
+}
+
+function applyBannerGeometry(data, element) {
+    const mobile = window.matchMedia("(max-width: 767px)").matches;
+    const mode = bannerHeightSettings(data, mobile).mode;
+    const viewportHeight = window.visualViewport?.height || window.innerHeight;
+    const headerHeight = document.querySelector(".skinHeader")?.getBoundingClientRect().height || 0;
+    const root = element.querySelector(".splide");
+    const previousOffset = parseFloat(element.style.getPropertyValue("--ec-fullscreen-offset")) || 0;
+    element.classList.toggle("editorsChoiceCustomHeight", mode !== "preset");
+    const height = bannerHeightPixels(data, mobile, viewportHeight, headerHeight);
+    root.style.height = `${height}px`;
+    let offset = 0;
+    if (mode === "fullscreen") {
+        let scroll = window.scrollY;
+        for (let parent = element.parentElement; parent && parent !== document.body && parent !== document.documentElement; parent = parent.parentElement) scroll += parent.scrollTop;
+        const top = root.getBoundingClientRect().top - previousOffset + scroll;
+        offset = (data.bannerSubtractHeader !== false ? headerHeight : 0) - top;
+    }
+    element.style.setProperty("--ec-fullscreen-offset", `${offset}px`);
+    return height;
+}
+
+const pendingBanners = new Map();
+
+function createBannerShell(parent, data) {
+    const template = document.createElement("template");
+    template.innerHTML = container.trim();
+    const element = template.content.querySelector(".editorsChoiceContainer");
+    element.id = `editorsChoice-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    element.classList.add("editorsChoiceIsLoading");
+    element.setAttribute("aria-busy", "true");
+    element.setAttribute("aria-label", "Featured content");
+    parent.closest("#homeTab")?.classList.add("editorsChoiceHeroMode");
+    parent.classList.add(EDITORS_CHOICE_ADDED_CLASS);
+    parent.prepend(template.content);
+    applyBannerFonts(data, element);
+    const update = () => applyBannerGeometry(data, element);
+    update();
+    const frame = requestAnimationFrame(update);
+    window.addEventListener("resize", update);
+    window.visualViewport?.addEventListener("resize", update);
+    const header = document.querySelector(".skinHeader");
+    const observer = header && typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : null;
+    if (observer) observer.observe(header);
+    pendingBanners.set(element, () => {
+        cancelAnimationFrame(frame);
+        window.removeEventListener("resize", update);
+        window.visualViewport?.removeEventListener("resize", update);
+        observer?.disconnect();
+        pendingBanners.delete(element);
     });
+    return element;
+}
+
+function finishBannerLoading(element) {
+    element.classList.remove("editorsChoiceIsLoading");
+    element.setAttribute("aria-busy", "false");
+}
+
+function showBannerMessage(element, text, retry) {
+    finishBannerLoading(element);
+    element.classList.add("editorsChoiceMessage");
+    const message = document.createElement("div");
+    message.className = "editorsChoiceMessageText";
+    message.setAttribute("role", "status");
+    const label = document.createElement("p");
+    label.textContent = text;
+    message.append(label);
+    if (retry) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "emby-button raised";
+        button.textContent = "Retry";
+        button.addEventListener("click", retry, { once: true });
+        message.append(button);
+    }
+    element.querySelector(".splide").append(message);
+}
+
+async function waitForBannerClient() {
+    const deadline = Date.now() + 15000;
+    while (!window.ApiClient?.fetch || typeof window.$ !== "function") {
+        if (Date.now() >= deadline) throw new Error("Jellyfin client did not become ready.");
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
+}
+
+function bannerPresentation(data, element) {
+    return (slider) => {
+        const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+        const header = document.querySelector(".skinHeader");
+        let headerObserver;
+        let layoutFrame;
+        const customDuration = bannerNumber(data.transitionDurationMs, 0, 0, 3000);
+        function update() {
+            const height = applyBannerGeometry(data, element);
+            element.classList.toggle("editorsChoiceNoBackgroundMotion", data.enableBackgroundMotion === false || motion.matches);
+            element.classList.toggle("editorsChoiceInstant", data.transitionEffect === "instant" || motion.matches);
+            if (slider.options.height !== `${height}px`) slider.options = { height: `${height}px` };
+            const speed = data.transitionEffect === "instant" || motion.matches ? 0 : customDuration || 650;
+            if (slider.options.speed !== speed) slider.options = { speed };
+            if (motion.matches) {
+                slider.Components.Autoplay?.pause();
+                pauseThemeVideos(element);
+            }
+        }
+        return {
+            mount() {
+                slider.on("mounted", () => {
+                    update();
+                    // The home container's layout class is applied after mount.
+                    layoutFrame = window.requestAnimationFrame(update);
+                });
+                window.addEventListener("resize", update);
+                window.visualViewport?.addEventListener("resize", update);
+                motion.addEventListener("change", update);
+                if (header && typeof ResizeObserver !== "undefined") {
+                    headerObserver = new ResizeObserver(update);
+                    headerObserver.observe(header);
+                }
+            },
+            destroy() {
+                window.removeEventListener("resize", update);
+                window.visualViewport?.removeEventListener("resize", update);
+                motion.removeEventListener("change", update);
+                headerObserver?.disconnect();
+                window.cancelAnimationFrame(layoutFrame);
+                pauseThemeVideos(element);
+                bannerSliders.delete(element);
+            },
+        };
+    };
+}
+
+let splideLoadPromise;
+function ensureSplideLoaded() {
+    if (window.Splide) return Promise.resolve();
+    if (splideLoadPromise) return splideLoadPromise;
+
+    if (!document.querySelector('link[data-editorschoice-splide="1"]')) {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = "https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css";
+        link.dataset.editorschoiceSplide = "1";
+        link.addEventListener("error", () => link.remove(), { once: true });
+        document.head.appendChild(link);
+    }
+    splideLoadPromise = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js";
+        script.dataset.editorschoiceSplide = "1";
+        let timer;
+        const finish = (error) => {
+            clearTimeout(timer);
+            script.onload = script.onerror = null;
+            if (error) {
+                script.remove();
+                reject(error);
+            } else resolve();
+        };
+        script.onload = () => finish(window.Splide ? null : new Error("Carousel did not initialize."));
+        script.onerror = () => finish(new Error("Carousel could not be downloaded."));
+        timer = setTimeout(() => finish(new Error("Carousel download timed out.")), 15000);
+        document.head.appendChild(script);
+    }).catch(error => {
+        splideLoadPromise = null;
+        throw error;
+    });
+    return splideLoadPromise;
 }
 
 /* ===== Render ===== */
@@ -1410,7 +1687,7 @@ function renderHeroSlide(item, data) {
     const overview = buildOverview(item, "No Description Found");
     const actions = buildActions(item, data);
     const poster = buildPoster(item, data);
-    const themeVideo = buildThemeVideo(item);
+    const themeVideo = data.enableThemeVideos !== false ? buildThemeVideo(item) : "";
     const bannerClass = `editorsChoiceItemBanner splide__slide${themeVideo ? " editorsChoiceItemBanner--withThemeVideo" : ""}`;
     const contentClass = `editorsChoiceContent${poster ? " editorsChoiceContent--withPoster" : ""}`;
     const infoClass = "editorsChoiceInfo editorsChoiceInfo--withAction";
@@ -1424,19 +1701,6 @@ function renderHeroSlide(item, data) {
     return `<article class="${bannerClass}"><div class="editorsChoiceBackdrop ${extraClass}" data-backdrop-url="${escapeHtml(backdropUrl)}"></div>${themeVideo}<div class="${contentClass}">${poster}<div class="${infoClass}"><div class="editorsChoiceContentMain">${logoOrTitle}${metadata}${overview}</div>${actions}</div></div></article>`;
 }
 
-function renderNormalSlide(item, data) {
-    const metadata = buildMetadata(item);
-    const logoOrTitle = buildLogoOrTitle(item, data.reduceImageSizes);
-    const overview = buildOverview(item);
-    const bannerSize = buildBannerSizeParam(data.reduceImageSizes);
-    const actions = buildActions(item, data);
-    const poster = buildPoster(item, data);
-    const contentClass = `editorsChoiceContent${poster ? " editorsChoiceContent--withPoster" : ""}`;
-    const infoClass = "editorsChoiceInfo editorsChoiceInfo--withAction";
-
-    return `<article class="editorsChoiceItemBanner splide__slide" style="background-image:url(../Items/${escapeHtml(item.id)}/Images/Backdrop/0${bannerSize});"><div class="${contentClass}">${poster}<div class="${infoClass}"><div class="editorsChoiceContentMain">${logoOrTitle}${metadata}${overview}</div>${actions}</div></div></article>`;
-}
-
 /* ===== Main setup ===== */
 async function setup() {
     console.log("Attempting creation of editors choice slider.");
@@ -1445,6 +1709,7 @@ async function setup() {
     // Splide is loading, so waiting before setting this marker can render the
     // same slider multiple times.
     const containers = Array.from(document.querySelectorAll(HOME_CONTAINER_SELECTOR)).filter((element) => {
+        if (initializingContainers.has(element)) return false;
         if (element.querySelector(":scope > .editorsChoiceContainer")) {
             initializedContainers.add(element);
             element.classList.add(EDITORS_CHOICE_ADDED_CLASS);
@@ -1460,15 +1725,16 @@ async function setup() {
     });
     if (!containers.length) return;
 
-    try {
-        await ensureSplideLoaded();
-    } catch (e) {
-        for (const elem of containers) {
+    const bootstrap = typeof editorsChoiceBootstrap === "object" ? editorsChoiceBootstrap : { bannerHeight: 360, bannerHeightMode: "preset" };
+    const shells = new Map();
+    for (const elem of containers) {
+        if (bootstrap.hideOnTvLayout && document.documentElement.classList.contains("layout-tv")) {
+            initializedContainers.add(elem);
             initializingContainers.delete(elem);
             elem.classList.remove(EDITORS_CHOICE_LOADING_CLASS);
+            continue;
         }
-        console.warn("Editors Choice: Splide failed to load.", e);
-        return;
+        shells.set(elem, createBannerShell(elem, bootstrap));
     }
 
     for (const elem of containers) {
@@ -1479,41 +1745,47 @@ async function setup() {
         }
 
         console.log("Fetching favourites data from API...");
-        let containerElem;
+        const containerElem = shells.get(elem);
+        if (!containerElem) continue;
+        const retry = () => {
+            pendingBanners.get(containerElem)?.();
+            containerElem.remove();
+            initializedContainers.delete(elem);
+            initializingContainers.delete(elem);
+            elem.classList.remove(EDITORS_CHOICE_LOADING_CLASS);
+            setup();
+        };
 
-        ApiClient.fetch({ url: ApiClient.getUrl("/EditorsChoice/favourites"), type: "GET" })
+        Promise.all([ensureSplideLoaded(), waitForBannerClient()])
+            .then(() => ApiClient.fetch({ url: ApiClient.getUrl("/EditorsChoice/favourites"), type: "GET" }))
             .then((response) => response.json())
             .then((data) => {
                 if (!elem.isConnected || !elem.matches(HOME_CONTAINER_SELECTOR)) return;
 
-                const existingContainer = elem.querySelector(":scope > .editorsChoiceContainer");
-                if (existingContainer) {
-                    initializedContainers.add(elem);
-                    elem.classList.add(EDITORS_CHOICE_ADDED_CLASS);
-                    return;
-                }
-
                 if (data.hideOnTvLayout && document.documentElement.classList.contains("layout-tv")) {
-                    console.log("Editors Choice: hidden on TV layout by configuration.");
+                    pendingBanners.get(containerElem)?.();
+                    containerElem.remove();
                     initializedContainers.add(elem);
                     elem.classList.add(EDITORS_CHOICE_ADDED_CLASS);
                     return;
                 }
 
-                const favourites = shuffle(data.favourites || []);
-                const template = document.createElement("template");
-                template.innerHTML = container.trim();
-                const content = template.content.cloneNode(true);
-                containerElem = content.querySelector(".editorsChoiceContainer");
-                const containerId = `editorsChoice-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+                const favourites = data.favourites || [];
+                const containerId = containerElem.id;
+                applyBannerFonts(data, containerElem);
+                applyBannerGeometry(data, containerElem);
                 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
                 const autoplayEnabled = !!data.autoplay && !prefersReducedMotion && favourites.length > 1;
 
-                containerElem.id = containerId;
                 containerElem.classList.add(`editorsChoiceHeight-${data.bannerHeight}`);
-                containerElem.classList.toggle("editorsChoiceIsLoading", !!data.useHeroLayout);
-                elem.prepend(content);
+                containerElem.style.setProperty("--ec-dimming", data.enableBackgroundDimming
+                    ? bannerNumber(data.backgroundDimmingPercent, 30, 0, 100) / 100 : 0);
                 const $containerElem = $(containerElem);
+                if (!favourites.length) {
+                    showBannerMessage(containerElem, "No featured items available.");
+                    initializedContainers.add(elem);
+                    return;
+                }
 
                 // TV focus workaround
                 let focusResolved = false;
@@ -1526,19 +1798,13 @@ async function setup() {
                 });
 
                 const homeTab = elem.closest("#homeTab");
-                if (homeTab) homeTab.classList.toggle("editorsChoiceHeroMode", !!data.useHeroLayout);
-
-                if ("heading" in data && data.heading && !data.useHeroLayout) {
-                    containerElem.insertAdjacentHTML("afterbegin", `<h2 class="sectionTitle sectionTitle-cards">${escapeHtml(data.heading)}</h2>`);
-                }
+                if (homeTab) homeTab.classList.add("editorsChoiceHeroMode");
 
                 const list = containerElem.querySelector(".editorsChoiceItemsContainer");
                 const $list = $(list);
 
                 for (const item of favourites) {
-                    const html = data.useHeroLayout
-                        ? renderHeroSlide(item, data)
-                        : renderNormalSlide(item, data);
+                    const html = renderHeroSlide(item, data);
 
                     list.insertAdjacentHTML("beforeend", html);
                 }
@@ -1558,8 +1824,10 @@ async function setup() {
                     arrow.style.display = data.showNavigationArrows ? "" : "none";
                 });
 
+                const effect = ["loop", "fade", "zoom", "wipe", "instant"].includes(data.transitionEffect) ? data.transitionEffect : "loop";
+                const customTransition = ["zoom", "wipe", "instant"].includes(effect);
                 const slider = new Splide(`#${containerId} .splide`, {
-                    type: data.transitionEffect ?? "loop",
+                    type: effect === "loop" ? "loop" : "fade",
                     autoplay: autoplayEnabled,
                     arrows: !!data.showNavigationArrows,
                     rewind: true,
@@ -1568,9 +1836,10 @@ async function setup() {
                     pauseOnFocus: true,
                     pagination: true,
                     keyboard: true,
-                    speed: data.useHeroLayout ? 650 : 400,
+                    waitForTransition: true,
+                    speed: effect === "instant" || prefersReducedMotion ? 0 : bannerNumber(data.transitionDurationMs, 0, 0, 3000) || 650,
                     easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-                    height: `${data.bannerHeight + (data.useHeroLayout ? 120 : 0)}px`,
+                    height: `${bannerHeightPixels(data, window.innerWidth < 768, window.visualViewport?.height || window.innerHeight, document.querySelector(".skinHeader")?.getBoundingClientRect().height || 0)}px`,
                 });
 
                 const updateMobilePagination = () => {
@@ -1582,7 +1851,6 @@ async function setup() {
                     .filter((slide) => !slide.classList.contains("splide__slide--clone"));
 
                 const prepareSlideAt = (index, fetchPriority = "auto") => {
-                    if (!data.useHeroLayout) return Promise.resolve();
                     const slides = getOriginalSlides();
                     if (!slides.length) return Promise.resolve();
                     const normalizedIndex = ((index % slides.length) + slides.length) % slides.length;
@@ -1591,7 +1859,7 @@ async function setup() {
                 };
 
                 const activateThemeVideoAt = (index) => {
-                    if (!data.useHeroLayout) return Promise.resolve();
+                    if (data.enableThemeVideos === false) return Promise.resolve();
                     if ($containerElem.hasClass("editorsChoiceThemeVideoHidden")) {
                         pauseThemeVideos($containerElem[0]);
                         return Promise.resolve();
@@ -1625,21 +1893,19 @@ async function setup() {
                     updateMobilePagination();
                     $containerElem.toggleClass("editorsChoiceSingleSlide", slider.length <= 1);
 
-                    if (data.useHeroLayout) {
+                    {
                         prepareSlideAt(slider.index, "high")
                             .catch((error) => {
                                 console.warn("Editors Choice: initial hero media preparation failed.", error);
                             })
                             .then(() => {
-                                $containerElem.removeClass("editorsChoiceIsLoading");
+                                finishBannerLoading(containerElem);
                                 return Promise.resolve().then(() => activateThemeVideoAt(slider.index));
                             })
                             .catch((error) => {
                                 console.debug("Editors Choice: theme video activation unavailable.", error);
                             });
                         preloadFollowingSlide();
-                    } else {
-                        $containerElem.removeClass("editorsChoiceIsLoading");
                     }
                 });
 
@@ -1699,13 +1965,16 @@ async function setup() {
                     }
                 });
 
-                slider.mount();
+                pendingBanners.get(containerElem)?.();
+                slider.mount({ Presentation: bannerPresentation(data, containerElem) }, customTransition ? bannerTransition(effect) : undefined);
+                bannerSliders.set(containerElem, slider);
 
                 initializedContainers.add(elem);
                 elem.classList.add(EDITORS_CHOICE_ADDED_CLASS);
             })
             .catch((e) => {
-                containerElem?.remove();
+                if (!containerElem.isConnected) return;
+                showBannerMessage(containerElem, "Featured content could not be loaded.", retry);
                 initializedContainers.delete(elem);
                 elem.classList.remove(EDITORS_CHOICE_ADDED_CLASS);
                 console.warn("Editors Choice: failed to fetch/render.", e);
@@ -1747,6 +2016,12 @@ function initializeEditorsChoice() {
     }
 
     const observer = new MutationObserver((mutations) => {
+        for (const [element, cleanup] of pendingBanners) {
+            if (!element.isConnected) cleanup();
+        }
+        for (const [element, slider] of bannerSliders) {
+            if (!element.isConnected) slider.destroy(true);
+        }
         for (const mutation of mutations) {
             if (mutation.type === "attributes") {
                 const element = mutation.target;
@@ -1772,8 +2047,8 @@ function initializeEditorsChoice() {
         subtree: true,
     });
 
-    // The script can be loaded after the home tab has already mounted.
-    scheduleSetup();
+    // Reserve space immediately when the home page is already present.
+    setup();
 
     // Remind user that their favourites will be public when they add a new favourite.
     document.body.addEventListener("click", (event) => {

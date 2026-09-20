@@ -138,6 +138,41 @@
                 border-color: #292929c2;
             }
 
+          .editorsChoiceSettingsPreview {
+            position: relative;
+            height: 120px;
+            max-width: 620px;
+            margin-top: 1rem;
+            overflow: hidden;
+            isolation: isolate;
+            border: 1px solid rgba(255,255,255,.25);
+            border-radius: 6px;
+            background: #283c49;
+            color: #fff;
+          }
+          .editorsChoicePreviewScene {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(155deg, #a7c6c7 0 35%, #58767b 35% 60%, #283c49 60%);
+          }
+          .editorsChoicePreviewScene::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: #000;
+            opacity: var(--preview-dimming, 0);
+          }
+          .editorsChoicePreviewCopy {
+            position: absolute;
+            left: 1.2rem;
+            bottom: 1.2rem;
+            display: grid;
+            gap: .3rem;
+            text-shadow: 0 1px 5px #000;
+          }
+          .editorsChoicePreviewCopy strong { font-size: 1.2rem; }
+          .editorsChoicePreviewCopy span { font-size: .85rem; }
+          .editorsChoicePreviewButton { border: 1px solid currentColor; padding: .2rem .5rem; width: fit-content; }
         </style>
 
         <div data-role="content">
@@ -146,7 +181,8 @@
                     <h1>EditorsChoice settings</h1>
 
                     <hr />
-                    <h2>Mode</h2>
+                    <h2>Content</h2>
+                    <h3>Selection</h3>
                     <div class="inputContainer">
                         <label class="radio-label-block mdl-radio show-focus">
                             <input type="radio" is="emby-radio" id="FavouritesMode" name="mode" value="FavouritesMode" class="mdl-radio__button" />
@@ -244,32 +280,7 @@
                         <p>One collection will be shown at a time across the slider. If multiple are checked below, one of them will be randomly chosen each time it loads.</p>
                     </div>
 
-                    <hr />
-                    <h2>Autoplay</h2>
-
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label class="emby-checkbox-label">
-                            <input is="emby-checkbox" type="checkbox" id="EnableAutoplay" name="EnableAutoplay" />
-                            <span class="checkboxLabel">Enable autoplay</span>
-                        </label>
-                    </div>
-
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label class="emby-checkbox-label">
-                            <input is="emby-checkbox" type="checkbox" id="ShowAutoplayButton" name="ShowAutoplayButton" />
-                            <span class="checkboxLabel">Show autoplay button</span>
-                        </label>
-                        <div class="fieldDescription">Show the play/pause control when autoplay is enabled.</div>
-                    </div>
-
-                    <div id="AutoplayInterval-container" class="inputContainer" style="display:none;">
-                        <label class="inputLabel inputLabelUnfocused" for="AutoplayInterval">Autoplay interval</label>
-                        <input is="emby-input" type="number" id="AutoplayInterval" name="AutoplayInterval" min="1" step="1" />
-                        <div class="fieldDescription">How often, in seconds, the slider moves to the next item. Default is 10 seconds.</div>
-                    </div>
-
-                    <hr />
-                    <h2>Filtering</h2>
+                    <h3>Filtering</h3>
 
                     <div class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="RandomMediaCount">Maximum items shown</label>
@@ -305,7 +316,7 @@
                     </div>
 
                     <hr />
-                    <h2>Display</h2>
+                    <h3>Display</h3>
 
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label class="emby-checkbox-label">
@@ -314,11 +325,6 @@
                         </label>
                     </div>
 
-                    <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="Heading">Banner heading</label>
-                        <input is="emby-input" type="text" id="Heading" name="Heading" />
-                        <div class="fieldDescription">Add a heading above the banner. Leave empty for no heading.</div>
-                    </div>
 
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label class="emby-checkbox-label">
@@ -350,14 +356,23 @@
 
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label class="emby-checkbox-label">
-                            <input is="emby-checkbox" type="checkbox" id="UseHeroLayout" name="UseHeroLayout" />
-                            <span class="checkboxLabel">Use Hero Display Style</span>
+                            <input id="EnableSelectionCache" type="checkbox" is="emby-checkbox" />
+                            <span>Cache featured selections on the server</span>
                         </label>
-                        <div class="fieldDescription">Changes the banner layout to a hero-style display. Recommended banner height: Large or higher.</div>
+                        <div class="fieldDescription">Prepare a separate selection for each user in advance. Enabled by default; playback progress stays current.</div>
+                    </div>
+                    <div id="SelectionRefreshMinutes-container" class="inputContainer">
+                        <label class="inputLabel" for="SelectionRefreshMinutes">Refresh selection every (minutes)</label>
+                        <input id="SelectionRefreshMinutes" type="number" is="emby-input" min="1" max="1440" step="1" required />
+                        <div class="fieldDescription">Default: 30 minutes. New selections appear on subsequent banner loads. This is separate from the slideshow interval.</div>
                     </div>
 
+                    <hr />
+                    <h2>Appearance</h2>
+                    <p class="fieldDescription">The home page always uses the Hero banner. Its loading placeholder reserves the configured height before content arrives.</p>
+
                     <div id="HeroBackdropPosition-container" class="selectContainer">
-                        <label class="selectLabel" for="HeroBackdropPositionSelect">Image Position (Hero Style):</label>
+                        <label class="selectLabel" for="HeroBackdropPositionSelect">Image position</label>
                         <select is="emby-select" id="HeroBackdropPositionSelect" name="HeroBackdropPositionSelect" class="emby-select-withcolor emby-select">
                             <option value="center">Center (Default)</option>
                             <option value="top">Top</option>
@@ -365,12 +380,15 @@
                         </select>
                     </div>
 
-                    <div id="effect-container" class="selectContainer">
-                        <label class="selectLabel" for="TransitionEffectSelect">Transition Effect:</label>
-                        <select is="emby-select" id="TransitionEffectSelect" name="TransitionEffectSelect" class="emby-select-withcolor emby-select">
-                            <option value="loop">Slide (Default)</option>
-                            <option value="fade">Fade</option>
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="BannerHeightMode">Banner height</label>
+                        <select is="emby-select" id="BannerHeightMode" class="emby-select-withcolor emby-select">
+                            <option value="preset">Preset (existing sizing)</option>
+                            <option value="pixels">Custom pixels</option>
+                            <option value="viewport">Screen percentage</option>
+                            <option value="fullscreen">Full screen height</option>
                         </select>
+                        <div class="fieldDescription">Custom heights are exact. Presets retain the existing Hero sizing, including 120px behind the header.</div>
                     </div>
 
                     <div id="BannerHeight-container" class="selectContainer">
@@ -381,6 +399,135 @@
                             <option value="500">Large</option>
                             <option value="600">Huge</option>
                         </select>
+                    </div>
+
+                    <div id="BannerCustomHeight-container" class="inputContainer">
+                        <label class="inputLabel" for="BannerCustomHeight">Height in pixels</label>
+                        <input is="emby-input" type="number" id="BannerCustomHeight" min="240" max="2160" step="1" required />
+                    </div>
+                    <div id="BannerViewportHeight-container" class="inputContainer">
+                        <label class="inputLabel" for="BannerViewportHeight">Screen height percentage</label>
+                        <input is="emby-input" type="number" id="BannerViewportHeight" min="25" max="100" step="1" required />
+                        <div class="fieldDescription">Adapts to the available browser height, including mobile browser controls.</div>
+                    </div>
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="MobileBannerHeightMode">Mobile banner height (below 768px wide)</label>
+                        <select is="emby-select" id="MobileBannerHeightMode" class="emby-select-withcolor emby-select">
+                            <option value="inherit">Use desktop setting</option>
+                            <option value="pixels">Custom pixels</option>
+                            <option value="viewport">Screen percentage</option>
+                            <option value="fullscreen">Full screen height</option>
+                        </select>
+                    </div>
+                    <div id="MobileBannerCustomHeight-container" class="inputContainer">
+                        <label class="inputLabel" for="MobileBannerCustomHeight">Mobile height in pixels</label>
+                        <input is="emby-input" type="number" id="MobileBannerCustomHeight" min="240" max="2160" step="1" required />
+                    </div>
+                    <div id="MobileBannerViewportHeight-container" class="inputContainer">
+                        <label class="inputLabel" for="MobileBannerViewportHeight">Mobile screen height percentage</label>
+                        <input is="emby-input" type="number" id="MobileBannerViewportHeight" min="25" max="100" step="1" required />
+                    </div>
+                    <div id="BannerSubtractHeader-container" class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="BannerSubtractHeader" />
+                            <span class="checkboxLabel">Fit full screen banner beneath the Jellyfin header</span>
+                        </label>
+                        <div class="fieldDescription">Subtract the visible header height. Turn off to make the banner itself the full viewport height.</div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="EnableBackgroundDimming" />
+                            <span class="checkboxLabel">Dim background artwork and video</span>
+                        </label>
+                        <div class="fieldDescription">Off by default. Adds darkness behind the text without dimming titles or controls.</div>
+                    </div>
+                    <div id="BackgroundDimmingPercent-container" class="inputContainer">
+                        <label class="inputLabel" for="BackgroundDimmingPercent">Additional dimming (%)</label>
+                        <input is="emby-input" type="number" id="BackgroundDimmingPercent" min="0" max="100" step="1" required />
+                    </div>
+
+                    <h3>Fonts</h3>
+                    <p class="fieldDescription">Choose a font for each text tier. Uses local fonts with device-appropriate fallbacks; no remote font downloads. Title fonts apply to text titles, not image logos.</p>
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="TitleFont">Title font</label>
+                        <select is="emby-select" id="TitleFont" class="emby-select-withcolor emby-select"></select>
+                    </div>
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="MetadataFont">Metadata (year, rating, runtime) font</label>
+                        <select is="emby-select" id="MetadataFont" class="emby-select-withcolor emby-select"></select>
+                    </div>
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="DescriptionFont">Description font</label>
+                        <select is="emby-select" id="DescriptionFont" class="emby-select-withcolor emby-select"></select>
+                    </div>
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="ButtonFont">Buttons font</label>
+                        <select is="emby-select" id="ButtonFont" class="emby-select-withcolor emby-select"></select>
+                    </div>
+                    <div class="inputContainer">
+                        <h3>Banner preview</h3>
+                        <label class="selectLabel" for="BannerPreviewDevice">Preview size</label>
+                        <select is="emby-select" id="BannerPreviewDevice" class="emby-select-withcolor emby-select">
+                            <option value="desktop">Desktop</option>
+                            <option value="mobile">Mobile</option>
+                        </select>
+                        <div id="BannerPreview" class="editorsChoiceSettingsPreview" aria-hidden="true">
+                            <div class="editorsChoicePreviewScene"></div>
+                            <div class="editorsChoicePreviewCopy"><strong>Featured tonight</strong><small>2026 · Series</small><span>Your next great watch</span><span class="editorsChoicePreviewButton">Watch now</span></div>
+                        </div>
+                        <p id="BannerPreviewSummary" class="fieldDescription" aria-live="polite"></p>
+                        <button is="emby-button" type="button" id="PreviewTransition" class="raised button-submit emby-button"><span>Preview transition</span></button>
+                        <div class="fieldDescription">Illustrative preview; artwork cropping and header size depend on your device. Changes apply to the home page after saving and refreshing.</div>
+                    </div>
+
+                    <hr />
+                    <h2>Motion</h2>
+                    <div id="effect-container" class="selectContainer">
+                        <label class="selectLabel" for="TransitionEffectSelect">Transition effect</label>
+                        <select is="emby-select" id="TransitionEffectSelect" class="emby-select-withcolor emby-select">
+                            <option value="loop">Slide (default)</option>
+                            <option value="fade">Fade</option>
+                            <option value="zoom">Fade + Zoom</option>
+                            <option value="wipe">Wipe</option>
+                            <option value="instant">Instant</option>
+                        </select>
+                    </div>
+                    <div id="TransitionDurationMs-container" class="inputContainer">
+                        <label class="inputLabel" for="TransitionDurationMs">Transition duration (milliseconds)</label>
+                        <input is="emby-input" type="number" id="TransitionDurationMs" min="0" max="3000" step="1" required />
+                        <div class="fieldDescription">0 uses the default of 650ms. This is separate from the autoplay interval.</div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="EnableBackgroundMotion" />
+                            <span class="checkboxLabel">Animate background artwork</span>
+                        </label>
+                        <div class="fieldDescription">On by default. Controls artwork zoom, independently of slide transitions.</div>
+                    </div>
+                    <div id="EnableThemeVideos-container" class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="EnableThemeVideos" />
+                            <span class="checkboxLabel">Play theme videos</span>
+                        </label>
+                        <div class="fieldDescription">On by default. Play available theme videos, muted, in Hero style on desktop. When off, videos are not loaded.</div>
+                    </div>
+                    <p class="fieldDescription">The device's reduced-motion preference disables animated transitions, background motion, video playback, and automatic slide advancement.</p>
+                    <div class="checkboxContainer">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="EnableAutoplay" name="EnableAutoplay" />
+                            <span class="checkboxLabel">Enable autoplay</span>
+                        </label>
+                    </div>
+                    <div id="ShowAutoplayButton-container" class="checkboxContainer">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="ShowAutoplayButton" name="ShowAutoplayButton" />
+                            <span class="checkboxLabel">Show autoplay button</span>
+                        </label>
+                    </div>
+                    <div id="AutoplayInterval-container" class="inputContainer">
+                        <label class="inputLabel" for="AutoplayInterval">Autoplay interval (seconds)</label>
+                        <input is="emby-input" type="number" id="AutoplayInterval" name="AutoplayInterval" min="1" step="1" />
+                        <div class="fieldDescription">Time each item stays visible before advancing. Default: 10 seconds.</div>
                     </div>
 
                     <hr />

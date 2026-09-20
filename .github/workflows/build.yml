@@ -83,7 +83,7 @@ jobs:
               test -f "$package_dir/$artifact"
             done
             jq -e --arg version "$version" --arg abi "$jellyfin_version.0" \
-              '.version == $version and .targetAbi == $abi' "$package_dir/meta.json"
+              '.version == $version and .targetAbi == $abi and .name == "EditorsChoice"' "$package_dir/meta.json"
             (cd "$package_dir" && zip -r "$GITHUB_WORKSPACE/dist/$archive" .)
             checksum="$(md5sum "dist/$archive" | cut -d ' ' -f 1 | tr '[:lower:]' '[:upper:]')"
             printf '%s  %s\n' "$checksum" "$archive" > "dist/$archive.md5"

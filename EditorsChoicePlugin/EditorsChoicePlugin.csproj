@@ -25,6 +25,9 @@
   </ItemGroup>
 
   <PropertyGroup>
+    <!-- Jellyfin groups installed versions by this name during startup cleanup. Keep it
+         identical to Plugin.Name; PluginDisplayName is only the catalog/brand name. -->
+    <PluginIdentityName>EditorsChoice</PluginIdentityName>
     <PluginDisplayName>Editor's Choice</PluginDisplayName>
     <PluginGuid>70bb2ec1-f19e-46b5-b49a-942e6b96ebae</PluginGuid>
     <PluginTargetAbi>$(JellyfinVersion).0</PluginTargetAbi>
@@ -50,7 +53,7 @@
   "description": "$(PluginDescription)",
   "guid": "$(PluginGuid)",
   "imageUrl": "https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/logo.png",
-  "name": "$(PluginDisplayName)",
+  "name": "$(PluginIdentityName)",
   "overview": "$(PluginOverview)",
   "owner": "$(PluginOwner)",
   "targetAbi": "$(PluginTargetAbi)",

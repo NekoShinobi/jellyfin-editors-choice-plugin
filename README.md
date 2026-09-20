@@ -1,6 +1,7 @@
 ## Details about Fork
 
-Mostly addressing the hero banner to make it more pretty.
+This fork focuses on the Hero banner experience. See [CHANGES_FORK.md](CHANGES_FORK.md)
+for the full list of fork changes and implementation status.
 
 <img width="1783" height="696" alt="image" src="https://github.com/user-attachments/assets/30d2c493-9be0-4a9d-b500-8388d7653432" />
 
@@ -14,19 +15,57 @@ Banner descriptions use the item's Jellyfin overview and support safe Markdown f
 
 Each banner can display its community/content rating, year, and either movie runtime or series episode count. The Play button uses the active user's Jellyfin progress: resumable movies continue from their saved position, and started series show and play the current or next episode.
 
-**Default mode**
-
-![Screenshot of Jellyfin with Editor's Choice banner slider](https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/blob/main/example.png?raw=true)
-
-**Hero mode**
+**Hero banner**
 
 ![Screenshot of Jellyfin with Editor's Choice in hero mode](https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/blob/main/example-hero.png?raw=true)
+
+
+## Banner settings
+
+Hero is the only layout; the old layout switch and Banner Heading setting have
+been removed. Settings are grouped into Content, Appearance, Motion, and Fonts. Appearance supports the
+existing height presets, an exact pixel height (240–2160px), a percentage of the
+browser height (25–100%), or a full screen height banner. Full screen mode can fit
+beneath the Jellyfin header. Devices below 768px wide can use their own height or
+inherit the desktop setting.
+
+Presets retain Hero's extra 120px. Existing installations using the old layout
+now use Hero sizing. Custom heights use the specified value. The settings
+preview illustrates height, dimming, and transitions before saving.
+
+Slide, Fade, Fade + Zoom, Wipe, and Instant transitions are available. Transition
+duration is independent of the autoplay interval; 0 retains the original layout
+default (650ms).
+
+Additional background dimming is off by default and affects only artwork and
+video. Background motion and theme videos are on by default. Theme videos play
+muted on desktop; disabling them prevents loading. The device's
+reduced-motion preference suppresses animated transitions, backdrop motion,
+theme video playback, and automatic slide advancement.
+
+Separate font dropdowns control titles, metadata, descriptions, and buttons.
+Choices use fonts installed on the device with standard fallbacks; no external
+font downloads are required. Image logos retain their original lettering.
+
+An early skeleton reserves the configured banner height while content loads.
+Empty and failed loads retain the space, with a Retry button for failures.
+The placeholder appears as soon as Jellyfin mounts its home content and the
+plugin script runs; injection timing still depends on the installed loader.
+
+Save settings and refresh the home page to apply them.
+
+Server selection caching is on by default. The server prepares a separate featured
+selection for each user and refreshes it every 30 minutes. Under Content, you can
+disable caching or choose a refresh interval from 1 to 1440 minutes. Access is
+rechecked and playback progress remains current on each request. Refreshed
+selections appear when the banner next loads; this interval is separate from
+automatic slide advancement.
 
 ## Building
 
 Install the .NET 10 SDK, then run `dotnet build EditorsChoicePlugin.sln --configuration Release` to build for Jellyfin 12. A ready-to-zip package is written to `EditorsChoicePlugin/bin/Release/net10.0/Editor's Choice_<version>/`. It contains the plugin metadata and every required DLL, including the Markdown renderer and sanitizer.
 
-Run the regression tests with `dotnet test tests/EditorsChoicePlugin.Tests/EditorsChoicePlugin.Tests.csproj --configuration Release`. They cover array-backed library results in random, favourites, and recent-release modes.
+Run the regression tests with `dotnet test tests/EditorsChoicePlugin.Tests/EditorsChoicePlugin.Tests.csproj --configuration Release`. They cover array-backed library results, legacy configuration defaults, and presentation setting validation. See [browser checks](tests/browser/README.md) for the interactive settings and carousel tests.
 
 To build for Jellyfin 10.11 instead, run `dotnet build EditorsChoicePlugin.sln --configuration Release -p:JellyfinVersion=10.11.0`. That package is written under `net9.0`. Add the same `-p:JellyfinVersion=10.11.0` option to the test command to test that target (requires the .NET 9 runtime).
 
