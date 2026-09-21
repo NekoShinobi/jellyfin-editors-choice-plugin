@@ -338,6 +338,12 @@ const container = `
     flex-wrap: wrap;
   }
 
+  .editorsChoiceCustomButton {
+    background-color: var(--ec-button-background) !important;
+    color: var(--ec-button-text) !important;
+    opacity: var(--ec-button-opacity, 1);
+  }
+
   @keyframes banner {
     0% { background-position-y: 52%; }
     100% { background-position-y: 48%; }
@@ -1034,6 +1040,47 @@ const container = `
   .editorsChoiceContainer .editorsChoiceItemMetadata { font-family: var(--ec-font-metadata, inherit); }
   .editorsChoiceContainer .editorsChoiceItemOverview { font-family: var(--ec-font-description, inherit); }
   .editorsChoiceContainer :is(.editorsChoiceItemButton, .editorsChoiceInfoButton, .editorsChoiceOpeningAction) { font-family: var(--ec-font-button, inherit); }
+  .editorsChoiceOpeningSlide--center > .editorsChoiceContent { justify-content: center; }
+  .editorsChoiceOpeningSlide--center .editorsChoiceInfo {
+    align-items: center;
+    text-align: center;
+  }
+  .editorsChoiceOpeningSlide--center .editorsChoiceContentMain { align-items: center; }
+  .editorsChoiceOpeningSlide--center .editorsChoiceItemTitle,
+  .editorsChoiceOpeningSlide--center .editorsChoiceItemMetadata { justify-content: center; }
+  .editorsChoiceOpeningSlide--center .editorsChoiceItemTitle { margin-right: 0; }
+  .editorsChoiceOpeningSlide--center .editorsChoiceItemActions {
+    right: auto;
+    left: 50%;
+    justify-content: center;
+    transform: translateX(-50%);
+  }
+  .editorsChoiceOpeningSlide--right > .editorsChoiceContent { justify-content: end; }
+  .editorsChoiceOpeningSlide--right .editorsChoiceInfo {
+    align-items: flex-end;
+    text-align: right;
+  }
+  .editorsChoiceOpeningSlide--right .editorsChoiceContentMain { align-items: flex-end; }
+  .editorsChoiceOpeningSlide--right .editorsChoiceItemTitle,
+  .editorsChoiceOpeningSlide--right .editorsChoiceItemMetadata { justify-content: flex-end; }
+  .editorsChoiceOpeningSlide--right .editorsChoiceItemTitle { margin-right: 0; }
+  .editorsChoiceOpeningSlide--right .editorsChoiceItemActions {
+    right: 0;
+    left: auto;
+    justify-content: flex-end;
+    transform: none;
+  }
+  .editorsChoiceOpeningSlide--left .editorsChoiceItemActions {
+    right: auto;
+    left: 0;
+    transform: none;
+  }
+  .editorsChoiceHeroMode .editorsChoiceOpeningSlide--right .editorsChoiceBackdrop::after {
+    transform: scaleX(-1);
+  }
+  .editorsChoiceHeroMode .editorsChoiceOpeningSlide--center .editorsChoiceBackdrop::after {
+    background: linear-gradient(90deg, rgba(0,0,0,.22), rgba(0,0,0,.78) 50%, rgba(0,0,0,.22));
+  }
   .editorsChoiceIsLoading .splide, .editorsChoiceMessage .splide { position: relative; visibility: visible; }
   .editorsChoiceIsLoading .editorsChoiceScrollButtonsContainer,
   .editorsChoiceIsLoading .editorsChoiceMobilePagination,
@@ -1144,6 +1191,19 @@ function escapeHtml(value) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
+}
+
+function buildCustomButtonStyle(backgroundColor, textColor, opacity = 100) {
+    if (!/^#[0-9a-f]{6}$/i.test(backgroundColor || "") || !/^#[0-9a-f]{6}$/i.test(textColor || "")) {
+        return { className: "", attribute: "" };
+    }
+
+    const normalizedOpacity = Math.min(100, Math.max(0, Number(opacity)));
+    const alpha = Number.isFinite(normalizedOpacity) ? normalizedOpacity / 100 : 1;
+    return {
+        className: " editorsChoiceCustomButton",
+        attribute: ` style="--ec-button-background:${backgroundColor};--ec-button-text:${textColor};--ec-button-opacity:${alpha}"`,
+    };
 }
 
 function formatRuntime(totalMinutes) {
@@ -1270,8 +1330,11 @@ function buildPlayButton(item, data) {
     const progressBar = progress > 0
         ? `<span class="editorsChoicePlaybackProgress" role="progressbar" aria-label="Playback progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><span class="editorsChoicePlaybackProgressFill" style="width:${progress}%"></span></span>`
         : "";
+    const customStyle = data.useCustomPlayButtonColors
+        ? buildCustomButtonStyle(data.playButtonBackgroundColor, data.playButtonTextColor)
+        : { className: "", attribute: "" };
 
-    return `<div class="editorsChoicePlayAction"><button type="button" is="emby-button" class="editorsChoiceItemButton itemAction raised button-submit emby-button" data-action="${nativeAction}" data-id="${escapeHtml(playItemId)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(playItemType)}" data-mediatype="Video" data-isfolder="${item.play_is_folder ? "true" : "false"}" data-positionticks="${positionTicks}" aria-label="${escapeHtml(buttonText)}: ${escapeHtml(item.name)}"><span class="material-icons editorsChoicePlayIcon play_arrow" aria-hidden="true"></span><span>${escapeHtml(buttonText)}</span></button>${progressBar}</div>`;
+    return `<div class="editorsChoicePlayAction"><button type="button" is="emby-button" class="editorsChoiceItemButton itemAction raised button-submit emby-button${customStyle.className}"${customStyle.attribute} data-action="${nativeAction}" data-id="${escapeHtml(playItemId)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(playItemType)}" data-mediatype="Video" data-isfolder="${item.play_is_folder ? "true" : "false"}" data-positionticks="${positionTicks}" aria-label="${escapeHtml(buttonText)}: ${escapeHtml(item.name)}"><span class="material-icons editorsChoicePlayIcon play_arrow" aria-hidden="true"></span><span>${escapeHtml(buttonText)}</span></button>${progressBar}</div>`;
 }
 
 function buildInfoButton(item) {
@@ -1759,7 +1822,8 @@ function renderOpeningActions(actions) {
         const external = /^https?:\/\//i.test(action.url);
         const externalAttributes = external ? ' target="_blank" rel="noopener noreferrer"' : "";
         const icon = action.primary ? "arrow_forward" : "help_outline";
-        return `<a is="emby-linkbutton" class="editorsChoiceOpeningAction raised emby-button${primaryClass}" href="${escapeHtml(action.url)}"${externalAttributes}><span class="material-icons" aria-hidden="true">${icon}</span><span>${escapeHtml(action.label)}</span></a>`;
+        const customStyle = buildCustomButtonStyle(action.backgroundColor, action.textColor, action.opacity);
+        return `<a is="emby-linkbutton" class="editorsChoiceOpeningAction raised emby-button${primaryClass}${customStyle.className}"${customStyle.attribute} href="${escapeHtml(action.url)}"${externalAttributes}><span class="material-icons" aria-hidden="true">${icon}</span><span>${escapeHtml(action.label)}</span></a>`;
     }).join("");
 
     return buttons ? `<div class="editorsChoiceItemActions">${buttons}</div>` : "";
@@ -1773,6 +1837,7 @@ function renderOpeningMessage(slide, data) {
             ? slide.backgroundUrl
             : "";
     const backgroundClass = backdropUrl ? "" : " editorsChoiceOpeningSlide--gradient";
+    const alignment = ["center", "right"].includes(slide.alignment) ? slide.alignment : "left";
     const extraClass = data.heroBackdropPosition === "top" ? "editorsChoiceBackdropTop"
         : data.heroBackdropPosition === "bottom" ? "editorsChoiceBackdropBottom"
             : "editorsChoiceBackdropCenter";
@@ -1780,7 +1845,7 @@ function renderOpeningMessage(slide, data) {
     const infoClass = `editorsChoiceInfo${actions ? " editorsChoiceInfo--withAction" : ""}`;
     const body = slide.bodyHtml ? `<div class="editorsChoiceItemOverview">${slide.bodyHtml}</div>` : "";
 
-    return `<article class="editorsChoiceItemBanner editorsChoiceOpeningSlide${backgroundClass} splide__slide"><div class="editorsChoiceBackdrop ${extraClass}" data-backdrop-url="${escapeHtml(backdropUrl)}"></div><div class="editorsChoiceDimming" aria-hidden="true"></div><div class="editorsChoiceContent"><div class="${infoClass}"><div class="editorsChoiceContentMain"><div class="editorsChoiceItemMetadata" role="list"><span role="listitem" class="editorsChoiceMetadataItem">${escapeHtml(slide.eyebrow || "Welcome")}</span></div><h1 class="editorsChoiceItemTitle">${escapeHtml(slide.title || "Welcome")}</h1>${body}</div>${actions}</div></div></article>`;
+    return `<article class="editorsChoiceItemBanner editorsChoiceOpeningSlide editorsChoiceOpeningSlide--${alignment}${backgroundClass} splide__slide"><div class="editorsChoiceBackdrop ${extraClass}" data-backdrop-url="${escapeHtml(backdropUrl)}"></div><div class="editorsChoiceDimming" aria-hidden="true"></div><div class="editorsChoiceContent"><div class="${infoClass}"><div class="editorsChoiceContentMain"><div class="editorsChoiceItemMetadata" role="list"><span role="listitem" class="editorsChoiceMetadataItem">${escapeHtml(slide.eyebrow || "Welcome")}</span></div><h1 class="editorsChoiceItemTitle">${escapeHtml(slide.title || "Welcome")}</h1>${body}</div>${actions}</div></div></article>`;
 }
 
 /* ===== Main setup ===== */

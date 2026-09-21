@@ -219,6 +219,7 @@ public class EditorsChoiceActivityController : ControllerBase
             { "eyebrow", LimitedText(_config.OpeningSlideEyebrow, 40) ?? "Welcome" },
             { "title", LimitedText(_config.OpeningSlideTitle, 120) ?? "Welcome" },
             { "bodyHtml", RenderOverviewMarkdown(LimitedText(_config.OpeningSlideBody, 4000)) },
+            { "alignment", _config.OpeningSlideAlignment is "center" or "right" ? _config.OpeningSlideAlignment : "left" },
             { "backgroundType", _config.OpeningSlideBackgroundType is "media" or "url"
                 ? _config.OpeningSlideBackgroundType : "gradient" }
         };
@@ -246,8 +247,24 @@ public class EditorsChoiceActivityController : ControllerBase
         }
 
         var actions = new List<object>();
-        AddOpeningAction(actions, _config.OpeningSlidePrimaryButtonText, _config.OpeningSlidePrimaryButtonUrl, true);
-        AddOpeningAction(actions, _config.OpeningSlideSecondaryButtonText, _config.OpeningSlideSecondaryButtonUrl, false);
+        AddOpeningAction(
+            actions,
+            _config.OpeningSlidePrimaryButtonText,
+            _config.OpeningSlidePrimaryButtonUrl,
+            true,
+            _config.OpeningSlidePrimaryButtonBackgroundColor,
+            _config.OpeningSlidePrimaryButtonTextColor,
+            _config.OpeningSlidePrimaryButtonOpacity,
+            _config.OpeningSlideUseCustomButtonStyles);
+        AddOpeningAction(
+            actions,
+            _config.OpeningSlideSecondaryButtonText,
+            _config.OpeningSlideSecondaryButtonUrl,
+            false,
+            _config.OpeningSlideSecondaryButtonBackgroundColor,
+            _config.OpeningSlideSecondaryButtonTextColor,
+            _config.OpeningSlideSecondaryButtonOpacity,
+            _config.OpeningSlideUseCustomButtonStyles);
         slide.Add("actions", actions);
         return slide;
     }
@@ -269,18 +286,30 @@ public class EditorsChoiceActivityController : ControllerBase
         List<object> actions,
         string? label,
         string? configuredUrl,
-        bool primary)
+        bool primary,
+        string backgroundColor,
+        string textColor,
+        int opacity,
+        bool useCustomStyle)
     {
         string? safeLabel = LimitedText(label, 60);
         string? safeUrl = NormalizeSafeUrl(configuredUrl);
         if (safeLabel is null || safeUrl is null) return;
 
-        actions.Add(new Dictionary<string, object>
+        var action = new Dictionary<string, object>
         {
             { "label", safeLabel },
             { "url", safeUrl },
             { "primary", primary }
-        });
+        };
+        if (useCustomStyle)
+        {
+            action.Add("backgroundColor", BannerSettings.NormalizeColor(backgroundColor, primary ? "#7f5af0" : "#20242c"));
+            action.Add("textColor", BannerSettings.NormalizeColor(textColor, "#ffffff"));
+            action.Add("opacity", Math.Clamp(opacity, 0, 100));
+        }
+
+        actions.Add(action);
     }
 
     private static string? LimitedText(string? value, int maximumLength)

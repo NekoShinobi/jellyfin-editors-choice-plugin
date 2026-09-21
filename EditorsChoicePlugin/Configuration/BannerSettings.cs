@@ -30,6 +30,12 @@ public static class BannerSettings
         response.Add("showNavigationArrows", config.ShowNavigationArrows);
         response.Add("hideOnTvLayout", config.HideOnTvLayout);
         response.Add("heroBackdropPosition", config.HeroBackdropPosition);
+        response.Add("useCustomPlayButtonColors", config.UseCustomPlayButtonColors);
+        if (config.UseCustomPlayButtonColors)
+        {
+            response.Add("playButtonBackgroundColor", NormalizeColor(config.PlayButtonBackgroundColor, "#7f5af0"));
+            response.Add("playButtonTextColor", NormalizeColor(config.PlayButtonTextColor, "#ffffff"));
+        }
 
         // If ShowPlayButton is true and a PlayButtonText is set, include this in the response to allow custom play button text
         if (config.ShowPlayButton && !string.IsNullOrEmpty(config.PlayButtonText))
@@ -46,4 +52,12 @@ public static class BannerSettings
 
     private static string NormalizeFont(string font) =>
         font is "system" or "noto" or "arial" or "verdana" or "trebuchet" or "georgia" or "serif" or "mono" ? font : "default";
+
+    public static string NormalizeColor(string? color, string fallback)
+    {
+        string? value = color?.Trim();
+        return value is { Length: 7 } && value[0] == '#' && value[1..].All(Uri.IsHexDigit)
+            ? value.ToLowerInvariant()
+            : fallback;
+    }
 }

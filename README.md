@@ -17,11 +17,13 @@ Each banner can display its community/content rating, year, and either movie run
 
 Administrators can also add an optional opening slide before the automatic selection:
 
-- **Custom message** — write a welcome, announcement, help, or guidance message with safe Markdown, up to two link buttons, and either the built-in gradient, artwork from a library title, or an image URL.
+- **Custom message** — write a welcome, announcement, help, or guidance message with safe Markdown, align it left, center, or right, add up to two link buttons, and use either the built-in gradient, artwork from a library title, or an image URL. Each button can use its own background color, text color, and opacity.
 - **Featured title** — search for a particular movie or series and keep it first while the remaining selection rotates normally.
 - **Opening slide only** — turn off “Continue with the automatic selection” for a static home-page hero.
 
 Featured titles and library artwork are resolved separately for every viewer. If a viewer cannot access the configured title, the plugin falls back to their normal selection. Existing installations continue to use only the automatic selection until an opening slide is enabled.
+
+The primary play button on featured media slides can also use an administrator-selected background and text color. Custom button styling is opt-in so existing installations continue to follow their active Jellyfin theme.
 
 **Hero banner**
 

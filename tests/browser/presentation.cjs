@@ -202,9 +202,10 @@ async function expectHeight(page, expected) {
         const messageOnly = await home(browser, {
             openingSlide: {
                 type: 'message', continueToSelection: false, eyebrow: 'Welcome', title: 'Welcome to Harbor Media',
-                bodyHtml: '<p>Find something great or read the guide.</p>', backgroundType: 'gradient',
+                bodyHtml: '<p>Find something great or read the guide.</p>', backgroundType: 'gradient', alignment: 'right',
                 actions: [
-                    { label: 'Browse library', url: '/web/#/home.html', primary: true },
+                    { label: 'Browse library', url: '/web/#/home.html', primary: true,
+                        backgroundColor: '#123456', textColor: '#fedcba', opacity: 60 },
                     { label: 'Getting started', url: 'https://example.com/help', primary: false },
                 ],
             },
@@ -213,8 +214,14 @@ async function expectHeight(page, expected) {
         assert.equal(await messageOnly.locator('.splide__slide:not(.splide__slide--clone) .editorsChoiceItemTitle').textContent(), 'Welcome to Harbor Media');
         const originalMessage = messageOnly.locator('.splide__slide:not(.splide__slide--clone)');
         assert.equal(await originalMessage.evaluate(el => el.classList.contains('editorsChoiceOpeningSlide--gradient')), true);
+        assert.equal(await originalMessage.evaluate(el => el.classList.contains('editorsChoiceOpeningSlide--right')), true);
         assert.equal(await originalMessage.evaluate(el => el.classList.contains('editorsChoiceSlideReady')), true);
-        assert.equal(await originalMessage.getByRole('link', { name: /Browse library/ }).getAttribute('href'), '/web/#/home.html');
+        const customOpeningButton = originalMessage.getByRole('link', { name: /Browse library/ });
+        assert.equal(await customOpeningButton.getAttribute('href'), '/web/#/home.html');
+        assert.equal(await customOpeningButton.evaluate(el => el.classList.contains('editorsChoiceCustomButton')), true);
+        assert.equal(await customOpeningButton.evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(18, 52, 86)');
+        assert.equal(await customOpeningButton.evaluate(el => getComputedStyle(el).color), 'rgb(254, 220, 186)');
+        assert.equal(await customOpeningButton.evaluate(el => getComputedStyle(el).opacity), '0.6');
         assert.equal(await originalMessage.getByRole('link', { name: /Getting started/ }).getAttribute('target'), '_blank');
         await messageOnly.close();
 
@@ -230,6 +237,9 @@ async function expectHeight(page, expected) {
         await messageAndSelection.close();
 
         const pinnedMedia = await home(browser, {
+            useCustomPlayButtonColors: true,
+            playButtonBackgroundColor: '#345678',
+            playButtonTextColor: '#ffffff',
             openingSlide: {
                 type: 'media', continueToSelection: true,
                 item: { id: '2', name: 'Feature 2', item_type: 'Movie', overview_html: '<p>Pinned.</p>' },
@@ -238,6 +248,9 @@ async function expectHeight(page, expected) {
         assert.equal(await pinnedMedia.locator('.splide__slide:not(.splide__slide--clone)').count(), 3);
         assert.equal(await pinnedMedia.locator('.splide__slide:not(.splide__slide--clone)').first().locator('.editorsChoiceItemTitle').textContent(), 'Feature 2');
         assert.equal(await pinnedMedia.locator('.splide__slide:not(.splide__slide--clone) .editorsChoiceItemTitle', { hasText: 'Feature 2' }).count(), 1);
+        const customPlayButton = pinnedMedia.locator('.splide__slide:not(.splide__slide--clone)').first().locator('.editorsChoiceItemButton');
+        assert.equal(await customPlayButton.evaluate(el => el.classList.contains('editorsChoiceCustomButton')), true);
+        assert.equal(await customPlayButton.evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(52, 86, 120)');
         await pinnedMedia.close();
         console.log('PASS custom message, message-only mode, actions, and pinned media ordering');
 
@@ -318,9 +331,20 @@ async function expectHeight(page, expected) {
         await settings.selectOption('#OpeningSlidePreset', 'welcome');
         await settings.selectOption('#OpeningSlideBackgroundType', 'url');
         await settings.fill('#OpeningSlideBackgroundUrl', 'https://example.com/welcome.jpg');
+        await settings.selectOption('#OpeningSlideAlignment', 'center');
+        await settings.check('#OpeningSlideUseCustomButtonStyles');
+        await settings.fill('#OpeningSlidePrimaryButtonBackgroundColor', '#123456');
+        await settings.fill('#OpeningSlidePrimaryButtonTextColor', '#fedcba');
+        await settings.fill('#OpeningSlidePrimaryButtonOpacity', '65');
+        await settings.fill('#OpeningSlideSecondaryButtonBackgroundColor', '#234567');
+        await settings.fill('#OpeningSlideSecondaryButtonTextColor', '#ffffff');
+        await settings.fill('#OpeningSlideSecondaryButtonOpacity', '75');
         await settings.fill('#OpeningSlideSecondaryButtonText', 'Getting started');
         await settings.fill('#OpeningSlideSecondaryButtonUrl', 'https://example.com/help');
         await settings.uncheck('#OpeningSlideContinue');
+        await settings.check('#UseCustomPlayButtonColors');
+        await settings.fill('#PlayButtonBackgroundColor', '#345678');
+        await settings.fill('#PlayButtonTextColor', '#abcdef');
         assert.equal(await settings.locator('#OpeningSlideMessage-container').isVisible(), true);
         assert.equal(await settings.locator('#OpeningSlideMedia-container').isVisible(), false);
         assert.equal(await settings.locator('#OpeningSlideBackgroundUrl-container').isVisible(), true);
@@ -369,6 +393,17 @@ async function expectHeight(page, expected) {
         assert.equal(saved.OpeningSlideTitle, 'Welcome to our media library');
         assert.equal(saved.OpeningSlideBackgroundType, 'url');
         assert.equal(saved.OpeningSlideBackgroundUrl, 'https://example.com/welcome.jpg');
+        assert.equal(saved.OpeningSlideAlignment, 'center');
+        assert.equal(saved.OpeningSlideUseCustomButtonStyles, true);
+        assert.equal(saved.OpeningSlidePrimaryButtonBackgroundColor, '#123456');
+        assert.equal(saved.OpeningSlidePrimaryButtonTextColor, '#fedcba');
+        assert.equal(saved.OpeningSlidePrimaryButtonOpacity, 65);
+        assert.equal(saved.OpeningSlideSecondaryButtonBackgroundColor, '#234567');
+        assert.equal(saved.OpeningSlideSecondaryButtonTextColor, '#ffffff');
+        assert.equal(saved.OpeningSlideSecondaryButtonOpacity, 75);
+        assert.equal(saved.UseCustomPlayButtonColors, true);
+        assert.equal(saved.PlayButtonBackgroundColor, '#345678');
+        assert.equal(saved.PlayButtonTextColor, '#abcdef');
         assert.equal(saved.OpeningSlideSecondaryButtonText, 'Getting started');
         assert.equal(saved.OpeningSlideSecondaryButtonUrl, 'https://example.com/help');
         await settings.evaluate(() => {
@@ -382,6 +417,9 @@ async function expectHeight(page, expected) {
         await settings.waitForFunction(() => document.querySelector('#BannerCustomHeight').value === '720');
         assert.equal(await settings.locator('#EnableSelectionCache').isChecked(), true);
         assert.equal(await settings.locator('#SelectionRefreshMinutes').inputValue(), '45');
+        assert.equal(await settings.locator('#OpeningSlideAlignment').inputValue(), 'center');
+        assert.equal(await settings.locator('#OpeningSlidePrimaryButtonOpacity').inputValue(), '65');
+        assert.equal(await settings.locator('#PlayButtonColors-container').isVisible(), true);
         await settings.uncheck('#EnableSelectionCache');
         assert.equal(await settings.locator('#SelectionRefreshMinutes').isDisabled(), true);
         assert.equal(await settings.locator('#SelectionRefreshMinutes-container').isVisible(), false);

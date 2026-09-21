@@ -67,6 +67,8 @@ export default function (view) {
         MobileBannerViewportHeight: [60, 25, 100],
         TransitionDurationMs: [0, 0, 3000],
         BackgroundDimmingPercent: [30, 0, 100],
+        OpeningSlidePrimaryButtonOpacity: [100, 0, 100],
+        OpeningSlideSecondaryButtonOpacity: [85, 0, 100],
     };
     const presentationToggles = {
         EnableSelectionCache: true,
@@ -74,6 +76,8 @@ export default function (view) {
         EnableBackgroundDimming: false,
         EnableBackgroundMotion: true,
         EnableThemeVideos: true,
+        OpeningSlideUseCustomButtonStyles: false,
+        UseCustomPlayButtonColors: false,
     };
     let previewAnimation;
     const fonts = {
@@ -132,6 +136,10 @@ export default function (view) {
         field(id).querySelectorAll("input, select").forEach((input) => { input.disabled = !visible; });
     }
 
+    function normalizeColor(value, fallback) {
+        return /^#[0-9a-f]{6}$/i.test(value || "") ? value : fallback;
+    }
+
     function normalizeMode(mode) {
         return ["FAVOURITES", "RANDOM", "COLLECTIONS", "NEW"].includes(mode) ? mode : "RANDOM";
     }
@@ -151,6 +159,9 @@ export default function (view) {
         setVisible("OpeningSlideContinue-container", openingType !== "none");
         setVisible("OpeningSlideBackgroundMedia-container", openingType === "message" && backgroundType === "media");
         setVisible("OpeningSlideBackgroundUrl-container", openingType === "message" && backgroundType === "url");
+        setVisible("OpeningSlidePrimaryButtonStyle-container", openingType === "message" && field("OpeningSlideUseCustomButtonStyles").checked);
+        setVisible("OpeningSlideSecondaryButtonStyle-container", openingType === "message" && field("OpeningSlideUseCustomButtonStyles").checked);
+        setVisible("PlayButtonColors-container", field("ShowPlayButton").checked && field("UseCustomPlayButtonColors").checked);
         field("OpeningSlideMediaId").required = openingType === "media";
         field("OpeningSlideBackgroundItemId").required = openingType === "message" && backgroundType === "media";
         setVisible("SelectionRefreshMinutes-container", field("EnableSelectionCache").checked);
@@ -191,13 +202,24 @@ export default function (view) {
         const previewMetadata = preview.querySelector("small");
         const previewBody = preview.querySelector("span:not(.editorsChoicePreviewButton)");
         const previewButton = preview.querySelector(".editorsChoicePreviewButton");
+        const previewCopy = preview.querySelector(".editorsChoicePreviewCopy");
         const previewScene = preview.querySelector(".editorsChoicePreviewScene");
         if (openingType === "message") {
+            previewCopy.dataset.alignment = field("OpeningSlideAlignment").value;
             previewTitle.textContent = field("OpeningSlideTitle").value || "Your headline";
             previewMetadata.textContent = field("OpeningSlideEyebrow").value || "WELCOME";
             previewBody.textContent = field("OpeningSlideBody").value || "Your message";
             previewButton.textContent = field("OpeningSlidePrimaryButtonText").value || "Optional action";
             previewButton.style.display = field("OpeningSlidePrimaryButtonText").value ? "" : "none";
+            if (field("OpeningSlideUseCustomButtonStyles").checked) {
+                previewButton.style.backgroundColor = field("OpeningSlidePrimaryButtonBackgroundColor").value;
+                previewButton.style.color = field("OpeningSlidePrimaryButtonTextColor").value;
+                previewButton.style.opacity = boundedNumber("OpeningSlidePrimaryButtonOpacity", 100, 0, 100) / 100;
+            } else {
+                previewButton.style.backgroundColor = "";
+                previewButton.style.color = "";
+                previewButton.style.opacity = "";
+            }
             const backgroundType = field("OpeningSlideBackgroundType").value;
             const backgroundValue = backgroundType === "url" ? field("OpeningSlideBackgroundUrl").value
                 : backgroundType === "media" && field("OpeningSlideBackgroundItemId").value
@@ -209,12 +231,21 @@ export default function (view) {
             previewScene.style.backgroundSize = backgroundValue ? "cover" : "";
             previewScene.style.backgroundPosition = backgroundValue ? "center" : "";
         } else {
+            previewCopy.dataset.alignment = "left";
             const selectedTitle = field("OpeningSlideMediaId").selectedOptions[0]?.textContent;
             previewTitle.textContent = openingType === "media" && field("OpeningSlideMediaId").value ? selectedTitle : "Featured tonight";
             previewMetadata.textContent = "2026 · Series";
             previewBody.textContent = openingType === "media" ? "Artwork and details come from Jellyfin." : "Your next great watch";
             previewButton.textContent = "Watch now";
             previewButton.style.display = "";
+            if (field("UseCustomPlayButtonColors").checked) {
+                previewButton.style.backgroundColor = field("PlayButtonBackgroundColor").value;
+                previewButton.style.color = field("PlayButtonTextColor").value;
+            } else {
+                previewButton.style.backgroundColor = "";
+                previewButton.style.color = "";
+            }
+            previewButton.style.opacity = "";
             previewScene.style.backgroundImage = "";
             previewScene.style.backgroundSize = "";
             previewScene.style.backgroundPosition = "";
@@ -461,6 +492,8 @@ export default function (view) {
         for (const id of fontFields) field(id).value = Object.hasOwn(fonts, config[id]) ? config[id] : "default";
         field("ShowPlayed").checked = config.ShowPlayed;
         field("PlayButtonText").value = config.PlayButtonText || "";
+        field("PlayButtonBackgroundColor").value = normalizeColor(config.PlayButtonBackgroundColor, "#7f5af0");
+        field("PlayButtonTextColor").value = normalizeColor(config.PlayButtonTextColor, "#ffffff");
         field("HideOnTvLayout").checked = config.HideOnTvLayout;
         field("OpeningSlideType").value = ["message", "media"].includes(config.OpeningSlideType) ? config.OpeningSlideType : "none";
         field("OpeningSlideContinue").checked = config.OpeningSlideContinue ?? true;
@@ -468,6 +501,8 @@ export default function (view) {
         field("OpeningSlideEyebrow").value = config.OpeningSlideEyebrow || "";
         field("OpeningSlideTitle").value = config.OpeningSlideTitle || "";
         field("OpeningSlideBody").value = config.OpeningSlideBody || "";
+        field("OpeningSlideAlignment").value = ["center", "right"].includes(config.OpeningSlideAlignment)
+            ? config.OpeningSlideAlignment : "left";
         field("OpeningSlideBackgroundType").value = ["media", "url"].includes(config.OpeningSlideBackgroundType)
             ? config.OpeningSlideBackgroundType : "gradient";
         field("OpeningSlideBackgroundUrl").value = config.OpeningSlideBackgroundUrl || "";
@@ -475,6 +510,10 @@ export default function (view) {
         field("OpeningSlidePrimaryButtonUrl").value = config.OpeningSlidePrimaryButtonUrl || "";
         field("OpeningSlideSecondaryButtonText").value = config.OpeningSlideSecondaryButtonText || "";
         field("OpeningSlideSecondaryButtonUrl").value = config.OpeningSlideSecondaryButtonUrl || "";
+        field("OpeningSlidePrimaryButtonBackgroundColor").value = normalizeColor(config.OpeningSlidePrimaryButtonBackgroundColor, "#7f5af0");
+        field("OpeningSlidePrimaryButtonTextColor").value = normalizeColor(config.OpeningSlidePrimaryButtonTextColor, "#ffffff");
+        field("OpeningSlideSecondaryButtonBackgroundColor").value = normalizeColor(config.OpeningSlideSecondaryButtonBackgroundColor, "#20242c");
+        field("OpeningSlideSecondaryButtonTextColor").value = normalizeColor(config.OpeningSlideSecondaryButtonTextColor, "#ffffff");
         restoreMediaOption("OpeningSlideMediaId", config.OpeningSlideMediaId, config.OpeningSlideMediaName);
         restoreMediaOption("OpeningSlideBackgroundItemId", config.OpeningSlideBackgroundItemId, config.OpeningSlideBackgroundItemName);
         updateConditionalVisibility();
@@ -541,6 +580,8 @@ export default function (view) {
         config.NewTimeLimit = field("NewTimeLimitSelect").value;
         config.BannerHeight = boundedNumber("BannerHeightSelect", 360, 1, Number.MAX_SAFE_INTEGER, true);
         config.PlayButtonText = field("PlayButtonText").value;
+        config.PlayButtonBackgroundColor = field("PlayButtonBackgroundColor").value;
+        config.PlayButtonTextColor = field("PlayButtonTextColor").value;
         config.OpeningSlideType = field("OpeningSlideType").value;
         config.OpeningSlideContinue = field("OpeningSlideContinue").checked;
         config.OpeningSlideMediaId = field("OpeningSlideMediaId").value || null;
@@ -549,6 +590,7 @@ export default function (view) {
         config.OpeningSlideEyebrow = field("OpeningSlideEyebrow").value.trim();
         config.OpeningSlideTitle = field("OpeningSlideTitle").value.trim();
         config.OpeningSlideBody = field("OpeningSlideBody").value.trim();
+        config.OpeningSlideAlignment = field("OpeningSlideAlignment").value;
         config.OpeningSlideBackgroundType = field("OpeningSlideBackgroundType").value;
         config.OpeningSlideBackgroundItemId = field("OpeningSlideBackgroundItemId").value || null;
         config.OpeningSlideBackgroundItemName = field("OpeningSlideBackgroundItemId").value
@@ -558,6 +600,10 @@ export default function (view) {
         config.OpeningSlidePrimaryButtonUrl = field("OpeningSlidePrimaryButtonUrl").value.trim() || null;
         config.OpeningSlideSecondaryButtonText = field("OpeningSlideSecondaryButtonText").value.trim() || null;
         config.OpeningSlideSecondaryButtonUrl = field("OpeningSlideSecondaryButtonUrl").value.trim() || null;
+        config.OpeningSlidePrimaryButtonBackgroundColor = field("OpeningSlidePrimaryButtonBackgroundColor").value;
+        config.OpeningSlidePrimaryButtonTextColor = field("OpeningSlidePrimaryButtonTextColor").value;
+        config.OpeningSlideSecondaryButtonBackgroundColor = field("OpeningSlideSecondaryButtonBackgroundColor").value;
+        config.OpeningSlideSecondaryButtonTextColor = field("OpeningSlideSecondaryButtonTextColor").value;
         return config;
     }
 

@@ -99,6 +99,9 @@ public class LibraryResultTests
             TransitionEffect = "invalid", TransitionDurationMs = 9000,
             EnableBackgroundDimming = true, BackgroundDimmingPercent = 200,
             EnableBackgroundMotion = false, EnableThemeVideos = false,
+            UseCustomPlayButtonColors = true,
+            PlayButtonBackgroundColor = "not-a-color",
+            PlayButtonTextColor = "#ABCDEF",
         };
         var paths = new Mock<IApplicationPaths>();
         paths.SetupGet(p => p.PluginsPath).Returns(Path.GetTempPath());
@@ -137,6 +140,9 @@ public class LibraryResultTests
         Assert.Equal(true, body["enableBackgroundDimming"]);
         Assert.Equal(false, body["enableBackgroundMotion"]);
         Assert.Equal(false, body["enableThemeVideos"]);
+        Assert.Equal(true, body["useCustomPlayButtonColors"]);
+        Assert.Equal("#7f5af0", body["playButtonBackgroundColor"]);
+        Assert.Equal("#abcdef", body["playButtonTextColor"]);
     }
 
     [Fact]
@@ -152,5 +158,10 @@ public class LibraryResultTests
         Assert.False(config.EnableBackgroundDimming);
         Assert.True(config.EnableBackgroundMotion);
         Assert.True(config.EnableThemeVideos);
+        Assert.Equal("left", config.OpeningSlideAlignment);
+        Assert.False(config.OpeningSlideUseCustomButtonStyles);
+        Assert.Equal(100, config.OpeningSlidePrimaryButtonOpacity);
+        Assert.Equal(85, config.OpeningSlideSecondaryButtonOpacity);
+        Assert.False(config.UseCustomPlayButtonColors);
     }
 }

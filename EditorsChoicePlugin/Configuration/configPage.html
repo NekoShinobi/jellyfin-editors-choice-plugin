@@ -4,7 +4,7 @@
     <title>Editors Choice Plugin</title>
 </head>
 <body>
-    <div data-role="page" class="page type-interior pluginConfigurationPage editorsChoiceConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox,emby-linkbutton,emby-radio" data-controller="__plugin/EditorsChoice.Configuration.js">
+    <div data-role="page" class="page type-interior pluginConfigurationPage editorsChoiceConfigurationPage" data-require="emby-input,emby-textarea,emby-button,emby-select,emby-checkbox,emby-linkbutton,emby-radio" data-controller="__plugin/EditorsChoice.Configuration.js">
         <style>
             .mdl-radio {
                 box-sizing: border-box;
@@ -156,8 +156,22 @@
                 margin-bottom: 0;
             }
 
+            .editorsChoiceButtonStyleGrid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: .75rem;
+            }
+
+            .editorsChoiceButtonStyleGrid .inputContainer {
+                margin-bottom: .75rem;
+            }
+
             @media (max-width: 600px) {
                 .editorsChoiceSearchRow {
+                    grid-template-columns: 1fr;
+                }
+
+                .editorsChoiceButtonStyleGrid {
                     grid-template-columns: 1fr;
                 }
             }
@@ -193,6 +207,20 @@
             display: grid;
             gap: .3rem;
             text-shadow: 0 1px 5px #000;
+          }
+          .editorsChoicePreviewCopy[data-alignment="center"] {
+            left: 50%;
+            right: auto;
+            width: min(80%, 28rem);
+            text-align: center;
+            justify-items: center;
+            transform: translateX(-50%);
+          }
+          .editorsChoicePreviewCopy[data-alignment="right"] {
+            right: 1.2rem;
+            left: auto;
+            text-align: right;
+            justify-items: end;
           }
           .editorsChoicePreviewCopy strong { font-size: 1.2rem; }
           .editorsChoicePreviewCopy span { font-size: .85rem; }
@@ -243,8 +271,17 @@
 
                             <div class="inputContainer">
                                 <label class="inputLabel" for="OpeningSlideBody">Message</label>
-                                <textarea is="emby-input" id="OpeningSlideBody" rows="5" maxlength="4000"></textarea>
+                                <textarea is="emby-textarea" class="emby-textarea emby-input" id="OpeningSlideBody" rows="5" maxlength="4000"></textarea>
                                 <div class="fieldDescription">Supports the same safe Markdown formatting as media descriptions.</div>
+                            </div>
+
+                            <div class="selectContainer">
+                                <label class="selectLabel" for="OpeningSlideAlignment">Content alignment</label>
+                                <select is="emby-select" id="OpeningSlideAlignment" class="emby-select-withcolor emby-select">
+                                    <option value="left">Left</option>
+                                    <option value="center">Center</option>
+                                    <option value="right">Right</option>
+                                </select>
                             </div>
 
                             <div class="selectContainer">
@@ -279,6 +316,13 @@
                             </div>
 
                             <h4>Actions</h4>
+                            <div class="checkboxContainer checkboxContainer-withDescription">
+                                <label class="emby-checkbox-label">
+                                    <input is="emby-checkbox" type="checkbox" id="OpeningSlideUseCustomButtonStyles" />
+                                    <span class="checkboxLabel">Customize opening slide buttons</span>
+                                </label>
+                                <div class="fieldDescription">Choose colors and opacity for each button. Leave this off to follow the active Jellyfin theme.</div>
+                            </div>
                             <div class="inputContainer">
                                 <label class="inputLabel" for="OpeningSlidePrimaryButtonText">Primary button label</label>
                                 <input is="emby-input" type="text" id="OpeningSlidePrimaryButtonText" maxlength="60" placeholder="Browse library" />
@@ -286,6 +330,20 @@
                             <div class="inputContainer">
                                 <label class="inputLabel" for="OpeningSlidePrimaryButtonUrl">Primary button destination</label>
                                 <input is="emby-input" type="text" id="OpeningSlidePrimaryButtonUrl" maxlength="2048" placeholder="#/home.html" />
+                            </div>
+                            <div id="OpeningSlidePrimaryButtonStyle-container" class="editorsChoiceButtonStyleGrid">
+                                <div class="inputContainer">
+                                    <label class="inputLabel" for="OpeningSlidePrimaryButtonBackgroundColor">Primary background</label>
+                                    <input is="emby-input" type="color" id="OpeningSlidePrimaryButtonBackgroundColor" />
+                                </div>
+                                <div class="inputContainer">
+                                    <label class="inputLabel" for="OpeningSlidePrimaryButtonTextColor">Primary text</label>
+                                    <input is="emby-input" type="color" id="OpeningSlidePrimaryButtonTextColor" />
+                                </div>
+                                <div class="inputContainer">
+                                    <label class="inputLabel" for="OpeningSlidePrimaryButtonOpacity">Primary opacity (%)</label>
+                                    <input is="emby-input" type="number" id="OpeningSlidePrimaryButtonOpacity" min="0" max="100" step="1" required />
+                                </div>
                             </div>
                             <div class="inputContainer">
                                 <label class="inputLabel" for="OpeningSlideSecondaryButtonText">Secondary button label</label>
@@ -295,6 +353,20 @@
                                 <label class="inputLabel" for="OpeningSlideSecondaryButtonUrl">Secondary button destination</label>
                                 <input is="emby-input" type="text" id="OpeningSlideSecondaryButtonUrl" maxlength="2048" placeholder="https://example.com/help" />
                                 <div class="fieldDescription">Destinations may be HTTPS links or paths within this Jellyfin server. Leave either label empty to hide that button.</div>
+                            </div>
+                            <div id="OpeningSlideSecondaryButtonStyle-container" class="editorsChoiceButtonStyleGrid">
+                                <div class="inputContainer">
+                                    <label class="inputLabel" for="OpeningSlideSecondaryButtonBackgroundColor">Secondary background</label>
+                                    <input is="emby-input" type="color" id="OpeningSlideSecondaryButtonBackgroundColor" />
+                                </div>
+                                <div class="inputContainer">
+                                    <label class="inputLabel" for="OpeningSlideSecondaryButtonTextColor">Secondary text</label>
+                                    <input is="emby-input" type="color" id="OpeningSlideSecondaryButtonTextColor" />
+                                </div>
+                                <div class="inputContainer">
+                                    <label class="inputLabel" for="OpeningSlideSecondaryButtonOpacity">Secondary opacity (%)</label>
+                                    <input is="emby-input" type="number" id="OpeningSlideSecondaryButtonOpacity" min="0" max="100" step="1" required />
+                                </div>
                             </div>
                         </div>
 
@@ -479,6 +551,24 @@
                         <label class="inputLabel inputLabelUnfocused" for="PlayButtonText">Custom Play Button Text</label>
                         <input is="emby-input" type="text" id="PlayButtonText" name="PlayButtonText" />
                         <div class="fieldDescription">Change “Watch Now” for items with no viewing progress. Resume, next episode, and replay labels remain automatic. Leave empty for the default.</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="UseCustomPlayButtonColors" />
+                            <span class="checkboxLabel">Customize Watch now button colors</span>
+                        </label>
+                        <div class="fieldDescription">Applies to the primary play, resume, continue, and replay button on media slides.</div>
+                    </div>
+                    <div id="PlayButtonColors-container" class="editorsChoiceButtonStyleGrid">
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="PlayButtonBackgroundColor">Button background</label>
+                            <input is="emby-input" type="color" id="PlayButtonBackgroundColor" />
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="PlayButtonTextColor">Button text</label>
+                            <input is="emby-input" type="color" id="PlayButtonTextColor" />
+                        </div>
                     </div>
 
                     <div class="checkboxContainer checkboxContainer-withDescription">

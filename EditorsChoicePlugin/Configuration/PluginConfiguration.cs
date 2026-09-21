@@ -115,6 +115,8 @@ public class PluginConfiguration : BasePluginConfiguration
 
     public string OpeningSlideBody { get; set; } = "Browse the latest additions, continue watching, or explore something new.";
 
+    public string OpeningSlideAlignment { get; set; } = "left";
+
     public string OpeningSlideBackgroundType { get; set; } = "gradient";
 
     public string? OpeningSlideBackgroundItemId { get; set; }
@@ -130,6 +132,26 @@ public class PluginConfiguration : BasePluginConfiguration
     public string? OpeningSlideSecondaryButtonText { get; set; }
 
     public string? OpeningSlideSecondaryButtonUrl { get; set; }
+
+    public bool OpeningSlideUseCustomButtonStyles { get; set; } = false;
+
+    public string OpeningSlidePrimaryButtonBackgroundColor { get; set; } = "#7f5af0";
+
+    public string OpeningSlidePrimaryButtonTextColor { get; set; } = "#ffffff";
+
+    public int OpeningSlidePrimaryButtonOpacity { get; set; } = 100;
+
+    public string OpeningSlideSecondaryButtonBackgroundColor { get; set; } = "#20242c";
+
+    public string OpeningSlideSecondaryButtonTextColor { get; set; } = "#ffffff";
+
+    public int OpeningSlideSecondaryButtonOpacity { get; set; } = 85;
+
+    public bool UseCustomPlayButtonColors { get; set; } = false;
+
+    public string PlayButtonBackgroundColor { get; set; } = "#7f5af0";
+
+    public string PlayButtonTextColor { get; set; } = "#ffffff";
 
     // Legacy XML compatibility only; Hero banners have no section heading.
     public string? Heading { get; set; }
