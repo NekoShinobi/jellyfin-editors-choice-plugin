@@ -9,6 +9,22 @@
     "imageUrl": "https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/logo.png",
     "versions": [
       {
+        "changelog": "feat: adding some additional options for button colors. Fix some of the existing options.",
+        "targetAbi": "12.0.0.0",
+        "version": "2.0.0.26",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.26/EditorsChoicePlugin_2.0.0.26.zip",
+        "checksum": "06638B49D74AA62AA725083EFC06C2D5",
+        "timestamp": "2026-09-21T07:45:54Z"
+      },
+      {
+        "changelog": "feat: adding some additional options for button colors. Fix some of the existing options.",
+        "targetAbi": "10.11.0.0",
+        "version": "1.5.2.26",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.26/EditorsChoicePlugin_1.5.2.26.zip",
+        "checksum": "3981A821B9EFECCD7F5F798E5EBF6B51",
+        "timestamp": "2026-09-21T07:45:54Z"
+      },
+      {
         "changelog": "feat: adding a feature to allow administrators to customize the initial landing page.",
         "targetAbi": "12.0.0.0",
         "version": "2.0.0.25",
