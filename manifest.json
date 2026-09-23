@@ -9,6 +9,22 @@
     "imageUrl": "https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/logo.png",
     "versions": [
       {
+        "changelog": "fix: incorrect banner/description placement and a few config fixes.",
+        "targetAbi": "12.0.0.0",
+        "version": "2.0.0.33",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.33/EditorsChoicePlugin_2.0.0.33.zip",
+        "checksum": "837316AEF942310DCC228AA7CBBA6522",
+        "timestamp": "2026-09-23T20:51:29Z"
+      },
+      {
+        "changelog": "fix: incorrect banner/description placement and a few config fixes.",
+        "targetAbi": "10.11.0.0",
+        "version": "1.5.2.33",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.33/EditorsChoicePlugin_1.5.2.33.zip",
+        "checksum": "FAE8DF569753843918F2164384A05A18",
+        "timestamp": "2026-09-23T20:51:29Z"
+      },
+      {
         "changelog": "Adding more transitions, config page fixes.",
         "targetAbi": "12.0.0.0",
         "version": "2.0.0.32",
