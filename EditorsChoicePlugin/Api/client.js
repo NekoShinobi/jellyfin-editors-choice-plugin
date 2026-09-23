@@ -34,6 +34,7 @@ const container = `
         <span class="material-icons chevron_right" aria-hidden="true"></span>
       </button>
     </div>
+    <div class="splide__progress editorsChoiceProgress" aria-hidden="true"><div class="splide__progress__bar"></div></div>
     <div class="editorsChoiceSkeleton" aria-hidden="true">
       <div class="editorsChoiceSkeletonPoster"></div>
       <div class="editorsChoiceSkeletonCopy">
@@ -548,13 +549,13 @@ const container = `
     white-space: normal;
     width: 100%;
     max-width: 100%;
-    max-height: 5.8em;
+    max-height: calc(1.45em * var(--ec-overview-lines, 4));
     margin-top: 0.75em;
     line-height: 1.45;
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 4;
+    -webkit-line-clamp: var(--ec-overview-lines, 4);
     flex-shrink: 1;
     min-height: 0;
     overflow: hidden;
@@ -617,7 +618,8 @@ const container = `
   }
 
   .editorsChoiceItemButton,
-  .editorsChoiceInfoButton {
+  .editorsChoiceInfoButton,
+  .editorsChoiceTrailerButton {
     width: fit-content !important;
     display: inline-flex !important;
     align-items: center;
@@ -714,7 +716,7 @@ const container = `
     }
 
     .editorsChoiceContent--withPoster .editorsChoiceItemActions {
-      left: calc(50% - min(13.5vw, 4rem) - 0.425rem);
+      left: calc(50% - var(--ec-mobile-poster-half, min(13.5vw, 4rem)) - 0.425rem);
     }
   }
 
@@ -761,8 +763,8 @@ const container = `
     background-size: cover;
     background-repeat: no-repeat;
     opacity: 0;
-    transform: scale(1.018);
-    transition: opacity 360ms ease, transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform: scale(var(--ec-motion-scale, 1.018));
+    transition: opacity 360ms ease, transform 900ms var(--ec-easing, cubic-bezier(0.22, 1, 0.36, 1));
     mask-image: linear-gradient(
       to bottom,
       rgba(0,0,0,1) 40%,
@@ -883,12 +885,12 @@ const container = `
     z-index: 1;
     background: linear-gradient(
       135deg,
-      rgba(0,0,0,var(--editors-choice-scrim-strong, 0.95)) 0%,
-      rgba(0,0,0,var(--editors-choice-scrim-mid, 0.85)) 15%,
-      rgba(0,0,0,var(--editors-choice-scrim-soft, 0.55)) 30%,
-      rgba(0,0,0,var(--editors-choice-scrim-faint, 0.25)) 50%,
-      rgba(0,0,0,0.08) 65%,
-      rgba(0,0,0,0) 80%
+      rgba(var(--ec-scrim-rgb, 0, 0, 0), calc(var(--editors-choice-scrim-strong, 0.95) * var(--ec-scrim-strength, 1))) 0%,
+      rgba(var(--ec-scrim-rgb, 0, 0, 0), calc(var(--editors-choice-scrim-mid, 0.85) * var(--ec-scrim-strength, 1))) 15%,
+      rgba(var(--ec-scrim-rgb, 0, 0, 0), calc(var(--editors-choice-scrim-soft, 0.55) * var(--ec-scrim-strength, 1))) 30%,
+      rgba(var(--ec-scrim-rgb, 0, 0, 0), calc(var(--editors-choice-scrim-faint, 0.25) * var(--ec-scrim-strength, 1))) 50%,
+      rgba(var(--ec-scrim-rgb, 0, 0, 0), calc(0.08 * var(--ec-scrim-strength, 1))) 65%,
+      rgba(var(--ec-scrim-rgb, 0, 0, 0), 0) 80%
     );
   }
 
@@ -900,6 +902,7 @@ const container = `
   .editorsChoiceHeroMode .editorsChoiceItemPoster,
   .editorsChoiceHeroMode .editorsChoiceItemLogo,
   .editorsChoiceHeroMode .editorsChoiceItemTitle,
+  .editorsChoiceHeroMode .editorsChoiceItemTagline,
   .editorsChoiceHeroMode .editorsChoiceItemMetadata,
   .editorsChoiceHeroMode .editorsChoiceItemOverview {
     opacity: 0;
@@ -911,20 +914,21 @@ const container = `
   }
 
   .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemPoster {
-    animation: editorsChoiceContentReveal 420ms 70ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: editorsChoiceContentReveal 420ms 70ms var(--ec-easing, cubic-bezier(0.22, 1, 0.36, 1)) both;
   }
 
   .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemLogo,
-  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemTitle {
-    animation: editorsChoiceContentReveal 420ms 120ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemTitle,
+  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemTagline {
+    animation: editorsChoiceContentReveal 420ms 120ms var(--ec-easing, cubic-bezier(0.22, 1, 0.36, 1)) both;
   }
 
   .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemMetadata {
-    animation: editorsChoiceContentReveal 420ms 175ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: editorsChoiceContentReveal 420ms 175ms var(--ec-easing, cubic-bezier(0.22, 1, 0.36, 1)) both;
   }
 
   .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemOverview {
-    animation: editorsChoiceContentReveal 420ms 225ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: editorsChoiceContentReveal 420ms 225ms var(--ec-easing, cubic-bezier(0.22, 1, 0.36, 1)) both;
   }
 
   .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemActions {
@@ -967,6 +971,7 @@ const container = `
     .editorsChoiceHeroMode .editorsChoiceItemPoster,
     .editorsChoiceHeroMode .editorsChoiceItemLogo,
     .editorsChoiceHeroMode .editorsChoiceItemTitle,
+    .editorsChoiceHeroMode .editorsChoiceItemTagline,
     .editorsChoiceHeroMode .editorsChoiceItemMetadata,
     .editorsChoiceHeroMode .editorsChoiceItemOverview,
     .editorsChoiceHeroMode .editorsChoiceItemActions {
@@ -976,6 +981,7 @@ const container = `
     .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemPoster,
     .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemLogo,
     .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemTitle,
+    .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemTagline,
     .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemMetadata,
     .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemOverview {
       opacity: 1;
@@ -1027,8 +1033,8 @@ const container = `
   }
   .editorsChoiceCustomHeight .editorsChoiceItemOverview { flex-shrink: 0; }
   .editorsChoiceCompactHeight .editorsChoiceItemOverview {
-    max-height: 2.9em;
-    -webkit-line-clamp: 2;
+    max-height: calc(1.45em * var(--ec-overview-lines-compact, 2));
+    -webkit-line-clamp: var(--ec-overview-lines-compact, 2);
   }
   .editorsChoiceShortHeight :is(.editorsChoiceItemLogo, .editorsChoiceItemTitle) { height: 3rem; }
   .editorsChoiceShortHeight .editorsChoiceItemMetadata { margin-top: 0.4em; }
@@ -1041,8 +1047,8 @@ const container = `
   .editorsChoiceCustomHeight .editorsChoiceSkeleton { padding-top: 30px; }
   .editorsChoiceHeroMode .editorsChoiceCustomHeight .editorsChoiceScrollButtonsContainer { top: .5rem; }
   .editorsChoiceTransitionOutgoing .editorsChoiceBackdrop { opacity: 1 !important; }
-  .editorsChoiceTransitionOutgoing :is(.editorsChoiceItemPoster, .editorsChoiceItemLogo, .editorsChoiceItemTitle, .editorsChoiceItemMetadata, .editorsChoiceItemOverview, .editorsChoiceItemActions),
-  .editorsChoiceInstant .is-active.editorsChoiceSlideReady :is(.editorsChoiceItemPoster, .editorsChoiceItemLogo, .editorsChoiceItemTitle, .editorsChoiceItemMetadata, .editorsChoiceItemOverview, .editorsChoiceItemActions) {
+  .editorsChoiceTransitionOutgoing :is(.editorsChoiceItemPoster, .editorsChoiceItemLogo, .editorsChoiceItemTitle, .editorsChoiceItemTagline, .editorsChoiceItemMetadata, .editorsChoiceItemOverview, .editorsChoiceItemActions),
+  .editorsChoiceInstant .is-active.editorsChoiceSlideReady :is(.editorsChoiceItemPoster, .editorsChoiceItemLogo, .editorsChoiceItemTitle, .editorsChoiceItemTagline, .editorsChoiceItemMetadata, .editorsChoiceItemOverview, .editorsChoiceItemActions) {
     animation: none !important;
     opacity: 1 !important;
   }
@@ -1054,32 +1060,39 @@ const container = `
   .editorsChoiceContainer .editorsChoiceItemTitle { font-family: var(--ec-font-title, inherit); }
   .editorsChoiceContainer .editorsChoiceItemMetadata { font-family: var(--ec-font-metadata, inherit); }
   .editorsChoiceContainer .editorsChoiceItemOverview { font-family: var(--ec-font-description, inherit); }
-  .editorsChoiceContainer :is(.editorsChoiceItemButton, .editorsChoiceInfoButton, .editorsChoiceOpeningAction) { font-family: var(--ec-font-button, inherit); }
-  .editorsChoiceOpeningSlide--center > .editorsChoiceContent { justify-content: center; }
-  .editorsChoiceOpeningSlide--center .editorsChoiceInfo {
+  .editorsChoiceContainer :is(.editorsChoiceItemButton, .editorsChoiceInfoButton, .editorsChoiceTrailerButton, .editorsChoiceOpeningAction) { font-family: var(--ec-font-button, inherit); }
+  /* Opening slides carry their own alignment; media slides follow the container's. */
+  /* Scrim styles other than automatic. Side gradients follow the alignment below. */
+  .editorsChoiceHeroMode .editorsChoiceContainer[data-ec-scrim="side"] .editorsChoiceItemBanner .editorsChoiceBackdrop::after {
+    background: linear-gradient(90deg, rgba(var(--ec-scrim-rgb, 0, 0, 0), calc(0.92 * var(--ec-scrim-strength, 1))) 0%, rgba(var(--ec-scrim-rgb, 0, 0, 0), calc(0.6 * var(--ec-scrim-strength, 1))) 38%, rgba(var(--ec-scrim-rgb, 0, 0, 0), 0) 72%);
+  }
+  :is(.editorsChoiceContainer[data-ec-align="center"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--center) > .editorsChoiceContent { justify-content: center; }
+  :is(.editorsChoiceContainer[data-ec-align="center"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--center) .editorsChoiceInfo {
     align-items: center;
     text-align: center;
   }
-  .editorsChoiceOpeningSlide--center .editorsChoiceContentMain { align-items: center; }
-  .editorsChoiceOpeningSlide--center .editorsChoiceItemTitle,
-  .editorsChoiceOpeningSlide--center .editorsChoiceItemMetadata { justify-content: center; }
-  .editorsChoiceOpeningSlide--center .editorsChoiceItemTitle { margin-right: 0; }
-  .editorsChoiceOpeningSlide--center .editorsChoiceItemActions {
+  :is(.editorsChoiceContainer[data-ec-align="center"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--center) .editorsChoiceContentMain { align-items: center; }
+  :is(.editorsChoiceContainer[data-ec-align="center"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--center) .editorsChoiceItemTitle,
+  :is(.editorsChoiceContainer[data-ec-align="center"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--center) .editorsChoiceItemMetadata { justify-content: center; }
+  :is(.editorsChoiceContainer[data-ec-align="center"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--center) .editorsChoiceItemTitle { margin-right: 0; }
+  :is(.editorsChoiceContainer[data-ec-align="center"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--center) .editorsChoiceItemLogo { object-position: center; }
+  :is(.editorsChoiceContainer[data-ec-align="center"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--center) .editorsChoiceItemActions {
     right: auto;
     left: 50%;
     justify-content: center;
     transform: translateX(-50%);
   }
-  .editorsChoiceOpeningSlide--right > .editorsChoiceContent { justify-content: end; }
-  .editorsChoiceOpeningSlide--right .editorsChoiceInfo {
+  :is(.editorsChoiceContainer[data-ec-align="right"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--right) > .editorsChoiceContent { justify-content: end; }
+  :is(.editorsChoiceContainer[data-ec-align="right"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--right) .editorsChoiceInfo {
     align-items: flex-end;
     text-align: right;
   }
-  .editorsChoiceOpeningSlide--right .editorsChoiceContentMain { align-items: flex-end; }
-  .editorsChoiceOpeningSlide--right .editorsChoiceItemTitle,
-  .editorsChoiceOpeningSlide--right .editorsChoiceItemMetadata { justify-content: flex-end; }
-  .editorsChoiceOpeningSlide--right .editorsChoiceItemTitle { margin-right: 0; }
-  .editorsChoiceOpeningSlide--right .editorsChoiceItemActions {
+  :is(.editorsChoiceContainer[data-ec-align="right"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--right) .editorsChoiceContentMain { align-items: flex-end; }
+  :is(.editorsChoiceContainer[data-ec-align="right"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--right) .editorsChoiceItemTitle,
+  :is(.editorsChoiceContainer[data-ec-align="right"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--right) .editorsChoiceItemMetadata { justify-content: flex-end; }
+  :is(.editorsChoiceContainer[data-ec-align="right"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--right) .editorsChoiceItemTitle { margin-right: 0; }
+  :is(.editorsChoiceContainer[data-ec-align="right"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--right) .editorsChoiceItemLogo { object-position: right center; }
+  :is(.editorsChoiceContainer[data-ec-align="right"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--right) .editorsChoiceItemActions {
     right: 0;
     left: auto;
     justify-content: flex-end;
@@ -1090,18 +1103,259 @@ const container = `
     left: 0;
     transform: none;
   }
-  .editorsChoiceHeroMode .editorsChoiceOpeningSlide--right .editorsChoiceBackdrop::after {
+  .editorsChoiceHeroMode :is(.editorsChoiceContainer[data-ec-align="right"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--right) .editorsChoiceBackdrop::after {
     transform: scaleX(-1);
   }
-  .editorsChoiceHeroMode .editorsChoiceOpeningSlide--center .editorsChoiceBackdrop::after {
-    background: linear-gradient(90deg, rgba(0,0,0,.22), rgba(0,0,0,.78) 50%, rgba(0,0,0,.22));
+  .editorsChoiceHeroMode :is(.editorsChoiceContainer[data-ec-align="center"] .editorsChoiceMediaSlide, .editorsChoiceOpeningSlide--center) .editorsChoiceBackdrop::after {
+    background: linear-gradient(90deg, rgba(var(--ec-scrim-rgb, 0, 0, 0), calc(0.22 * var(--ec-scrim-strength, 1))), rgba(var(--ec-scrim-rgb, 0, 0, 0), calc(0.78 * var(--ec-scrim-strength, 1))) 50%, rgba(var(--ec-scrim-rgb, 0, 0, 0), calc(0.22 * var(--ec-scrim-strength, 1))));
   }
+  .editorsChoiceHeroMode .editorsChoiceContainer.editorsChoiceContainer[data-ec-scrim="bottom"] .editorsChoiceItemBanner .editorsChoiceBackdrop::after {
+    background: linear-gradient(0deg, rgba(var(--ec-scrim-rgb, 0, 0, 0), calc(0.95 * var(--ec-scrim-strength, 1))) 0%, rgba(var(--ec-scrim-rgb, 0, 0, 0), calc(0.5 * var(--ec-scrim-strength, 1))) 38%, rgba(var(--ec-scrim-rgb, 0, 0, 0), 0) 75%);
+    transform: none;
+  }
+  .editorsChoiceHeroMode .editorsChoiceContainer.editorsChoiceContainer[data-ec-scrim="vignette"] .editorsChoiceItemBanner .editorsChoiceBackdrop::after {
+    background: radial-gradient(ellipse at center, rgba(var(--ec-scrim-rgb, 0, 0, 0), 0) 30%, rgba(var(--ec-scrim-rgb, 0, 0, 0), calc(0.9 * var(--ec-scrim-strength, 1))) 100%);
+    transform: none;
+  }
+  .editorsChoiceHeroMode .editorsChoiceContainer.editorsChoiceContainer[data-ec-scrim="none"] .editorsChoiceItemBanner .editorsChoiceBackdrop::after { display: none; }
   .editorsChoiceIsLoading .splide, .editorsChoiceMessage .splide { position: relative; visibility: visible; }
   .editorsChoiceIsLoading .editorsChoiceScrollButtonsContainer,
   .editorsChoiceIsLoading .editorsChoiceMobilePagination,
   .editorsChoiceMessage .editorsChoiceScrollButtonsContainer,
   .editorsChoiceMessage .editorsChoiceMobilePagination { visibility: hidden; }
   .editorsChoiceMessageText { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+
+  /* ===== Administrator appearance settings =====
+     applyBannerAppearance() sets these data-ec-* attributes and --ec-* properties
+     on the container; an absent attribute keeps the default layout above. */
+  .editorsChoiceItemTagline {
+    max-width: 100%;
+    margin: 0.3em 0 0;
+    overflow: hidden;
+    flex: none;
+    font-style: italic;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .editorsChoiceItemTitle.editorsChoiceItemTitle--secondary {
+    height: auto;
+    margin: 0.35em 0 0;
+    flex: none;
+    font-size: 1.15em;
+    font-weight: 600;
+  }
+
+  .editorsChoiceProgress { display: none; }
+  .editorsChoiceContainer[data-ec-indicator="progress"] .editorsChoiceProgress {
+    display: block;
+    position: absolute;
+    z-index: 4;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.18);
+    pointer-events: none;
+  }
+  .editorsChoiceProgress .splide__progress__bar {
+    width: 0;
+    height: 100%;
+    background: var(--ec-accent, rgba(255, 255, 255, 0.92));
+  }
+  .editorsChoiceIsLoading .editorsChoiceProgress,
+  .editorsChoiceSingleSlide .editorsChoiceProgress { display: none !important; }
+
+  /* Composition */
+  .editorsChoiceContainer[data-ec-valign="top"] .editorsChoiceItemBanner > .editorsChoiceContent { align-items: start; }
+  .editorsChoiceContainer[data-ec-valign="top"] .editorsChoiceInfo { justify-content: flex-start; }
+  .editorsChoiceContainer[data-ec-valign="top"] .editorsChoiceContent > :is(.editorsChoiceItemPoster, .editorsChoicePosterButton) { align-self: start; }
+  .editorsChoiceContainer[data-ec-valign="bottom"] .editorsChoiceItemBanner > .editorsChoiceContent { align-items: end; }
+  .editorsChoiceContainer[data-ec-valign="bottom"] .editorsChoiceInfo { justify-content: flex-end; }
+  .editorsChoiceContainer[data-ec-valign="bottom"] .editorsChoiceContent > :is(.editorsChoiceItemPoster, .editorsChoicePosterButton) { align-self: end; }
+  @media screen and (min-width: 501px) {
+    .editorsChoiceContainer[data-ec-width] .editorsChoiceItemBanner > .editorsChoiceContent {
+      grid-template-columns: minmax(0, var(--ec-content-width));
+    }
+    .editorsChoiceContainer[data-ec-width] .editorsChoiceItemBanner > .editorsChoiceContent--withPoster {
+      grid-template-columns: auto minmax(0, var(--ec-content-width));
+    }
+    .editorsChoiceContainer[data-ec-width] .editorsChoiceInfo { width: 100%; }
+  }
+  .editorsChoiceContainer[data-ec-poster="right"] .editorsChoiceItemBanner > .editorsChoiceContent--withPoster {
+    grid-template-columns: minmax(0, var(--ec-content-width, min(650px, 100%))) auto;
+  }
+  .editorsChoiceContainer[data-ec-poster="right"] .editorsChoiceContent > :is(.editorsChoiceItemPoster, .editorsChoicePosterButton) { order: 2; }
+  .editorsChoiceContainer[data-ec-poster-size="small"] { --ec-mobile-poster-half: min(10.7vw, 3.2rem); }
+  .editorsChoiceContainer[data-ec-poster-size="large"] { --ec-mobile-poster-half: min(16vw, 4.85rem); }
+  .editorsChoiceContainer[data-ec-poster-size="small"] .editorsChoiceContent > :is(.editorsChoiceItemPoster, .editorsChoicePosterButton) { height: min(60%, 28vw, 29rem); }
+  .editorsChoiceContainer[data-ec-poster-size="large"] .editorsChoiceContent > :is(.editorsChoiceItemPoster, .editorsChoicePosterButton) { height: min(88%, 44vw, 45rem); }
+  .editorsChoiceContainer.editorsChoiceCustomHeight[data-ec-poster-size="small"] .editorsChoiceContent > :is(.editorsChoiceItemPoster, .editorsChoicePosterButton) { height: min(80%, 28vw, 29rem); }
+  .editorsChoiceContainer.editorsChoiceCustomHeight[data-ec-poster-size="large"] .editorsChoiceContent > :is(.editorsChoiceItemPoster, .editorsChoicePosterButton) { height: min(100%, 44vw, 45rem); }
+  @media screen and (max-width: 500px) {
+    .editorsChoiceContainer[data-ec-poster="right"] .editorsChoiceItemBanner > .editorsChoiceContent--withPoster {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .editorsChoiceContainer[data-ec-poster="right"] .editorsChoiceContent--withPoster .editorsChoiceItemActions {
+      left: calc(50% + var(--ec-mobile-poster-half, min(13.5vw, 4rem)) + 0.425rem);
+    }
+    .editorsChoiceContainer[data-ec-poster-size="small"] .editorsChoiceContent > :is(.editorsChoiceItemPoster, .editorsChoicePosterButton) { height: min(50%, 32vw, 9.5rem); }
+    .editorsChoiceContainer[data-ec-poster-size="large"] .editorsChoiceContent > :is(.editorsChoiceItemPoster, .editorsChoicePosterButton) { height: min(80%, 48vw, 14.5rem); }
+    .editorsChoiceContainer.editorsChoiceCustomHeight[data-ec-poster-size="small"] .editorsChoiceContent > :is(.editorsChoiceItemPoster, .editorsChoicePosterButton) { height: min(80%, 32vw, 9.5rem); }
+    .editorsChoiceContainer.editorsChoiceCustomHeight[data-ec-poster-size="large"] .editorsChoiceContent > :is(.editorsChoiceItemPoster, .editorsChoicePosterButton) { height: min(100%, 48vw, 14.5rem); }
+    .editorsChoiceContainer[data-ec-mobile-poster="hidden"] .editorsChoiceItemBanner > .editorsChoiceContent--withPoster {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .editorsChoiceContainer[data-ec-mobile-poster="hidden"] .editorsChoiceContent > :is(.editorsChoiceItemPoster, .editorsChoicePosterButton) { display: none; }
+    .editorsChoiceContainer[data-ec-mobile-poster="hidden"] .editorsChoiceContent--withPoster .editorsChoiceItemActions { left: 50%; }
+    .editorsChoiceContainer[data-ec-mobile-overview="hidden"] .editorsChoiceMediaSlide .editorsChoiceItemOverview { display: none; }
+  }
+  .editorsChoiceContainer[data-ec-frame="inset"] .splide__track,
+  .editorsChoiceContainer[data-ec-frame="inset"] .editorsChoiceSkeleton {
+    margin-right: max(env(safe-area-inset-right), 3.3%);
+    margin-left: max(env(safe-area-inset-left), 3.3%);
+    overflow: hidden;
+    border-radius: var(--ec-radius, 16px);
+  }
+
+  /* Backdrop */
+  .editorsChoiceContainer[data-ec-backdrop-filter] .editorsChoiceBackdrop { filter: var(--ec-backdrop-filter); }
+  /* Oversize blurred artwork so its soft edges stay outside the banner. */
+  .editorsChoiceContainer[data-ec-backdrop-blur] .editorsChoiceBackdrop { inset: calc(var(--ec-backdrop-blur) * -2); }
+
+  /* Title and text */
+  .editorsChoiceContainer[data-ec-title-size] .editorsChoiceItemLogo {
+    width: min(calc(300px * var(--ec-title-scale)), 100%);
+    height: calc(5rem * var(--ec-title-scale));
+  }
+  .editorsChoiceContainer[data-ec-title-size] .editorsChoiceItemTitle {
+    height: calc(5rem * var(--ec-title-scale));
+    font-size: calc(1.8em * var(--ec-title-scale));
+  }
+  @media screen and (max-width: 500px) {
+    .editorsChoiceContainer[data-ec-title-size] :is(.editorsChoiceItemLogo, .editorsChoiceItemTitle) {
+      height: calc(3.75rem * var(--ec-title-scale));
+    }
+  }
+  .editorsChoiceContainer.editorsChoiceShortHeight[data-ec-title-size] :is(.editorsChoiceItemLogo, .editorsChoiceItemTitle) { height: 3rem; }
+  .editorsChoiceContainer[data-ec-title-size] .editorsChoiceItemTitle.editorsChoiceItemTitle--secondary {
+    height: auto;
+    font-size: calc(1.15em * var(--ec-title-scale));
+  }
+  .editorsChoiceContainer[data-ec-text-colors] .editorsChoiceItemTitle { color: var(--ec-title-color); }
+  .editorsChoiceContainer[data-ec-text-colors] :is(.editorsChoiceItemTagline, .editorsChoiceItemMetadata, .editorsChoiceItemOverview) {
+    color: var(--ec-text-color);
+  }
+  .editorsChoiceContainer[data-ec-text-shadow="soft"] .editorsChoiceContentMain { text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55); }
+  .editorsChoiceContainer[data-ec-text-shadow="soft"] .editorsChoiceItemLogo { filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.55)); }
+  .editorsChoiceContainer[data-ec-text-shadow="strong"] .editorsChoiceContentMain {
+    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.9), 0 0 18px rgba(0, 0, 0, 0.6);
+  }
+  .editorsChoiceContainer[data-ec-text-shadow="strong"] .editorsChoiceItemLogo {
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 14px rgba(0, 0, 0, 0.6));
+  }
+  .editorsChoiceContainer:is([data-ec-separator="dot"], [data-ec-separator="pipe"], [data-ec-separator="none"]) .editorsChoiceMediaSlide .editorsChoiceMetadataItem {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .editorsChoiceContainer:is([data-ec-separator="dot"], [data-ec-separator="pipe"]) .editorsChoiceMediaSlide .editorsChoiceMetadataItem + .editorsChoiceMetadataItem::before {
+    margin-right: 0.45rem;
+    opacity: 0.6;
+  }
+  .editorsChoiceContainer[data-ec-separator="dot"] .editorsChoiceMediaSlide .editorsChoiceMetadataItem + .editorsChoiceMetadataItem::before { content: "·"; }
+  .editorsChoiceContainer[data-ec-separator="pipe"] .editorsChoiceMediaSlide .editorsChoiceMetadataItem + .editorsChoiceMetadataItem::before { content: "|"; }
+  .editorsChoiceContainer[data-ec-separator="none"] .editorsChoiceMediaSlide .editorsChoiceItemMetadata { column-gap: 0.9rem; }
+  .editorsChoiceContainer[data-ec-overview-size="small"] .editorsChoiceItemOverview { font-size: 0.9em; }
+  .editorsChoiceContainer[data-ec-overview-size="large"] .editorsChoiceItemOverview { font-size: 1.12em; }
+  .editorsChoiceCriticIcon {
+    margin-right: 0.25em;
+    font-size: 1em;
+  }
+
+  /* Buttons */
+  .editorsChoiceContainer[data-ec-accent]:not([data-ec-button-variant]) :is(.editorsChoiceItemButton, .editorsChoiceOpeningAction.button-submit):not(.editorsChoiceCustomButton) {
+    background-color: var(--ec-accent) !important;
+    color: var(--ec-accent-text, #fff) !important;
+  }
+  .editorsChoiceContainer[data-ec-accent] .editorsChoicePlaybackProgressFill { background: var(--ec-accent); }
+  .editorsChoiceContainer[data-ec-accent] .splide__pagination__page.is-active { background-color: var(--ec-accent); }
+  .editorsChoiceContainer[data-ec-button-shape="rounded"] .editorsChoiceItemActions .emby-button { border-radius: 0.6em; }
+  .editorsChoiceContainer[data-ec-button-shape="pill"] .editorsChoiceItemActions .emby-button { border-radius: 999px; }
+  .editorsChoiceContainer[data-ec-button-shape="square"] .editorsChoiceItemActions .emby-button { border-radius: 0; }
+  .editorsChoiceContainer[data-ec-button-size="small"] .editorsChoiceItemActions { font-size: 0.88em; }
+  .editorsChoiceContainer[data-ec-button-size="large"] .editorsChoiceItemActions { font-size: 1.15em; }
+  .editorsChoiceContainer[data-ec-button-variant="outline"] .editorsChoiceItemActions .emby-button:not(.editorsChoiceCustomButton) {
+    border: 2px solid rgba(255, 255, 255, 0.72) !important;
+    color: #fff !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .editorsChoiceContainer[data-ec-button-variant="outline"] .editorsChoiceItemActions .button-submit:not(.editorsChoiceCustomButton) {
+    border-color: var(--ec-accent, #fff) !important;
+  }
+  .editorsChoiceContainer[data-ec-button-variant="glass"] .editorsChoiceItemActions .emby-button:not(.editorsChoiceCustomButton) {
+    border: 1px solid rgba(255, 255, 255, 0.26) !important;
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.14) !important;
+    box-shadow: none !important;
+    backdrop-filter: blur(10px) saturate(140%);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+  }
+  .editorsChoiceContainer[data-ec-button-variant="glass"] .editorsChoiceItemActions .button-submit:not(.editorsChoiceCustomButton) {
+    background: rgba(255, 255, 255, 0.24) !important;
+  }
+
+  /* Navigation */
+  .editorsChoiceContainer[data-ec-indicator="bars"] .splide__pagination__page {
+    width: 1.1rem;
+    height: 0.2rem;
+    border-radius: 2px;
+  }
+  .editorsChoiceContainer[data-ec-indicator="bars"] .splide__pagination__page.is-active { width: 1.8rem; }
+  .editorsChoiceContainer[data-ec-indicator="counter"] .editorsChoiceMobilePagination { display: flex; }
+  @media screen and (min-width: 501px) {
+    .editorsChoiceContainer[data-ec-indicator="counter"] .editorsChoiceMobilePageButton { display: none !important; }
+    .editorsChoiceContainer[data-ec-indicator="counter"] .editorsChoiceMobilePagination {
+      min-height: 2rem;
+      padding: 0.2rem 0.75rem;
+    }
+  }
+  .editorsChoiceContainer:is([data-ec-indicator="none"], [data-ec-indicator="progress"]) .editorsChoiceMobilePageStatus { display: none; }
+  .editorsChoiceContainer:is([data-ec-indicator="none"], [data-ec-indicator="progress"])[data-ec-nav="hidden"] .editorsChoiceMobilePagination {
+    display: none !important;
+  }
+  .editorsChoiceContainer[data-ec-indicator-position="left"] :is(.splide__pagination, .editorsChoiceMobilePagination) {
+    right: auto;
+    left: max(env(safe-area-inset-left), 3.3%);
+    transform: none;
+  }
+  .editorsChoiceContainer[data-ec-indicator-position="right"] :is(.splide__pagination, .editorsChoiceMobilePagination) {
+    right: max(env(safe-area-inset-right), 3.3%);
+    left: auto;
+    transform: none;
+  }
+  @media screen and (min-width: 900px) {
+    /* Leave room for the theme video toggle in the bottom-right corner. */
+    .editorsChoiceContainer[data-ec-indicator-position="right"] :is(.splide__pagination, .editorsChoiceMobilePagination) {
+      right: calc(max(env(safe-area-inset-right), 3.3%) + 3.5rem);
+    }
+  }
+  .editorsChoiceContainer[data-ec-arrows="minimal"] .editorsChoiceScrollButtonsContainer :is(.splide__arrow, .splide__toggle) {
+    background: transparent;
+    filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.8));
+  }
+  @media (hover: hover) {
+    .editorsChoiceContainer[data-ec-arrows="hover"] .editorsChoiceScrollButtonsContainer {
+      opacity: 0;
+      transition: opacity 160ms ease;
+    }
+    .editorsChoiceContainer[data-ec-arrows="hover"]:is(:hover, :focus-within) .editorsChoiceScrollButtonsContainer { opacity: 1; }
+  }
 </style>
 `;
 
@@ -1193,6 +1447,28 @@ function getLocalizedString(key) {
             ja: "話",
             ru: "эпизодов",
         },
+        endsAt: {
+            en: "Ends at",
+            fr: "Se termine à",
+            es: "Termina a las",
+            de: "Endet um",
+            it: "Finisce alle",
+            pt: "Termina às",
+            zh: "结束于",
+            ja: "終了",
+            ru: "Окончание в",
+        },
+        trailer: {
+            en: "Trailer",
+            fr: "Bande-annonce",
+            es: "Tráiler",
+            de: "Trailer",
+            it: "Trailer",
+            pt: "Trailer",
+            zh: "预告片",
+            ja: "予告編",
+            ru: "Трейлер",
+        },
     };
 
     const lang = (navigator.language || "en").slice(0, 2);
@@ -1230,65 +1506,100 @@ function formatRuntime(totalMinutes) {
     return remainder ? hours + "h " + remainder + "m" : hours + "h";
 }
 
-function buildMetadata(item) {
-    const metadata = [];
+const heroMetadataFields = ["type", "rating", "critic", "year", "runtime", "official", "genres", "ends"];
+const defaultHeroMetadataFields = ["type", "rating", "year", "runtime", "official"];
+
+function getMetadataFields(data) {
+    if (!Array.isArray(data?.heroMetadataFields)) return defaultHeroMetadataFields;
+    return [...new Set(data.heroMetadataFields.filter((field) => heroMetadataFields.includes(field)))];
+}
+
+function metadataItem(content, className = "", label = "") {
+    const ariaLabel = label ? ` aria-label="${escapeHtml(label)}"` : "";
+    return `<span role="listitem" class="editorsChoiceMetadataItem${className}"${ariaLabel}>${content}</span>`;
+}
+
+function formatEndTime(item) {
+    const minutes = item.playback_action === "resume" && Number.isInteger(item.playback_remaining_minutes)
+        ? item.playback_remaining_minutes
+        : item.item_type === "Movie" ? item.runtime_minutes : null;
+    if (!Number.isFinite(minutes) || minutes <= 0) return "";
+    const end = new Date(Date.now() + minutes * 60000);
+    return getLocalizedString("endsAt") + " " + end.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+function buildMetadata(item, data = {}) {
     const rating = typeof item.community_rating === "number" ? Number(item.community_rating.toFixed(1)) : 0;
-
-    if (item.item_type) {
-        metadata.push(
-            '<span role="listitem" class="editorsChoiceMetadataItem editorsChoiceMediaType">' +
-            escapeHtml(item.item_type) +
-            '</span>'
-        );
-    }
-
-    if (rating > 0) {
-        metadata.push(
-            '<span role="listitem" class="editorsChoiceMetadataItem">' +
-            '<span class="material-icons starIcon star" aria-hidden="true"></span>' +
-            rating +
-            '</span>'
-        );
-    }
-
-    if (Number.isInteger(item.year) && item.year > 0) {
-        metadata.push('<span role="listitem" class="editorsChoiceMetadataItem">' + item.year + '</span>');
-    }
-
-    if (item.item_type === "Movie") {
-        const runtime = formatRuntime(item.runtime_minutes);
-        if (runtime) metadata.push('<span role="listitem" class="editorsChoiceMetadataItem">' + runtime + '</span>');
-    } else if (item.item_type === "Series" && Number.isInteger(item.episode_count) && item.episode_count > 0) {
-        const episodeLabel = getLocalizedString(item.episode_count === 1 ? "episode" : "episodes");
-        metadata.push(
-            '<span role="listitem" class="editorsChoiceMetadataItem">' +
-            item.episode_count + " " + escapeHtml(episodeLabel) +
-            '</span>'
-        );
-    }
-
-    if (item.official_rating) {
-        metadata.push(
-            '<span role="listitem" class="editorsChoiceMetadataItem editorsChoiceOfficialRating">' +
-            escapeHtml(item.official_rating) +
-            '</span>'
-        );
-    }
+    const builders = {
+        type: () => item.item_type ? metadataItem(escapeHtml(item.item_type), " editorsChoiceMediaType") : "",
+        rating: () => rating > 0
+            ? metadataItem('<span class="material-icons starIcon star" aria-hidden="true"></span>' + rating)
+            : "",
+        critic: () => Number.isFinite(item.critic_rating) && item.critic_rating > 0
+            ? metadataItem('<span class="material-icons editorsChoiceCriticIcon thumb_up" aria-hidden="true"></span>' +
+                Math.round(item.critic_rating) + "%", "", `Critic rating ${Math.round(item.critic_rating)}%`)
+            : "",
+        year: () => Number.isInteger(item.year) && item.year > 0 ? metadataItem(String(item.year)) : "",
+        runtime: () => {
+            if (item.item_type === "Movie") {
+                const runtime = formatRuntime(item.runtime_minutes);
+                return runtime ? metadataItem(runtime) : "";
+            }
+            if (item.item_type === "Series" && Number.isInteger(item.episode_count) && item.episode_count > 0) {
+                const episodeLabel = getLocalizedString(item.episode_count === 1 ? "episode" : "episodes");
+                return metadataItem(item.episode_count + " " + escapeHtml(episodeLabel));
+            }
+            return "";
+        },
+        official: () => item.official_rating
+            ? metadataItem(escapeHtml(item.official_rating), " editorsChoiceOfficialRating")
+            : "",
+        genres: () => Array.isArray(item.genres) && item.genres.length
+            ? metadataItem(escapeHtml(item.genres.slice(0, bannerNumber(data.heroMaxGenres, 2, 1, 5)).join(", ")))
+            : "",
+        ends: () => {
+            const endTime = formatEndTime(item);
+            return endTime ? metadataItem(escapeHtml(endTime)) : "";
+        },
+    };
+    const metadata = getMetadataFields(data).map((field) => builders[field]()).filter(Boolean);
 
     return metadata.length
         ? '<div class="editorsChoiceItemMetadata" role="list">' + metadata.join("") + '</div>'
         : "";
 }
 
-function buildLogoOrTitle(item, reduceImageSizes) {
-    if (!item.hasLogo) return '<h1 class="editorsChoiceItemTitle">' + escapeHtml(item.name) + '</h1>';
-    const logoSize = reduceImageSizes ? "?width=300" : "";
-    return '<img class="editorsChoiceItemLogo" src="../Items/' + item.id +
+const bannerTitleScales = { small: 0.8, medium: 1, large: 1.25, xlarge: 1.5 };
+
+function buildLogoOrTitle(item, data) {
+    const display = ["title", "both"].includes(data.heroTitleDisplay) ? data.heroTitleDisplay : "logo";
+    const title = '<h1 class="editorsChoiceItemTitle">' + escapeHtml(item.name) + '</h1>';
+    if (!item.hasLogo || display === "title") return title;
+    const logoWidth = Math.round(300 * (bannerTitleScales[data.heroTitleSize] || 1));
+    const logoSize = data.reduceImageSizes ? `?width=${logoWidth}` : "";
+    const logo = '<img class="editorsChoiceItemLogo" src="../Items/' + item.id +
         '/Images/Logo/0' + logoSize + '" alt="' + escapeHtml(item.name) + '"/>';
+    return display === "both"
+        ? logo + '<h2 class="editorsChoiceItemTitle editorsChoiceItemTitle--secondary">' + escapeHtml(item.name) + '</h2>'
+        : logo;
+}
+
+function buildTagline(item, data) {
+    if (!data.showTagline || typeof item.tagline !== "string" || !item.tagline.trim()) return "";
+    return '<p class="editorsChoiceItemTagline">' + escapeHtml(item.tagline.trim()) + '</p>';
+}
+
+function trailerAttributes(item) {
+    const hasLocalTrailer = !!item.trailer_item_id;
+    const trailerAction = hasLocalTrailer ? "play" : "playtrailer";
+    const trailerItemId = item.trailer_item_id || item.id;
+    const trailerItemType = item.trailer_item_type || item.item_type;
+    const trailerIsFolder = hasLocalTrailer ? false : !!item.play_is_folder;
+    return `data-action="${trailerAction}" data-id="${escapeHtml(trailerItemId)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(trailerItemType)}" data-mediatype="Video" data-isfolder="${trailerIsFolder ? "true" : "false"}" data-positionticks="0"`;
 }
 
 function buildPoster(item, data) {
-    if (!item.hasPoster) return "";
+    if (!item.hasPoster || data.heroPosterMode === "hidden") return "";
 
     const viewportHeight = window.visualViewport?.height || window.innerHeight;
     const headerHeight = document.querySelector(".skinHeader")?.getBoundingClientRect().height || 0;
@@ -1302,13 +1613,7 @@ function buildPoster(item, data) {
 
     if (!item.has_trailer) return image;
 
-    const hasLocalTrailer = !!item.trailer_item_id;
-    const trailerAction = hasLocalTrailer ? "play" : "playtrailer";
-    const trailerItemId = item.trailer_item_id || item.id;
-    const trailerItemType = item.trailer_item_type || item.item_type;
-    const trailerIsFolder = hasLocalTrailer ? false : !!item.play_is_folder;
-
-    return `<button type="button" is="emby-button" class="editorsChoicePosterButton itemAction emby-button" data-action="${trailerAction}" data-id="${escapeHtml(trailerItemId)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(trailerItemType)}" data-mediatype="Video" data-isfolder="${trailerIsFolder ? "true" : "false"}" data-positionticks="0" title="Play trailer" aria-label="Play trailer: ${escapeHtml(item.name)}">${image}<span class="material-icons editorsChoiceTrailerIcon play_circle_filled" aria-hidden="true"></span></button>`;
+    return `<button type="button" is="emby-button" class="editorsChoicePosterButton itemAction emby-button" ${trailerAttributes(item)} title="Play trailer" aria-label="Play trailer: ${escapeHtml(item.name)}">${image}<span class="material-icons editorsChoiceTrailerIcon play_circle_filled" aria-hidden="true"></span></button>`;
 }
 
 function buildThemeVideo(item) {
@@ -1348,7 +1653,7 @@ function buildPlayButton(item, data) {
     const progress = Number.isFinite(item.playback_progress_percent)
         ? Math.max(0, Math.min(100, item.playback_progress_percent))
         : 0;
-    const progressBar = progress > 0
+    const progressBar = progress > 0 && data.showResumeProgress !== false
         ? `<span class="editorsChoicePlaybackProgress" role="progressbar" aria-label="Playback progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><span class="editorsChoicePlaybackProgressFill" style="width:${progress}%"></span></span>`
         : "";
     const customStyle = data.useCustomPlayButtonColors
@@ -1358,12 +1663,20 @@ function buildPlayButton(item, data) {
     return `<div class="editorsChoicePlayAction"><button type="button" is="emby-button" class="editorsChoiceItemButton itemAction raised button-submit emby-button${customStyle.className}"${customStyle.attribute} data-action="${nativeAction}" data-id="${escapeHtml(playItemId)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(playItemType)}" data-mediatype="Video" data-isfolder="${item.play_is_folder ? "true" : "false"}" data-positionticks="${positionTicks}" aria-label="${escapeHtml(buttonText)}: ${escapeHtml(item.name)}"><span class="material-icons editorsChoicePlayIcon play_arrow" aria-hidden="true"></span><span>${escapeHtml(buttonText)}</span></button>${progressBar}</div>`;
 }
 
-function buildInfoButton(item) {
+function buildInfoButton(item, data) {
+    if (data.showInfoButton === false) return "";
     return `<button type="button" is="emby-button" class="editorsChoiceInfoButton itemAction raised emby-button" data-action="link" data-id="${escapeHtml(item.id)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(item.item_type)}" data-mediatype="Video" data-isfolder="${item.play_is_folder ? "true" : "false"}" aria-label="More information: ${escapeHtml(item.name)}"><span class="material-icons editorsChoiceInfoIcon info" aria-hidden="true"></span></button>`;
 }
 
+function buildTrailerButton(item, data) {
+    if (!data.showTrailerButton || !item.has_trailer) return "";
+    const label = getLocalizedString("trailer");
+    return `<button type="button" is="emby-button" class="editorsChoiceTrailerButton itemAction raised emby-button" ${trailerAttributes(item)} aria-label="${escapeHtml(label)}: ${escapeHtml(item.name)}"><span class="material-icons movie" aria-hidden="true"></span><span>${escapeHtml(label)}</span></button>`;
+}
+
 function buildActions(item, data) {
-    return `<div class="editorsChoiceItemActions">${buildPlayButton(item, data)}${buildInfoButton(item)}</div>`;
+    const buttons = buildPlayButton(item, data) + buildTrailerButton(item, data) + buildInfoButton(item, data);
+    return buttons ? `<div class="editorsChoiceItemActions">${buttons}</div>` : "";
 }
 
 function buildBannerSizeParam(reduceImageSizes) {
@@ -1643,7 +1956,135 @@ function applyBannerFonts(data, element) {
     }
 }
 
+function bannerChoice(value, allowed, fallback) {
+    return allowed.includes(value) ? value : fallback;
+}
+
+function bannerColor(value) {
+    return /^#[0-9a-f]{6}$/i.test(value || "") ? value : null;
+}
+
+function bannerRgb(hex) {
+    const value = Number.parseInt(hex.slice(1), 16);
+    return [value >> 16 & 255, value >> 8 & 255, value & 255];
+}
+
+function bannerContrastText(hex) {
+    const [red, green, blue] = bannerRgb(hex);
+    return (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255 > 0.6 ? "#101010" : "#ffffff";
+}
+
+const bannerMotionScales = { subtle: 1.008, strong: 1.05 };
+const defaultBannerEasing = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+// The server sends a normalized cubic-bezier(); anything else keeps the default.
+function bannerEasing(data) {
+    const number = "-?\\d+(?:\\.\\d+)?";
+    const pattern = new RegExp(`^cubic-bezier\\((${number}), ${number}, (${number}), ${number}\\)$`);
+    const match = pattern.exec(data.transitionEasing || "");
+    if (!match) return defaultBannerEasing;
+    const inRange = (value) => Number(value) >= 0 && Number(value) <= 1;
+    return inRange(match[1]) && inRange(match[2]) ? data.transitionEasing : defaultBannerEasing;
+}
+
+// Translates administrator appearance settings into data-ec-* attributes and
+// --ec-* properties. Settings at their defaults leave no trace, so the
+// stylesheet's original layout applies unchanged.
+function applyBannerAppearance(data, element, autoplay) {
+    const attribute = (name, value) => value
+        ? element.setAttribute(`data-ec-${name}`, value)
+        : element.removeAttribute(`data-ec-${name}`);
+    const property = (name, value) => value == null
+        ? element.style.removeProperty(`--ec-${name}`)
+        : element.style.setProperty(`--ec-${name}`, value);
+    const option = (value, fallback, allowed) => allowed.includes(value) && value !== fallback ? value : null;
+
+    attribute("valign", option(data.heroContentVerticalPosition, "center", ["top", "bottom"]));
+    const width = bannerNumber(data.heroContentMaxWidth, 0, 0, 90);
+    attribute("width", width >= 30 ? "custom" : null);
+    property("content-width", width >= 30 ? `${width}%` : null);
+    attribute("poster", option(data.heroPosterMode, "auto", ["right", "hidden"]));
+    attribute("poster-size", option(data.heroPosterSize, "medium", ["small", "large"]));
+    attribute("mobile-poster", data.mobileHidePoster ? "hidden" : null);
+    const inset = data.heroFrameStyle === "inset";
+    attribute("frame", inset ? "inset" : null);
+    property("radius", inset ? `${bannerNumber(data.heroCornerRadius, 16, 0, 32)}px` : null);
+
+    const blur = bannerNumber(data.heroBackdropBlur, 0, 0, 20);
+    const brightness = bannerNumber(data.heroBackdropBrightness, 100, 50, 150);
+    const saturation = bannerNumber(data.heroBackdropSaturation, 100, 0, 150);
+    const filters = [
+        blur ? `blur(${blur}px)` : "",
+        brightness !== 100 ? `brightness(${brightness}%)` : "",
+        saturation !== 100 ? `saturate(${saturation}%)` : "",
+    ].filter(Boolean).join(" ");
+    attribute("backdrop-filter", filters ? "custom" : null);
+    property("backdrop-filter", filters || null);
+    attribute("backdrop-blur", blur ? "custom" : null);
+    property("backdrop-blur", blur ? `${blur}px` : null);
+
+    attribute("scrim", option(data.heroScrimStyle, "auto", ["side", "bottom", "vignette", "none"]));
+    const scrimColor = bannerColor(data.heroScrimColor);
+    property("scrim-rgb", scrimColor && scrimColor.toLowerCase() !== "#000000" ? bannerRgb(scrimColor).join(", ") : null);
+    const scrimStrength = bannerNumber(data.heroScrimStrength, 100, 0, 100);
+    property("scrim-strength", scrimStrength !== 100 ? String(scrimStrength / 100) : null);
+
+    const accent = bannerColor(data.heroAccentColor);
+    attribute("accent", accent ? "custom" : null);
+    property("accent", accent);
+    property("accent-text", accent ? bannerContrastText(accent) : null);
+
+    const titleSize = option(data.heroTitleSize, "medium", ["small", "large", "xlarge"]);
+    attribute("title-size", titleSize);
+    property("title-scale", titleSize ? String(bannerTitleScales[titleSize]) : null);
+    const titleColor = bannerColor(data.heroTitleColor);
+    const textColor = bannerColor(data.heroTextColor);
+    attribute("text-colors", titleColor || textColor ? "custom" : null);
+    property("title-color", titleColor);
+    property("text-color", textColor);
+    attribute("text-shadow", option(data.heroTextShadow, "none", ["soft", "strong"]));
+    attribute("separator", option(data.heroMetadataSeparator, "pill", ["dot", "pipe", "none"]));
+
+    const overviewLines = bannerNumber(data.heroOverviewMaxLines, 4, 1, 8);
+    property("overview-lines", overviewLines !== 4 ? String(overviewLines) : null);
+    property("overview-lines-compact", overviewLines < 2 ? String(overviewLines) : null);
+    attribute("overview-size", option(data.heroOverviewSize, "medium", ["small", "large"]));
+    attribute("mobile-overview", data.mobileHideDescription ? "hidden" : null);
+
+    attribute("button-shape", option(data.heroButtonShape, "default", ["rounded", "pill", "square"]));
+    attribute("button-variant", option(data.heroButtonVariant, "filled", ["outline", "glass"]));
+    attribute("button-size", option(data.heroButtonSize, "medium", ["small", "large"]));
+
+    attribute("indicator", option(bannerIndicatorStyle(data, autoplay), "dots", ["none", "bars", "counter", "progress"]));
+    attribute("indicator-position", option(data.heroIndicatorPosition, "center", ["left", "right"]));
+    attribute("nav", data.showNavigationArrows === false ? "hidden" : null);
+    attribute("arrows", option(data.heroArrowStyle, "circle", ["minimal", "hover"]));
+
+    const easing = bannerEasing(data);
+    property("easing", easing !== defaultBannerEasing ? easing : null);
+    const motion = option(data.backgroundMotionIntensity, "normal", ["subtle", "strong"]);
+    property("motion-scale", motion ? String(bannerMotionScales[motion]) : null);
+}
+
+// An autoplay progress bar has nothing to show without autoplay, so fall back to dots.
+function bannerIndicatorStyle(data, autoplay) {
+    const style = bannerChoice(data.heroIndicatorStyle, ["none", "dots", "bars", "counter", "progress"], "dots");
+    return style === "progress" && !autoplay ? "dots" : style;
+}
+
+// Phones can override the desktop alignment, so this runs with every resize.
+function applyBannerAlignment(data, element) {
+    const phone = window.matchMedia("(max-width: 500px)").matches;
+    const mobile = bannerChoice(data.mobileContentAlignment, ["inherit", "left", "center"], "inherit");
+    const alignment = phone && mobile !== "inherit"
+        ? mobile
+        : bannerChoice(data.heroContentAlignment, ["left", "center", "right"], "left");
+    if (alignment === "left") element.removeAttribute("data-ec-align");
+    else element.setAttribute("data-ec-align", alignment);
+}
+
 function applyBannerGeometry(data, element) {
+    applyBannerAlignment(data, element);
     const mobile = window.matchMedia("(max-width: 767px)").matches;
     const mode = bannerHeightSettings(data, mobile).mode;
     const viewportHeight = window.visualViewport?.height || window.innerHeight;
@@ -1680,6 +2121,7 @@ function createBannerShell(parent, data) {
     parent.classList.add(EDITORS_CHOICE_ADDED_CLASS);
     parent.prepend(template.content);
     applyBannerFonts(data, element);
+    applyBannerAppearance(data, element, !!data.autoplay);
     const update = () => applyBannerGeometry(data, element);
     update();
     const frame = requestAnimationFrame(update);
@@ -1816,24 +2258,34 @@ function ensureSplideLoaded() {
 }
 
 /* ===== Render ===== */
+// A custom focus point overrides the position classes with an inline style.
+function backdropFocusStyle(data) {
+    if (data.heroBackdropPosition !== "custom") return "";
+    const x = bannerNumber(data.heroBackdropFocusX, 50, 0, 100);
+    const y = bannerNumber(data.heroBackdropFocusY, 50, 0, 100);
+    return ` style="background-position:${x}% ${y}%"`;
+}
+
 function renderHeroSlide(item, data) {
-    const metadata = buildMetadata(item);
-    const logoOrTitle = buildLogoOrTitle(item, data.reduceImageSizes);
+    const metadata = buildMetadata(item, data);
+    const logoOrTitle = buildLogoOrTitle(item, data);
+    const tagline = buildTagline(item, data);
     const overview = buildOverview(item, "No Description Found");
     const actions = buildActions(item, data);
     const poster = buildPoster(item, data);
     const themeVideo = data.enableThemeVideos !== false ? buildThemeVideo(item) : "";
-    const bannerClass = `editorsChoiceItemBanner splide__slide${themeVideo ? " editorsChoiceItemBanner--withThemeVideo" : ""}`;
+    const bannerClass = `editorsChoiceItemBanner editorsChoiceMediaSlide splide__slide${themeVideo ? " editorsChoiceItemBanner--withThemeVideo" : ""}`;
     const contentClass = `editorsChoiceContent${poster ? " editorsChoiceContent--withPoster" : ""}`;
-    const infoClass = "editorsChoiceInfo editorsChoiceInfo--withAction";
+    const infoClass = `editorsChoiceInfo${actions ? " editorsChoiceInfo--withAction" : ""}`;
 
     const backdropSize = buildBannerSizeParam(data.reduceImageSizes);
-    const backdropUrl = `../Items/${item.id}/Images/Backdrop/0${backdropSize}`;
+    const backdropType = ["Thumb", "Primary"].includes(item.backdrop_type) ? item.backdrop_type : "Backdrop";
+    const backdropUrl = `../Items/${item.id}/Images/${backdropType}/0${backdropSize}`;
     const extraClass = data.heroBackdropPosition === "center" ? "editorsChoiceBackdropCenter" :
         data.heroBackdropPosition === "top" ? "editorsChoiceBackdropTop" :
         data.heroBackdropPosition === "bottom" ? "editorsChoiceBackdropBottom" : "";
 
-    return `<article class="${bannerClass}"><div class="editorsChoiceBackdrop ${extraClass}" data-backdrop-url="${escapeHtml(backdropUrl)}"></div>${themeVideo}<div class="editorsChoiceDimming" aria-hidden="true"></div><div class="${contentClass}">${poster}<div class="${infoClass}"><div class="editorsChoiceContentMain">${logoOrTitle}${metadata}${overview}</div>${actions}</div></div></article>`;
+    return `<article class="${bannerClass}"><div class="editorsChoiceBackdrop ${extraClass}"${backdropFocusStyle(data)} data-backdrop-url="${escapeHtml(backdropUrl)}"></div>${themeVideo}<div class="editorsChoiceDimming" aria-hidden="true"></div><div class="${contentClass}">${poster}<div class="${infoClass}"><div class="editorsChoiceContentMain">${logoOrTitle}${tagline}${metadata}${overview}</div>${actions}</div></div></article>`;
 }
 
 function renderOpeningActions(actions) {
@@ -1868,7 +2320,7 @@ function renderOpeningMessage(slide, data) {
     const infoClass = `editorsChoiceInfo${actions ? " editorsChoiceInfo--withAction" : ""}`;
     const body = slide.bodyHtml ? `<div class="editorsChoiceItemOverview">${slide.bodyHtml}</div>` : "";
 
-    return `<article class="editorsChoiceItemBanner editorsChoiceOpeningSlide editorsChoiceOpeningSlide--${alignment}${backgroundClass} splide__slide"><div class="editorsChoiceBackdrop ${extraClass}" data-backdrop-url="${escapeHtml(backdropUrl)}"></div><div class="editorsChoiceDimming" aria-hidden="true"></div><div class="editorsChoiceContent"><div class="${infoClass}"><div class="editorsChoiceContentMain"><div class="editorsChoiceItemMetadata" role="list"><span role="listitem" class="editorsChoiceMetadataItem">${escapeHtml(slide.eyebrow || "Welcome")}</span></div><h1 class="editorsChoiceItemTitle">${escapeHtml(slide.title || "Welcome")}</h1>${body}</div>${actions}</div></div></article>`;
+    return `<article class="editorsChoiceItemBanner editorsChoiceOpeningSlide editorsChoiceOpeningSlide--${alignment}${backgroundClass} splide__slide"><div class="editorsChoiceBackdrop ${extraClass}"${backdropFocusStyle(data)} data-backdrop-url="${escapeHtml(backdropUrl)}"></div><div class="editorsChoiceDimming" aria-hidden="true"></div><div class="editorsChoiceContent"><div class="${infoClass}"><div class="editorsChoiceContentMain"><div class="editorsChoiceItemMetadata" role="list"><span role="listitem" class="editorsChoiceMetadataItem">${escapeHtml(slide.eyebrow || "Welcome")}</span></div><h1 class="editorsChoiceItemTitle">${escapeHtml(slide.title || "Welcome")}</h1>${body}</div>${actions}</div></div></article>`;
 }
 
 /* ===== Main setup ===== */
@@ -1956,10 +2408,20 @@ async function setup() {
                     }
                 }
                 const containerId = containerElem.id;
-                applyBannerFonts(data, containerElem);
-                applyBannerGeometry(data, containerElem);
                 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
                 const autoplayEnabled = !!data.autoplay && !prefersReducedMotion && slides.length > 1;
+                applyBannerFonts(data, containerElem);
+                applyBannerAppearance(data, containerElem, autoplayEnabled);
+                applyBannerGeometry(data, containerElem);
+                containerElem.querySelector(".editorsChoiceCustomCss")?.remove();
+                if (typeof data.heroCustomCss === "string" && data.heroCustomCss.trim()) {
+                    const customCss = document.createElement("style");
+                    customCss.className = "editorsChoiceCustomCss";
+                    // Nesting scopes the administrator's selectors to this banner, and the
+                    // ID lets them override the plugin's own rules.
+                    customCss.textContent = `#${containerId} {\n${data.heroCustomCss}\n}`;
+                    containerElem.append(customCss);
+                }
 
                 containerElem.classList.add(`editorsChoiceHeight-${data.bannerHeight}`);
                 containerElem.style.setProperty("--ec-dimming", data.enableBackgroundDimming
@@ -2017,13 +2479,13 @@ async function setup() {
                     arrows: !!data.showNavigationArrows,
                     rewind: true,
                     interval: data.autoplayInterval,
-                    pauseOnHover: true,
+                    pauseOnHover: data.pauseOnHover !== false,
                     pauseOnFocus: true,
-                    pagination: true,
+                    pagination: ["dots", "bars"].includes(bannerIndicatorStyle(data, autoplayEnabled)),
                     keyboard: true,
                     waitForTransition: true,
                     speed: effect === "instant" || prefersReducedMotion ? 0 : bannerNumber(data.transitionDurationMs, 0, 0, 3000) || 650,
-                    easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+                    easing: bannerEasing(data),
                     height: `${bannerHeightPixels(data, window.innerWidth < 768, window.visualViewport?.height || window.innerHeight, document.querySelector(".skinHeader")?.getBoundingClientRect().height || 0)}px`,
                 });
 
@@ -2043,19 +2505,20 @@ async function setup() {
                     return prepareHeroBackdrop($containerElem, slide, fetchPriority);
                 };
 
-                const activateThemeVideoAt = (index) => {
-                    if (data.enableThemeVideos === false) return Promise.resolve();
+                const themeVideoDelay = bannerNumber(data.themeVideoStartDelaySeconds, 0, 0, 10) * 1000;
+                const activateThemeVideoAt = async (index) => {
+                    if (data.enableThemeVideos === false) return;
                     if ($containerElem.hasClass("editorsChoiceThemeVideoHidden")) {
                         pauseThemeVideos($containerElem[0]);
-                        return Promise.resolve();
+                        return;
                     }
                     const slides = getOriginalSlides();
-                    if (!slides.length) return Promise.resolve();
+                    if (!slides.length) return;
                     const normalizedIndex = ((index % slides.length) + slides.length) % slides.length;
                     const originalSlide = slides[normalizedIndex];
                     const originalVideo = originalSlide.querySelector(".editorsChoiceThemeVideoPlayer");
                     pauseThemeVideos($containerElem[0]);
-                    if (!originalVideo) return Promise.resolve();
+                    if (!originalVideo) return;
 
                     const themeVideoId = originalVideo.dataset.themeVideoId;
                     const activeSlide = Array.from($list[0].children).find((candidate) => {
@@ -2063,7 +2526,15 @@ async function setup() {
                         return candidate.classList.contains("is-active")
                             && candidateVideo?.dataset.themeVideoId === themeVideoId;
                     });
-                    return prepareThemeVideo(activeSlide || originalSlide, true);
+                    const videoSlide = activeSlide || originalSlide;
+                    if (themeVideoDelay) {
+                        // Load during the delay so playback starts promptly afterwards.
+                        prepareThemeVideo(videoSlide, false).catch(() => {});
+                        await new Promise((resolve) => setTimeout(resolve, themeVideoDelay));
+                        if (slider.index !== index || !containerElem.isConnected
+                            || $containerElem.hasClass("editorsChoiceThemeVideoHidden")) return;
+                    }
+                    return prepareThemeVideo(videoSlide, true);
                 };
 
                 const preloadFollowingSlide = () => {

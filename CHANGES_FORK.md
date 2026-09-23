@@ -20,6 +20,21 @@ The screenshot at the top of [README.md](README.md) shows the fork's Hero design
 - Added background dimming (off by default), background motion (on by default),
   and theme videos (on by default). Disabled videos are not loaded.
 - Respect reduced-motion preferences for transitions, artwork, videos, and autoplay.
+- Reorganized settings into Content, Opening slide, Layout, Style, Motion, and
+  Advanced tabs with a sticky save bar, unsaved-change markers, Discard, and a
+  live desktop/mobile preview that uses titles from the library.
+- Added hero customization: alignment (desktop and phone), vertical position,
+  text width, poster placement and size, inset frame, backdrop image type, focus
+  point, blur/brightness/saturation, scrim style/color/strength, accent color,
+  title display and size, text colors and shadow, taglines, ordered metadata
+  fields (adding critic rating, genres, and end time), description lines and
+  size, details/trailer/resume-progress toggles, button shape/style/size,
+  artwork zoom intensity, theme video delay, pause on hover, slide indicator
+  style and position, arrow style, and custom CSS. Defaults match the previous
+  layout, and every value is validated on the server before reaching browsers.
+- Added an animation curve for slide transitions, the text reveal, and the
+  artwork zoom: ten templates or a custom cubic Bézier curve, with a draggable
+  and keyboard-accessible editor and a playback demo.
 
 ## Content and playback
 

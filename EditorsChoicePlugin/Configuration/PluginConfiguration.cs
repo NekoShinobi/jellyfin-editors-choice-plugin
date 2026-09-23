@@ -153,6 +153,117 @@ public class PluginConfiguration : BasePluginConfiguration
 
     public string PlayButtonTextColor { get; set; } = "#ffffff";
 
+    // Hero composition. Defaults reproduce the layout from earlier releases.
+    public string HeroContentAlignment { get; set; } = "left";
+
+    public string MobileContentAlignment { get; set; } = "inherit";
+
+    public string HeroContentVerticalPosition { get; set; } = "center";
+
+    // Percentage of the banner width; zero keeps the automatic 650px text column.
+    public int HeroContentMaxWidth { get; set; } = 0;
+
+    public string HeroPosterMode { get; set; } = "auto";
+
+    public string HeroPosterSize { get; set; } = "medium";
+
+    public bool MobileHidePoster { get; set; } = false;
+
+    public string HeroFrameStyle { get; set; } = "bleed";
+
+    public int HeroCornerRadius { get; set; } = 16;
+
+    // Hero backdrop. HeroBackdropPosition "custom" enables the focus coordinates.
+    public string HeroBackdropImageType { get; set; } = "Backdrop";
+
+    public int HeroBackdropFocusX { get; set; } = 50;
+
+    public int HeroBackdropFocusY { get; set; } = 50;
+
+    public int HeroBackdropBlur { get; set; } = 0;
+
+    public int HeroBackdropBrightness { get; set; } = 100;
+
+    public int HeroBackdropSaturation { get; set; } = 100;
+
+    public string HeroScrimStyle { get; set; } = "auto";
+
+    public string HeroScrimColor { get; set; } = "#000000";
+
+    public int HeroScrimStrength { get; set; } = 100;
+
+    // Hero typography and colour.
+    public bool UseHeroAccentColor { get; set; } = false;
+
+    public string HeroAccentColor { get; set; } = "#00a4dc";
+
+    public string HeroTitleDisplay { get; set; } = "logo";
+
+    public string HeroTitleSize { get; set; } = "medium";
+
+    public bool UseCustomTextColors { get; set; } = false;
+
+    public string HeroTitleColor { get; set; } = "#ffffff";
+
+    public string HeroTextColor { get; set; } = "#ffffff";
+
+    public string HeroTextShadow { get; set; } = "none";
+
+    public bool ShowTagline { get; set; } = false;
+
+    public string[] HeroMetadataFields { get; set; } = ["type", "rating", "year", "runtime", "official"];
+
+    public string HeroMetadataSeparator { get; set; } = "pill";
+
+    public int HeroMaxGenres { get; set; } = 2;
+
+    public int HeroOverviewMaxLines { get; set; } = 4;
+
+    public string HeroOverviewSize { get; set; } = "medium";
+
+    public bool MobileHideDescription { get; set; } = false;
+
+    // Hero buttons.
+    public bool ShowInfoButton { get; set; } = true;
+
+    public bool ShowTrailerButton { get; set; } = false;
+
+    public string HeroButtonShape { get; set; } = "default";
+
+    public string HeroButtonVariant { get; set; } = "filled";
+
+    public string HeroButtonSize { get; set; } = "medium";
+
+    public bool ShowResumeProgress { get; set; } = true;
+
+    // Hero motion and navigation.
+    // One easing curve shapes slide transitions, the text reveal and the artwork zoom.
+    // A preset name from BannerSettings.EasingPresets, or "custom" for the points below.
+    public string TransitionEasing { get; set; } = "smooth";
+
+    public double TransitionEasingX1 { get; set; } = 0.22;
+
+    public double TransitionEasingY1 { get; set; } = 1;
+
+    public double TransitionEasingX2 { get; set; } = 0.36;
+
+    public double TransitionEasingY2 { get; set; } = 1;
+
+    public string BackgroundMotionIntensity { get; set; } = "normal";
+
+    public int ThemeVideoStartDelaySeconds { get; set; } = 0;
+
+    public bool PauseOnHover { get; set; } = true;
+
+    public string HeroIndicatorStyle { get; set; } = "dots";
+
+    public string HeroIndicatorPosition { get; set; } = "center";
+
+    public string HeroArrowStyle { get; set; } = "circle";
+
+    // Administrator CSS, nested inside the banner container on the client.
+    public string HeroCustomCss { get; set; } = "";
+
     // Legacy XML compatibility only; Hero banners have no section heading.
     public string? Heading { get; set; }
     public string? PlayButtonText { get; set; }

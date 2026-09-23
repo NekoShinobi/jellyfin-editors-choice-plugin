@@ -124,6 +124,11 @@ public class EditorsChoiceActivityController : ControllerBase
             response.Add("favourites", items);
             if (openingSlide is not null) response.Add("openingSlide", openingSlide);
             foreach (var setting in BannerSettings.Create(_config)) response.Add(setting.Key, setting.Value);
+            // Kept out of the pre-login bootstrap: it is only needed once slides render.
+            if (BannerSettings.NormalizeCustomCss(_config.HeroCustomCss) is { } customCss)
+            {
+                response.Add("heroCustomCss", customCss);
+            }
 
             return Ok(response);
 
@@ -173,6 +178,14 @@ public class EditorsChoiceActivityController : ControllerBase
         }
 
         if (_config.ShowDescription) itemObject.Add("overview_html", RenderOverviewMarkdown(item.Overview));
+        if (_config.ShowTagline && LimitedText(item.Tagline, 200) is { } tagline) itemObject.Add("tagline", tagline);
+        if (item.CriticRating.HasValue) itemObject.Add("critic_rating", (int)Math.Round(item.CriticRating.Value));
+        if (_config.HeroMetadataFields?.Contains("genres") == true && item.Genres is { Length: > 0 } genres)
+        {
+            itemObject.Add("genres", genres.Take(Math.Clamp(_config.HeroMaxGenres, 1, 5)).ToArray());
+        }
+
+        if (GetBackdropImageType(item) is { } backdropType) itemObject.Add("backdrop_type", backdropType);
         if (item.ProductionYear.HasValue) itemObject.Add("year", item.ProductionYear.Value);
         if (itemKind == BaseItemKind.Movie && item.RunTimeTicks.HasValue)
         {
@@ -192,6 +205,18 @@ public class EditorsChoiceActivityController : ControllerBase
 
         AddPlaybackState(item, itemObject, activeUser);
         return itemObject;
+    }
+
+    // Falls back to the Backdrop image (by returning null) when the title lacks the chosen type.
+    private string? GetBackdropImageType(BaseItem item)
+    {
+        MediaBrowser.Model.Entities.ImageType? type = _config.HeroBackdropImageType switch
+        {
+            "Thumb" => MediaBrowser.Model.Entities.ImageType.Thumb,
+            "Primary" => MediaBrowser.Model.Entities.ImageType.Primary,
+            _ => null
+        };
+        return type is { } imageType && item.HasImage(imageType) ? imageType.ToString() : null;
     }
 
     private Dictionary<string, object>? CreateOpeningSlide(

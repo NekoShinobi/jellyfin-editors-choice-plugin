@@ -327,9 +327,87 @@ async function expectHeight(page, expected) {
         await dependency.close();
         console.log('PASS early skeleton, stable hydration, fonts, empty state, API and dependency retry');
 
-        const settings = await browser.newPage();
+        const appearanceItem = {
+            id: 'look', name: 'Look Test', item_type: 'Movie', year: 2024, hasPoster: true, has_trailer: true,
+            genres: ['Drama', 'Mystery', 'Thriller'], tagline: 'Every lighthouse keeps a secret.',
+            overview_html: '<p>Overview text.</p>',
+        };
+        const defaults = await home(browser, { enableThemeVideos: false });
+        assert.deepEqual(await defaults.locator('.editorsChoiceContainer').evaluate(el =>
+            el.getAttributeNames().filter(name => name.startsWith('data-ec-'))), []);
+        assert.equal(await defaults.locator('.splide__slide.is-active:not(.splide__slide--clone) .editorsChoiceInfoButton').count(), 1);
+        assert.equal(await defaults.evaluate(() => testSlider.options.pagination), true);
+        await defaults.close();
+        const styled = await home(browser, {
+            enableThemeVideos: false, favourites: [appearanceItem, { ...appearanceItem, id: 'look-2' }],
+            heroContentAlignment: 'center', heroScrimStyle: 'bottom', heroIndicatorStyle: 'counter',
+            heroIndicatorPosition: 'left', heroTitleDisplay: 'title', heroMetadataFields: ['year', 'genres', 'type', 'bogus'],
+            heroMaxGenres: 2, heroMetadataSeparator: 'dot', heroButtonVariant: 'glass', showInfoButton: false,
+            showTrailerButton: true, showTagline: true, heroPosterMode: 'right', heroOverviewMaxLines: 1,
+            heroBackdropPosition: 'custom', heroBackdropFocusX: 30, heroBackdropFocusY: 70, heroBackdropBlur: 4,
+            heroCustomCss: '.editorsChoiceItemTitle { letter-spacing: 3px; }',
+        });
+        const styledSlide = styled.locator('.splide__slide.is-active:not(.splide__slide--clone)');
+        const container = styled.locator('.editorsChoiceContainer');
+        assert.equal(await container.getAttribute('data-ec-align'), 'center');
+        assert.equal(await container.getAttribute('data-ec-scrim'), 'bottom');
+        assert.equal(await container.getAttribute('data-ec-indicator'), 'counter');
+        assert.deepEqual(await styledSlide.locator('.editorsChoiceMetadataItem').allTextContents(), ['2024', 'Drama, Mystery', 'Movie']);
+        assert.equal(await styledSlide.locator('.editorsChoiceMetadataItem').nth(1).evaluate(el => getComputedStyle(el, '::before').content), '"·"');
+        assert.equal(await styledSlide.locator('.editorsChoiceItemTagline').textContent(), 'Every lighthouse keeps a secret.');
+        assert.equal(await styledSlide.locator('.editorsChoiceInfoButton').count(), 0);
+        assert.equal(await styledSlide.locator('.editorsChoiceTrailerButton').count(), 1);
+        assert.equal(await styledSlide.locator('.editorsChoiceInfo').evaluate(el => getComputedStyle(el).textAlign), 'center');
+        assert.equal(await styledSlide.locator('.editorsChoicePosterButton').evaluate(el => getComputedStyle(el).order), '2');
+        assert.equal(await styledSlide.locator('.editorsChoiceItemTitle').evaluate(el => getComputedStyle(el).letterSpacing), '3px');
+        assert.equal(await styledSlide.locator('.editorsChoiceItemOverview').evaluate(el => getComputedStyle(el).webkitLineClamp), '1');
+        assert.match(await styledSlide.locator('.editorsChoiceBackdrop').evaluate(el => getComputedStyle(el, '::after').backgroundImage), /^linear-gradient\(0deg/);
+        assert.equal(await styledSlide.locator('.editorsChoiceBackdrop').evaluate(el => el.style.backgroundPosition), '30% 70%');
+        assert.match(await styledSlide.locator('.editorsChoiceBackdrop').evaluate(el => getComputedStyle(el).filter), /blur\(4px\)/);
+        assert.equal(await styled.evaluate(() => testSlider.options.pagination), false);
+        assert.equal(await styled.locator('.editorsChoiceMobilePagination').isVisible(), true);
+        assert.equal(await styled.locator('.editorsChoiceMobilePageButton').first().isVisible(), false);
+        await styled.close();
+        const accented = await home(browser, {
+            enableThemeVideos: false, autoplay: true, heroAccentColor: '#ff0000', heroIndicatorStyle: 'progress',
+        });
+        assert.equal(await accented.locator('.splide__slide.is-active:not(.splide__slide--clone) .editorsChoiceItemButton').first().evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 0, 0)');
+        assert.equal(await accented.locator('.editorsChoiceProgress').evaluate(el => getComputedStyle(el).display), 'block');
+        await accented.close();
+        const eased = await home(browser, { enableThemeVideos: false, transitionEffect: 'zoom', transitionEasing: 'cubic-bezier(0.36, 0, 0.66, -0.56)' });
+        assert.equal(await eased.evaluate(() => testSlider.options.easing), 'cubic-bezier(0.36, 0, 0.66, -0.56)');
+        assert.equal(await eased.locator('.editorsChoiceContainer').evaluate(el => el.style.getPropertyValue('--ec-easing')), 'cubic-bezier(0.36, 0, 0.66, -0.56)');
+        await eased.evaluate(() => testSlider.go('>'));
+        await eased.waitForFunction(() => document.querySelector('.editorsChoiceTransitionOutgoing'));
+        assert.equal(await eased.evaluate(() => document.querySelector('.splide__slide[style*="z-index: 2"]').getAnimations()[0].effect.getTiming().easing), 'cubic-bezier(0.36, 0, 0.66, -0.56)');
+        await eased.close();
+        const unsafeEasing = await home(browser, { enableThemeVideos: false, transitionEasing: 'cubic-bezier(2, 0, 0.5, 1)' });
+        assert.equal(await unsafeEasing.evaluate(() => testSlider.options.easing), 'cubic-bezier(0.22, 1, 0.36, 1)');
+        assert.equal(await unsafeEasing.locator('.editorsChoiceContainer').evaluate(el => el.style.getPropertyValue('--ec-easing')), '');
+        await unsafeEasing.close();
+        // Without autoplay the progress bar has nothing to show, so dots remain.
+        const stillProgress = await home(browser, { enableThemeVideos: false, heroIndicatorStyle: 'progress' });
+        assert.equal(await stillProgress.locator('.editorsChoiceContainer').getAttribute('data-ec-indicator'), null);
+        assert.equal(await stillProgress.evaluate(() => testSlider.options.pagination), true);
+        await stillProgress.close();
+        const phone = await home(browser, {
+            enableThemeVideos: false, favourites: [appearanceItem], heroContentAlignment: 'right',
+            mobileContentAlignment: 'center', mobileHidePoster: true, mobileHideDescription: true,
+        }, { mobile: true });
+        assert.equal(await phone.locator('.editorsChoiceContainer').getAttribute('data-ec-align'), 'center');
+        assert.equal(await phone.locator('.editorsChoicePosterButton').first().isVisible(), false);
+        assert.equal(await phone.locator('.editorsChoiceItemOverview').first().evaluate(el => getComputedStyle(el).display), 'none');
+        await phone.setViewportSize({ width: 1440, height: 900 });
+        await phone.waitForFunction(() => document.querySelector('.editorsChoiceContainer').dataset.ecAlign === 'right');
+        await phone.close();
+        console.log('PASS appearance settings: layout, metadata, buttons, indicators, scrim, custom CSS');
+
+        const settings = await browser.newPage({ viewport: { width: 1440, height: 900 } });
         settings.on('pageerror', error => errors.push(error.message));
-        await settings.setContent(fs.readFileSync(path.join(root, 'EditorsChoicePlugin/Configuration/configPage.html'), 'utf8'));
+        // A real origin gives the page session storage, which remembers the open tab.
+        await settings.route('http://settings.test/**', route => route.fulfill({ contentType: 'text/html',
+            body: fs.readFileSync(path.join(root, 'EditorsChoicePlugin/Configuration/configPage.html'), 'utf8') }));
+        await settings.goto('http://settings.test/');
         await settings.evaluate(() => {
             window.config = { Mode: 'RANDOM', BannerHeight: 500, UseHeroLayout: true, EnableAutoplay: true, ShowPlayButton: true,
                 AutoplayInterval: 10, RandomMediaCount: 5, MinimumRating: 0, MinimumCriticRating: 0 };
@@ -348,7 +426,18 @@ async function expectHeight(page, expected) {
             initializeConfig(view);
             view.dispatchEvent(new Event('viewshow'));
         });
+        const openTab = name => settings.click(`#EditorsChoiceTab-${name}`);
+        const status = () => settings.locator('#EditorsChoiceSaveStatus').textContent();
         await settings.waitForFunction(() => document.querySelector('#BannerHeightSelect').value === '500');
+        assert.equal(await settings.locator('#EditorsChoiceTab-content').getAttribute('aria-selected'), 'true');
+        assert.equal(await settings.locator('#BannerPreviewPanel').isVisible(), false);
+        assert.equal(await status(), 'All changes saved');
+        assert.equal(await settings.locator('#EditorsChoiceDiscard').isDisabled(), true);
+        // Arrow keys move between tabs.
+        await settings.focus('#EditorsChoiceTab-content');
+        await settings.keyboard.press('ArrowLeft');
+        assert.equal(await settings.locator('#EditorsChoiceTab-advanced').getAttribute('aria-selected'), 'true');
+        assert.equal(await settings.locator('#EditorsChoicePanel-advanced').isVisible(), true);
         assert.equal(await settings.locator('#EnableSelectionCache').isChecked(), true);
         assert.equal(await settings.locator('#SelectionRefreshMinutes').inputValue(), '30');
         await settings.fill('#SelectionRefreshMinutes', '0');
@@ -356,10 +445,77 @@ async function expectHeight(page, expected) {
         await settings.fill('#SelectionRefreshMinutes', '1441');
         assert.equal(await settings.locator('form').evaluate(el => el.checkValidity()), false);
         await settings.fill('#SelectionRefreshMinutes', '45');
+        assert.equal(await settings.locator('#EditorsChoiceTab-advanced').evaluate(el => el.classList.contains('editorsChoiceTab--dirty')), true);
+        assert.equal(await status(), 'Unsaved changes in Advanced');
+        await settings.fill('#HeroCustomCss', '.editorsChoiceItemTitle { color: red;');
+        assert.equal(await settings.locator('form').evaluate(el => el.checkValidity()), false);
+        await settings.fill('#HeroCustomCss', '.editorsChoiceItemTitle { color: red; }');
+        assert.equal(await settings.locator('form').evaluate(el => el.checkValidity()), true);
+
+        await openTab('layout');
+        assert.equal(await settings.locator('#BannerPreviewPanel').isVisible(), true);
         assert.equal(await settings.locator('#EnableBackgroundDimming').isChecked(), false);
+        assert.equal(await settings.locator('#HeroScrimStyle').inputValue(), 'auto');
+        assert.equal(await settings.locator('#HeroCornerRadius-container').isVisible(), false);
+        await settings.selectOption('#HeroFrameStyle', 'inset');
+        assert.equal(await settings.locator('#HeroCornerRadius-container').isVisible(), true);
+        await settings.fill('#HeroCornerRadius', '24');
+        await settings.selectOption('#HeroContentAlignment', 'center');
+        await settings.selectOption('#HeroPosterMode', 'right');
+        await settings.selectOption('#HeroContentMaxWidth', '60');
+        await settings.selectOption('#HeroScrimStyle', 'side');
+        await settings.fill('#HeroScrimStrength', '70');
+        await settings.selectOption('#HeroBackdropPositionSelect', 'custom');
+        await settings.fill('#HeroBackdropFocusX', '30');
+        await settings.fill('#HeroBackdropFocusY', '60');
+        assert.equal(await settings.locator('#BannerPreview').evaluate(el => el.querySelector('.editorsChoicePreviewBackdrop').style.backgroundPosition), '30% 60%');
+        assert.equal(await settings.locator('#BannerPreview .editorsChoicePreviewInfo').evaluate(el => el.style.textAlign), 'center');
+        await settings.selectOption('#BannerHeightMode', 'pixels');
+        await settings.fill('#BannerCustomHeight', '720');
+        await settings.selectOption('#MobileBannerHeightMode', 'fullscreen');
+        await settings.check('#EnableBackgroundDimming');
+        await settings.fill('#BackgroundDimmingPercent', '40');
+
+        await openTab('motion');
         assert.equal(await settings.locator('#EnableBackgroundMotion').isChecked(), true);
         assert.equal(await settings.locator('#EnableThemeVideos').isChecked(), true);
-        assert.equal(await settings.locator('#Heading, #UseHeroLayout').count(), 0);
+        await settings.uncheck('#EnableBackgroundMotion');
+        await settings.uncheck('#EnableThemeVideos');
+        assert.equal(await settings.locator('#ThemeVideoStartDelaySeconds-container').isVisible(), false);
+        await settings.selectOption('#TransitionEffectSelect', 'wipe');
+        await settings.fill('#TransitionDurationMs', '1200');
+        assert.equal(await settings.locator('#TransitionEasing').inputValue(), 'smooth');
+        assert.equal(await settings.locator('#TransitionEasingValue').textContent(), 'cubic-bezier(0.22, 1, 0.36, 1)');
+        await settings.selectOption('#TransitionEasing', 'overshoot');
+        assert.equal(await settings.locator('#TransitionEasingY1').inputValue(), '1.56');
+        assert.equal(await settings.locator('#TransitionEasingValue').textContent(), 'cubic-bezier(0.34, 1.56, 0.64, 1)');
+        // Editing a template's numbers makes it a custom curve.
+        await settings.fill('#TransitionEasingX1', '0.5');
+        assert.equal(await settings.locator('#TransitionEasing').inputValue(), 'custom');
+        await settings.fill('#TransitionEasingX1', '1.5');
+        assert.equal(await settings.locator('form').evaluate(el => el.checkValidity()), false);
+        await settings.fill('#TransitionEasingX1', '0.5');
+        // Handles move with the keyboard and by dragging.
+        await settings.focus('[data-handle="2"]');
+        await settings.keyboard.press('ArrowRight');
+        await settings.keyboard.press('Shift+ArrowDown');
+        assert.equal(await settings.locator('#TransitionEasingX2').inputValue(), '0.65');
+        assert.equal(await settings.locator('#TransitionEasingY2').inputValue(), '0.9');
+        const handle = await settings.locator('[data-handle="1"]').boundingBox();
+        const graph = await settings.locator('#TransitionEasingGraph').boundingBox();
+        await settings.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
+        await settings.mouse.down();
+        await settings.mouse.move(graph.x + graph.width * 0.9, handle.y + handle.height / 2, { steps: 4 });
+        await settings.mouse.move(graph.x + graph.width * 2, handle.y + handle.height / 2, { steps: 2 });
+        await settings.mouse.up();
+        assert.equal(await settings.locator('#TransitionEasingX1').inputValue(), '1');
+        assert.equal(await settings.locator('#TransitionEasingY1').inputValue(), '1.56');
+        assert.equal(await settings.locator('#TransitionEasingGraph path').getAttribute('d'), 'M0 200 C200 -112 130 20 200 0');
+        await settings.click('#TransitionEasingPlay');
+        await settings.selectOption('#HeroIndicatorStyle', 'bars');
+        await settings.selectOption('#HeroArrowStyle', 'minimal');
+
+        await openTab('opening');
         assert.equal(await settings.locator('#OpeningSlideType').inputValue(), 'none');
         assert.equal(await settings.locator('#OpeningSlideMessage-container').isVisible(), false);
         await settings.selectOption('#OpeningSlideType', 'media');
@@ -382,33 +538,55 @@ async function expectHeight(page, expected) {
         await settings.fill('#OpeningSlideSecondaryButtonText', 'Getting started');
         await settings.fill('#OpeningSlideSecondaryButtonUrl', 'https://example.com/help');
         await settings.uncheck('#OpeningSlideContinue');
-        await settings.check('#UseCustomPlayButtonColors');
-        await settings.fill('#PlayButtonBackgroundColor', '#345678');
-        await settings.fill('#PlayButtonTextColor', '#abcdef');
         assert.equal(await settings.locator('#OpeningSlideMessage-container').isVisible(), true);
         assert.equal(await settings.locator('#OpeningSlideMedia-container').isVisible(), false);
         assert.equal(await settings.locator('#OpeningSlideBackgroundUrl-container').isVisible(), true);
+        assert.equal(await settings.locator('#BannerPreview .editorsChoicePreviewTitle').textContent(), 'Welcome to our media library');
+
+        await openTab('style');
+        await settings.check('#UseCustomPlayButtonColors');
+        await settings.fill('#PlayButtonBackgroundColor', '#345678');
+        await settings.fill('#PlayButtonTextColor', '#abcdef');
         await settings.selectOption('#TitleFont', 'georgia');
         await settings.selectOption('#MetadataFont', 'mono');
+        assert.equal(await settings.locator('#HeroDescriptionOptions-container').isVisible(), false);
+        await settings.check('#ShowDesc');
         await settings.selectOption('#DescriptionFont', 'verdana');
         await settings.selectOption('#ButtonFont', 'arial');
-        await settings.selectOption('#BannerHeightMode', 'pixels');
-        await settings.fill('#BannerCustomHeight', '720');
-        await settings.selectOption('#MobileBannerHeightMode', 'fullscreen');
-        await settings.check('#EnableBackgroundDimming');
-        await settings.fill('#BackgroundDimmingPercent', '40');
-        await settings.uncheck('#EnableBackgroundMotion');
-        await settings.uncheck('#EnableThemeVideos');
-        await settings.selectOption('#TransitionEffectSelect', 'wipe');
-        await settings.fill('#TransitionDurationMs', '1200');
-        await settings.selectOption('#BannerPreviewDevice', 'mobile');
+        await settings.selectOption('#HeroTitleDisplay', 'both');
+        await settings.selectOption('#HeroTitleSize', 'large');
+        await settings.check('#UseHeroAccentColor');
+        await settings.fill('#HeroAccentColor', '#ff8800');
+        await settings.selectOption('#HeroButtonVariant', 'glass');
+        await settings.uncheck('#ShowInfoButton');
+        await settings.check('#ShowTagline');
+        assert.equal(await settings.locator('#HeroMaxGenres-container').isVisible(), false);
+        await settings.check('#HeroMetadataField-genres');
+        assert.equal(await settings.locator('#HeroMaxGenres-container').isVisible(), true);
+        // Move genres from seventh to fourth place.
+        for (let move = 0; move < 3; move++) await settings.click('[data-metadata-field="genres"] [data-move="-1"]');
+        await settings.uncheck('#HeroMetadataField-official');
+        await settings.selectOption('#HeroMetadataSeparator', 'dot');
+        await settings.fill('#HeroOverviewMaxLines', '2');
+        assert.equal(await settings.locator('#BannerPreview .editorsChoicePreviewMeta').getAttribute('data-separator'), 'dot');
+
+        await settings.click('#BannerPreviewMobile');
         await settings.click('#PreviewTransition');
         assert.match(await settings.locator('#BannerPreviewSummary').textContent(), /Mobile.*Wipe/);
+        assert.equal(await settings.locator('#BannerPreviewStage').evaluate(el => el.classList.contains('editorsChoicePreviewStage--mobile')), true);
+
+        // An invalid field on another tab brings that tab forward when saving.
+        await openTab('layout');
         await settings.fill('#BannerCustomHeight', '20');
+        await openTab('content');
         assert.equal(await settings.locator('form').evaluate(el => el.checkValidity()), false);
+        await settings.locator('form').evaluate(el => el.requestSubmit());
+        assert.equal(await settings.locator('#EditorsChoiceTab-layout').getAttribute('aria-selected'), 'true');
         await settings.fill('#BannerCustomHeight', '720');
+        assert.match(await status(), /Unsaved changes in Opening slide, Layout, Style, Motion, Advanced/);
         await settings.locator('form').evaluate(el => el.requestSubmit());
         await settings.waitForFunction(() => window.saved);
+        await settings.waitForFunction(() => document.querySelector('#EditorsChoiceSaveStatus').textContent === 'All changes saved');
         const saved = await settings.evaluate(() => window.saved);
         assert.equal(saved.EnableSelectionCache, true);
         assert.equal(saved.SelectionRefreshMinutes, 45);
@@ -427,6 +605,8 @@ async function expectHeight(page, expected) {
         assert.equal(saved.EnableThemeVideos, false);
         assert.equal(saved.TransitionEffect, 'wipe');
         assert.equal(saved.TransitionDurationMs, 1200);
+        assert.equal(saved.TransitionEasing, 'custom');
+        assert.deepEqual([saved.TransitionEasingX1, saved.TransitionEasingY1, saved.TransitionEasingX2, saved.TransitionEasingY2], [1, 1.56, 0.65, 0.9]);
         assert.equal(saved.OpeningSlideType, 'message');
         assert.equal(saved.OpeningSlideContinue, false);
         assert.equal(saved.OpeningSlideEyebrow, 'Welcome');
@@ -446,6 +626,31 @@ async function expectHeight(page, expected) {
         assert.equal(saved.PlayButtonTextColor, '#abcdef');
         assert.equal(saved.OpeningSlideSecondaryButtonText, 'Getting started');
         assert.equal(saved.OpeningSlideSecondaryButtonUrl, 'https://example.com/help');
+        assert.equal(saved.HeroFrameStyle, 'inset');
+        assert.equal(saved.HeroCornerRadius, 24);
+        assert.equal(saved.HeroContentAlignment, 'center');
+        assert.equal(saved.HeroPosterMode, 'right');
+        assert.equal(saved.HeroContentMaxWidth, 60);
+        assert.equal(saved.HeroScrimStyle, 'side');
+        assert.equal(saved.HeroScrimStrength, 70);
+        assert.equal(saved.HeroBackdropPosition, 'custom');
+        assert.equal(saved.HeroBackdropFocusX, 30);
+        assert.equal(saved.HeroBackdropFocusY, 60);
+        assert.equal(saved.HeroIndicatorStyle, 'bars');
+        assert.equal(saved.HeroArrowStyle, 'minimal');
+        assert.equal(saved.HeroTitleDisplay, 'both');
+        assert.equal(saved.HeroTitleSize, 'large');
+        assert.equal(saved.UseHeroAccentColor, true);
+        assert.equal(saved.HeroAccentColor, '#ff8800');
+        assert.equal(saved.HeroButtonVariant, 'glass');
+        assert.equal(saved.ShowInfoButton, false);
+        assert.equal(saved.ShowTagline, true);
+        assert.deepEqual(saved.HeroMetadataFields, ['type', 'rating', 'year', 'genres', 'runtime']);
+        assert.equal(saved.HeroMetadataSeparator, 'dot');
+        assert.equal(saved.HeroOverviewMaxLines, 2);
+        assert.equal(saved.HeroCustomCss, '.editorsChoiceItemTitle { color: red; }');
+        assert.equal(saved.PauseOnHover, true);
+        assert.equal(saved.ShowResumeProgress, true);
         await settings.evaluate(() => {
             window.config = window.saved;
             const oldView = document.querySelector('.editorsChoiceConfigurationPage');
@@ -455,11 +660,31 @@ async function expectHeight(page, expected) {
             view.dispatchEvent(new Event('viewshow'));
         });
         await settings.waitForFunction(() => document.querySelector('#BannerCustomHeight').value === '720');
+        // The last tab is remembered for the session.
+        assert.equal(await settings.locator('#EditorsChoiceTab-layout').getAttribute('aria-selected'), 'true');
+        assert.equal(await status(), 'All changes saved');
+        assert.equal(await settings.locator('#HeroContentAlignment').inputValue(), 'center');
+        assert.equal(await settings.locator('#HeroBackdropFocusY').inputValue(), '60');
+        await openTab('advanced');
         assert.equal(await settings.locator('#EnableSelectionCache').isChecked(), true);
         assert.equal(await settings.locator('#SelectionRefreshMinutes').inputValue(), '45');
+        await openTab('opening');
         assert.equal(await settings.locator('#OpeningSlideAlignment').inputValue(), 'center');
         assert.equal(await settings.locator('#OpeningSlidePrimaryButtonOpacity').inputValue(), '65');
+        await openTab('style');
         assert.equal(await settings.locator('#PlayButtonColors-container').isVisible(), true);
+        assert.deepEqual(await settings.locator('#HeroMetadataFieldList li').evaluateAll(rows => rows.map(row => row.dataset.metadataField)),
+            ['type', 'rating', 'year', 'genres', 'runtime', 'critic', 'official', 'ends']);
+        assert.equal(await settings.locator('#HeroMetadataField-official').isChecked(), false);
+        // Discard restores the saved value and clears the unsaved marker.
+        await settings.selectOption('#HeroTitleSize', 'small');
+        await settings.click('[data-metadata-field="runtime"] [data-move="-1"]');
+        assert.equal(await settings.locator('#EditorsChoiceTab-style').evaluate(el => el.classList.contains('editorsChoiceTab--dirty')), true);
+        await settings.click('#EditorsChoiceDiscard');
+        assert.equal(await settings.locator('#HeroTitleSize').inputValue(), 'large');
+        assert.equal(await settings.locator('#HeroMetadataOrder').inputValue(), 'type,rating,year,genres,runtime,critic,official,ends');
+        assert.equal(await status(), 'All changes saved');
+        await openTab('advanced');
         await settings.uncheck('#EnableSelectionCache');
         assert.equal(await settings.locator('#SelectionRefreshMinutes').isDisabled(), true);
         assert.equal(await settings.locator('#SelectionRefreshMinutes-container').isVisible(), false);
@@ -468,26 +693,35 @@ async function expectHeight(page, expected) {
         await settings.waitForFunction(() => window.saved);
         assert.equal(await settings.evaluate(() => saved.EnableSelectionCache), false);
         assert.equal(await settings.evaluate(() => saved.SelectionRefreshMinutes), 45);
+        await openTab('motion');
+        assert.equal(await settings.locator('#TransitionEasing').inputValue(), 'custom');
+        assert.equal(await settings.locator('#TransitionEasingValue').textContent(), 'cubic-bezier(1, 1.56, 0.65, 0.9)');
         assert.equal(await settings.locator('#EnableBackgroundMotion').isChecked(), false);
         assert.equal(await settings.locator('#EnableThemeVideos').isChecked(), false);
+        await openTab('layout');
         assert.equal(await settings.locator('#BackgroundDimmingPercent').inputValue(), '40');
+        await openTab('style');
         assert.equal(await settings.locator('#TitleFont').inputValue(), 'georgia');
+        await openTab('opening');
         assert.equal(await settings.locator('#OpeningSlideType').inputValue(), 'message');
         assert.equal(await settings.locator('#OpeningSlideEyebrow').inputValue(), 'Welcome');
         assert.equal(await settings.locator('#OpeningSlideTitle').inputValue(), 'Welcome to our media library');
         if (process.env.BANNER_SCREENSHOT_DIR) {
             await settings.locator('#BannerPreview').screenshot({ path: path.join(process.env.BANNER_SCREENSHOT_DIR, 'settings-preview.png') });
         }
+        await openTab('layout');
         await settings.selectOption('#BannerHeightMode', 'preset');
         await settings.selectOption('#MobileBannerHeightMode', 'inherit');
+        await openTab('motion');
         await settings.selectOption('#TransitionEffectSelect', 'instant');
         assert.equal(await settings.locator('#BannerCustomHeight').isDisabled(), true);
         assert.equal(await settings.locator('#TransitionDurationMs').isDisabled(), true);
+        assert.equal(await settings.locator('#TransitionEasing-container').isVisible(), false);
         assert.equal(await settings.locator('#BannerSubtractHeader-container').isVisible(), false);
         assert.deepEqual(await settings.evaluate(() => alerts), []);
         await settings.close();
         assert.deepEqual(errors, []);
-        console.log('PASS settings defaults, conditional fields, validation, preview, and persistence');
+        console.log('PASS settings tabs, unsaved changes, conditional fields, validation, preview, and persistence');
     } finally {
         await browser.close();
     }

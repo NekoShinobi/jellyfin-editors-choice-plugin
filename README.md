@@ -33,19 +33,38 @@ The primary play button on featured media slides can also use an administrator-s
 ## Banner settings
 
 Hero is the only layout; the old layout switch and Banner Heading setting have
-been removed. Settings are grouped into Content, Appearance, Motion, and Fonts. Appearance supports the
+been removed. Settings are grouped into tabs: Content, Opening slide, Layout,
+Style, Motion, and Advanced. A dot marks tabs with unsaved changes, and Discard
+restores the saved values. Layout supports the
 existing height presets, an exact pixel height (240–2160px), a percentage of the
 browser height (25–100%), or a full screen height banner. Full screen mode can fit
 beneath the Jellyfin header. Devices below 768px wide can use their own height or
 inherit the desktop setting.
 
 Presets retain Hero's extra 120px. Existing installations using the old layout
-now use Hero sizing. Custom heights use the specified value. The settings
-preview illustrates height, dimming, and transitions before saving.
+now use Hero sizing. Custom heights use the specified value. A live preview
+beside the Opening slide, Layout, Style, and Motion tabs shows titles from your
+library (or built-in artwork) with the current settings, for desktop or mobile.
+
+Layout also controls text alignment (with a separate phone setting), vertical
+position, text width, poster placement and size, an inset card frame, the
+backdrop image type, a custom focus point, blur, brightness, and saturation,
+and the readability scrim: automatic, side, bottom, vignette, or none, with its
+color and strength. Style covers an accent color, title display (logo, text, or
+both) and size, text colors and shadow, taglines, which metadata appears and in
+what order (including critic rating, genres, and end time), description length
+and size, and button visibility, shape, style, and size. Motion adds artwork
+zoom intensity, a theme video delay, pause on hover, slide indicators (dots,
+bars, counter, autoplay progress, or none) and their position, and arrow style.
+Advanced accepts custom CSS, nested inside the banner so it only affects banner
+elements. All defaults reproduce the previous layout.
 
 Slide, Fade, Fade + Zoom, Wipe, and Instant transitions are available. Transition
 duration is independent of the autoplay interval; 0 retains the original layout
-default (650ms).
+default (650ms). The animation curve, which also shapes the text reveal and the
+artwork zoom, can use a template (Smooth, Ease, Ease in/out, Linear, Gentle,
+Dramatic, Overshoot, Anticipate) or a custom cubic Bézier curve edited by
+dragging its handles, using the arrow keys, or typing the four values.
 
 Additional background dimming is off by default and affects only artwork and
 video. Background motion and theme videos are on by default. Theme videos play
@@ -53,7 +72,7 @@ muted on desktop; disabling them prevents loading. The device's
 reduced-motion preference suppresses animated transitions, backdrop motion,
 theme video playback, and automatic slide advancement.
 
-Separate font dropdowns control titles, metadata, descriptions, and buttons.
+Separate font dropdowns on the Style tab control titles, metadata, descriptions, and buttons.
 Choices use fonts installed on the device with standard fallbacks; no external
 font downloads are required. Image logos retain their original lettering.
 
@@ -111,7 +130,7 @@ By default, Editor's Choice automatically uses the first available frontend inje
 2. JavaScript Injector
 3. Direct `jellyfin-web/index.html` injection
 
-You can override the automatic selection under **Editor's Choice → Technical settings**. Install either of the two helper plugins below to avoid direct changes to Jellyfin Web.
+You can override the automatic selection under **Editor's Choice → Advanced**. Install either of the two helper plugins below to avoid direct changes to Jellyfin Web.
 
 ### Option 1: Install the File Transformation plugin (recommended)
 The easiest way to load the frontend script is to use the [File Transformation plugin](https://github.com/IAmParadox27/jellyfin-plugin-file-transformation):
@@ -142,7 +161,7 @@ The final way is to manually amend the `jellyfin-web/index.html` file yourself.
 
 If you manually insert the script tag, you will have to manually insert it on every Jellyfin update, as the index.html file will get overwritten.
 
-3. Select "Disabled / manual injection" under **Editor's Choice → Technical settings**.
+3. Select "Disabled / manual injection" under **Editor's Choice → Advanced**.
 4. In Jellyfin's program files, open `jellyfin-web/index.html`.
 5. Before the `</body>` tag, insert the following: `<script plugin="EditorsChoice" defer="defer" src="/editorschoice/script"></script>`. If you have a base path set, change `src="/editorschoice/script"` to `src="/YOUR_BASE_PATH/editorschoice/script"`.
 6. Clear your site cookies / local storage to get rid of the cached index file and receive a new one from the server.

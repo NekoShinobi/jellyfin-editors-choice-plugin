@@ -139,10 +139,7 @@
             }
 
             .editorsChoiceOpeningPanel {
-                margin: 1rem 0 2rem;
-                padding: 1rem;
-                border: 1px solid rgba(255,255,255,.18);
-                border-radius: 6px;
+                margin: 0;
             }
 
             .editorsChoiceSearchRow {
@@ -176,67 +173,877 @@
                 }
             }
 
-          .editorsChoiceSettingsPreview {
-            position: relative;
-            height: 120px;
-            max-width: 620px;
-            margin-top: 1rem;
-            overflow: hidden;
-            isolation: isolate;
-            border: 1px solid rgba(255,255,255,.25);
-            border-radius: 6px;
-            background: #283c49;
-            color: #fff;
-          }
-          .editorsChoicePreviewScene {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(155deg, #a7c6c7 0 35%, #58767b 35% 60%, #283c49 60%);
-          }
-          .editorsChoicePreviewScene::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: #000;
-            opacity: var(--preview-dimming, 0);
-          }
-          .editorsChoicePreviewCopy {
-            position: absolute;
-            left: 1.2rem;
-            bottom: 1.2rem;
-            display: grid;
-            gap: .3rem;
-            text-shadow: 0 1px 5px #000;
-          }
-          .editorsChoicePreviewCopy[data-alignment="center"] {
-            left: 50%;
-            right: auto;
-            width: min(80%, 28rem);
-            text-align: center;
-            justify-items: center;
-            transform: translateX(-50%);
-          }
-          .editorsChoicePreviewCopy[data-alignment="right"] {
-            right: 1.2rem;
-            left: auto;
-            text-align: right;
-            justify-items: end;
-          }
-          .editorsChoicePreviewCopy strong { font-size: 1.2rem; }
-          .editorsChoicePreviewCopy span { font-size: .85rem; }
-          .editorsChoicePreviewButton { border: 1px solid currentColor; padding: .2rem .5rem; width: fit-content; }
+            .editorsChoiceConfigurationPage {
+                --ec-accent: var(--jf-palette-primary-main, #00a4dc);
+                --ec-line: rgba(128, 128, 128, .28);
+                --ec-muted: rgba(128, 128, 128, .95);
+            }
+
+            /* Several preview and layout elements set display; keep hidden ones hidden. */
+            .editorsChoiceConfigurationPage [hidden] {
+                display: none !important;
+            }
+
+            .editorsChoiceSettingsHeader {
+                position: sticky;
+                top: var(--ec-sticky-top, 0px);
+                z-index: 5;
+                padding-top: .5rem;
+                background: var(--ec-settings-bg, #101010);
+            }
+
+            .editorsChoiceSettingsHeader h1 {
+                margin: 0 0 .25rem;
+            }
+
+            .editorsChoiceSettingsHeader > .fieldDescription {
+                margin: 0 0 .75rem;
+            }
+
+            .editorsChoiceTabs {
+                display: flex;
+                gap: .15rem;
+                overflow-x: auto;
+                border-bottom: 1px solid var(--ec-line);
+                scrollbar-width: none;
+            }
+
+            .editorsChoiceTabs::-webkit-scrollbar {
+                display: none;
+            }
+
+            .editorsChoiceTab {
+                position: relative;
+                display: inline-flex;
+                flex: none;
+                align-items: center;
+                gap: .45rem;
+                margin: 0 0 -1px;
+                padding: .8rem 1rem .85rem;
+                border: 0;
+                border-bottom: 2px solid transparent;
+                color: inherit;
+                background: none;
+                font: inherit;
+                font-weight: 500;
+                opacity: .7;
+                cursor: pointer;
+            }
+
+            .editorsChoiceTab:hover,
+            .editorsChoiceTab[aria-selected="true"] {
+                opacity: 1;
+            }
+
+            .editorsChoiceTab[aria-selected="true"] {
+                border-bottom-color: var(--ec-accent);
+            }
+
+            .editorsChoiceTab:focus-visible {
+                outline: 2px solid var(--ec-accent);
+                outline-offset: -2px;
+            }
+
+            .editorsChoiceTabDot {
+                width: .45rem;
+                height: .45rem;
+                border-radius: 50%;
+                background: #f0b429;
+                visibility: hidden;
+            }
+
+            .editorsChoiceTab--dirty .editorsChoiceTabDot {
+                visibility: visible;
+            }
+
+            .editorsChoiceVisuallyHidden {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                overflow: hidden;
+                clip-path: inset(50%);
+                white-space: nowrap;
+            }
+
+            .editorsChoiceSettingsLayout {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr);
+                gap: 2rem;
+                align-items: start;
+                padding-top: 1.5rem;
+            }
+
+            .editorsChoiceSettingsLayout--withPreview {
+                grid-template-columns: minmax(0, 1fr) minmax(0, 28rem);
+            }
+
+            .editorsChoiceSettingsPanels {
+                min-width: 0;
+                max-width: 54rem;
+            }
+
+            .editorsChoiceSettingsPanels h2 {
+                margin: 2rem 0 1rem;
+            }
+
+            .editorsChoiceSettingsPanels section > h2:first-child {
+                margin-top: 0;
+            }
+
+            .editorsChoiceFieldGrid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+                column-gap: .75rem;
+            }
+
+            .editorsChoiceMetadataFields {
+                margin: 0 0 1.5rem;
+                padding: 0;
+                list-style: none;
+                border: 1px solid var(--ec-line);
+                border-radius: 6px;
+            }
+
+            .editorsChoiceMetadataFields li {
+                display: flex;
+                align-items: center;
+                gap: .5rem;
+                padding: .15rem .35rem .15rem .75rem;
+                border-top: 1px solid var(--ec-line);
+            }
+
+            .editorsChoiceMetadataFields li:first-child {
+                border-top: 0;
+            }
+
+            .editorsChoiceMetadataFields .emby-checkbox-label {
+                flex: 1;
+                margin: 0;
+            }
+
+            .editorsChoiceMetadataFields .paper-icon-button-light:disabled {
+                opacity: .3;
+            }
+
+            .editorsChoicePreviewPanel {
+                position: sticky;
+                top: calc(var(--ec-sticky-top, 0px) + var(--ec-tabs-height, 0px) + 1rem);
+                display: grid;
+                gap: .75rem;
+                min-width: 0;
+            }
+
+            .editorsChoicePreviewHeading {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: .75rem;
+            }
+
+            .editorsChoicePreviewHeading h3 {
+                margin: 0;
+            }
+
+            .editorsChoiceSegmented {
+                display: inline-flex;
+                padding: .2rem;
+                border-radius: 6px;
+                background: rgba(128, 128, 128, .18);
+            }
+
+            .editorsChoiceSegmented button {
+                padding: .3rem .8rem;
+                border: 0;
+                border-radius: 4px;
+                color: inherit;
+                background: none;
+                font: inherit;
+                font-size: .9em;
+                opacity: .75;
+                cursor: pointer;
+            }
+
+            .editorsChoiceSegmented button[aria-pressed="true"] {
+                background: rgba(128, 128, 128, .35);
+                opacity: 1;
+            }
+
+            .editorsChoicePreviewStage {
+                display: grid;
+                justify-items: center;
+                overflow: hidden;
+                border: 1px solid var(--ec-line);
+                border-radius: 8px;
+                background: #0b0b0b;
+            }
+
+            .editorsChoicePreviewStage--mobile {
+                padding: .9rem 0;
+            }
+
+            .editorsChoicePreviewViewport {
+                width: 100%;
+                container-type: inline-size;
+            }
+
+            .editorsChoicePreviewStage--mobile .editorsChoicePreviewViewport {
+                width: 240px;
+                overflow: hidden;
+                border: 3px solid #2a2a2a;
+                border-radius: 16px;
+            }
+
+            /* The frame is a scaled copy of the banner: 1em equals 16px on a
+               1440px-wide desktop or a 390px-wide phone. */
+            .editorsChoiceSettingsPreview {
+                position: relative;
+                overflow: hidden;
+                isolation: isolate;
+                color: rgba(255, 255, 255, .8);
+                background: #101319;
+                font-size: calc(100cqw * 16 / 1440);
+                line-height: 1.35;
+            }
+
+            .editorsChoicePreviewStage--mobile .editorsChoiceSettingsPreview {
+                font-size: calc(100cqw * 16 / 390);
+            }
+
+            .editorsChoiceSettingsPreview[data-frame="inset"] {
+                margin: 0 3.3%;
+            }
+
+            .editorsChoicePreviewBackdrop,
+            .editorsChoicePreviewScrim,
+            .editorsChoicePreviewDimming {
+                position: absolute;
+                inset: 0;
+            }
+
+            .editorsChoicePreviewBackdrop {
+                background-color: #283c49;
+                background-size: cover;
+                background-repeat: no-repeat;
+            }
+
+            /* Matches the banner, where the scrim lives inside the masked backdrop. */
+            .editorsChoicePreviewBackdrop,
+            .editorsChoicePreviewScrim {
+                -webkit-mask-image: linear-gradient(to bottom, #000 40%, rgba(0, 0, 0, .9) 55%, rgba(0, 0, 0, .4) 70%, transparent 100%);
+                mask-image: linear-gradient(to bottom, #000 40%, rgba(0, 0, 0, .9) 55%, rgba(0, 0, 0, .4) 70%, transparent 100%);
+            }
+
+            .editorsChoicePreviewHeaderBar {
+                position: absolute;
+                z-index: 3;
+                top: 0;
+                right: 0;
+                left: 0;
+                display: flex;
+                align-items: center;
+                gap: 1.2em;
+                height: 5em;
+                padding: 0 3.3%;
+                color: rgba(255, 255, 255, .85);
+                background: linear-gradient(rgba(0, 0, 0, .55), transparent);
+                font-size: .9em;
+            }
+
+            .editorsChoicePreviewHeaderBar span:first-child {
+                padding: .2em .8em;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, .15);
+            }
+
+            .editorsChoicePreviewContent {
+                position: absolute;
+                z-index: 2;
+                right: 3.3%;
+                left: 3.3%;
+                display: grid;
+                grid-template-columns: minmax(0, 40.6em);
+                column-gap: 2.5em;
+                align-items: center;
+                justify-content: start;
+            }
+
+            .editorsChoicePreviewPoster {
+                width: auto;
+                height: 75%;
+                aspect-ratio: 2 / 3;
+                border-radius: .45em;
+                background: #2b3440 center / cover no-repeat;
+                box-shadow: 0 1.1em 2.8em rgba(4, 9, 15, .42);
+            }
+
+            .editorsChoicePreviewInfo {
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                min-width: 0;
+                height: 75%;
+                padding-bottom: 3.25em;
+                box-sizing: border-box;
+            }
+
+            .editorsChoicePreviewMain {
+                display: flex;
+                flex-direction: column;
+                min-height: 0;
+                overflow: hidden;
+            }
+
+            .editorsChoicePreviewLogo {
+                display: block;
+                width: min(18.75em, 100%);
+                height: 5em;
+                object-fit: contain;
+                object-position: left center;
+            }
+
+            .editorsChoicePreviewTitle {
+                display: flex;
+                align-items: center;
+                height: 2.78em;
+                margin: 0;
+                overflow: hidden;
+                color: #fff;
+                font-size: 1.8em;
+                font-weight: 600;
+                line-height: 1.08;
+            }
+
+            .editorsChoicePreviewSubtitle {
+                margin-top: .35em;
+                color: #fff;
+                font-size: 1.15em;
+                font-weight: 600;
+            }
+
+            .editorsChoicePreviewTagline {
+                margin-top: .3em;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+            }
+
+            .editorsChoicePreviewMeta {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: .4em;
+                margin-top: .7em;
+                font-size: .82em;
+                font-weight: 600;
+            }
+
+            .editorsChoicePreviewMeta span {
+                white-space: nowrap;
+            }
+
+            .editorsChoicePreviewMeta[data-separator="pill"] span {
+                padding: .14em .6em;
+                border: 1px solid rgba(255, 255, 255, .16);
+                border-radius: 999px;
+                background: rgba(18, 23, 31, .46);
+            }
+
+            .editorsChoicePreviewMeta[data-separator="dot"] span + span::before,
+            .editorsChoicePreviewMeta[data-separator="pipe"] span + span::before {
+                margin-right: .45em;
+                opacity: .6;
+            }
+
+            .editorsChoicePreviewMeta[data-separator="dot"] span + span::before {
+                content: "\00b7";
+            }
+
+            .editorsChoicePreviewMeta[data-separator="pipe"] span + span::before {
+                content: "|";
+            }
+
+            .editorsChoicePreviewMeta[data-separator="none"] {
+                column-gap: .9em;
+            }
+
+            .editorsChoicePreviewDescription {
+                display: -webkit-box;
+                margin: .75em 0 0;
+                overflow: hidden;
+                line-height: 1.45;
+                -webkit-box-orient: vertical;
+            }
+
+            .editorsChoicePreviewActions {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                display: flex;
+                flex-wrap: wrap;
+                gap: .55em;
+            }
+
+            .editorsChoicePreviewButton {
+                display: inline-flex;
+                align-items: center;
+                gap: .4em;
+                padding: .55em 1.1em;
+                border: 1px solid transparent;
+                border-radius: .2em;
+                color: #fff;
+                background: rgba(255, 255, 255, .16);
+                font-weight: 600;
+                white-space: nowrap;
+            }
+
+            .editorsChoicePreviewButton--icon {
+                padding-right: .8em;
+                padding-left: .8em;
+            }
+
+            .editorsChoicePreviewButton .material-icons {
+                font-size: 1.25em;
+            }
+
+            .editorsChoicePreviewProgressTrack {
+                position: absolute;
+                right: 0;
+                bottom: -.4em;
+                left: 0;
+                height: .18em;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, .24);
+            }
+
+            .editorsChoicePreviewProgressTrack span {
+                display: block;
+                width: 62%;
+                height: 100%;
+                border-radius: inherit;
+                background: var(--ec-preview-accent, rgba(255, 255, 255, .92));
+            }
+
+            .editorsChoicePreviewControls {
+                position: absolute;
+                z-index: 4;
+                top: 7.5em;
+                right: 3.3%;
+                display: flex;
+                gap: .2em;
+            }
+
+            .editorsChoicePreviewControls span {
+                display: grid;
+                place-items: center;
+                width: 2.5em;
+                height: 2.5em;
+                border-radius: 50%;
+                color: #fff;
+                background: rgba(16, 18, 22, .42);
+            }
+
+            .editorsChoicePreviewControls[data-style="minimal"] span {
+                background: transparent;
+                filter: drop-shadow(0 1px 4px rgba(0, 0, 0, .8));
+            }
+
+            .editorsChoiceSettingsPreview:not(:hover) .editorsChoicePreviewControls[data-style="hover"] {
+                opacity: 0;
+            }
+
+            .editorsChoicePreviewIndicator {
+                position: absolute;
+                z-index: 4;
+                bottom: 1.1em;
+                display: flex;
+                align-items: center;
+                gap: .35em;
+                padding: .35em .5em;
+                border: 1px solid rgba(255, 255, 255, .18);
+                border-radius: 999px;
+                color: #fff;
+                background: rgba(16, 18, 22, .42);
+                font-size: .82em;
+                font-weight: 600;
+            }
+
+            .editorsChoicePreviewIndicator i {
+                display: block;
+                width: .55em;
+                height: .55em;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, .55);
+            }
+
+            .editorsChoicePreviewIndicator i.is-active {
+                width: 1.95em;
+                background: var(--ec-preview-accent, #fff);
+            }
+
+            .editorsChoicePreviewIndicator[data-style="bars"] i {
+                width: 1.35em;
+                height: .25em;
+                border-radius: 2px;
+            }
+
+            .editorsChoicePreviewIndicator[data-style="bars"] i.is-active {
+                width: 2.2em;
+            }
+
+            .editorsChoicePreviewAutoplay {
+                position: absolute;
+                z-index: 4;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                height: 3px;
+                background: rgba(255, 255, 255, .18);
+            }
+
+            .editorsChoicePreviewAutoplay span {
+                display: block;
+                width: 40%;
+                height: 100%;
+                background: var(--ec-preview-accent, rgba(255, 255, 255, .92));
+            }
+
+            .editorsChoicePreviewFooter {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: .75rem;
+            }
+
+            .editorsChoicePreviewFooter .emby-button {
+                margin: 0;
+            }
+
+            .editorsChoicePreviewFooter .fieldDescription {
+                margin: 0;
+            }
+
+            .editorsChoiceEasingEditor {
+                display: grid;
+                grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
+                gap: 1.5rem;
+                align-items: start;
+                margin-bottom: 1.5rem;
+            }
+
+            @media (max-width: 600px) {
+                .editorsChoiceEasingEditor {
+                    grid-template-columns: minmax(0, 1fr);
+                }
+            }
+
+            .editorsChoiceEasingGraph {
+                width: 100%;
+                overflow: visible;
+                border: 1px solid var(--ec-line);
+                border-radius: 6px;
+                max-height: 22rem;
+                background: rgba(128, 128, 128, .08);
+                touch-action: none;
+            }
+
+            .editorsChoiceEasingAxes line {
+                stroke: var(--ec-line);
+                stroke-width: 1;
+                vector-effect: non-scaling-stroke;
+            }
+
+            .editorsChoiceEasingDiagonal {
+                stroke-dasharray: 4 4;
+            }
+
+            .editorsChoiceEasingAxes text {
+                fill: currentColor;
+                font-size: 10px;
+                opacity: .6;
+            }
+
+            .editorsChoiceEasingArm {
+                stroke: currentColor;
+                stroke-width: 1;
+                opacity: .55;
+                vector-effect: non-scaling-stroke;
+            }
+
+            .editorsChoiceEasingCurve {
+                fill: none;
+                stroke: var(--ec-accent);
+                stroke-width: 3;
+                stroke-linecap: round;
+                vector-effect: non-scaling-stroke;
+            }
+
+            .editorsChoiceEasingHandle {
+                fill: #fff;
+                stroke: var(--ec-accent);
+                stroke-width: 3;
+                vector-effect: non-scaling-stroke;
+                cursor: grab;
+            }
+
+            .editorsChoiceEasingHandle:focus-visible {
+                outline: none;
+                stroke: #f0b429;
+                stroke-width: 4;
+            }
+
+            .editorsChoiceEasingHandle.is-dragging {
+                cursor: grabbing;
+            }
+
+            .editorsChoiceEasingFields {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: .5rem;
+            }
+
+            .editorsChoiceEasingFields .inputContainer {
+                margin-bottom: .5rem;
+            }
+
+            .editorsChoiceEasingValue {
+                display: block;
+                margin-bottom: .75rem;
+                opacity: .8;
+            }
+
+            .editorsChoiceEasingDemo {
+                position: relative;
+                height: 1.5rem;
+                margin: 0 .75rem .75rem;
+                border-bottom: 1px dashed var(--ec-line);
+            }
+
+            .editorsChoiceEasingDemo span {
+                position: absolute;
+                bottom: -.5rem;
+                left: -.5rem;
+                width: 1rem;
+                height: 1rem;
+                border-radius: 50%;
+                background: var(--ec-accent);
+            }
+
+            .editorsChoiceSaveBar {
+                position: sticky;
+                z-index: 5;
+                bottom: 0;
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: .75rem;
+                margin-top: 2rem;
+                padding: .75rem 0 calc(.75rem + env(safe-area-inset-bottom, 0px));
+                border-top: 1px solid var(--ec-line);
+                background: var(--ec-settings-bg, #101010);
+            }
+
+            .editorsChoiceSaveStatus {
+                display: flex;
+                align-items: center;
+                gap: .5rem;
+                margin-right: auto;
+                opacity: .85;
+            }
+
+            .editorsChoiceSaveStatus::before {
+                content: "";
+                width: .5rem;
+                height: .5rem;
+                border-radius: 50%;
+                background: #52b788;
+            }
+
+            .editorsChoiceSaveStatus--dirty::before {
+                background: #f0b429;
+            }
+
+            .editorsChoiceSaveBar .emby-button {
+                width: auto;
+                margin: 0;
+            }
+
+            @media (max-width: 1099px) {
+                .editorsChoiceSettingsLayout--withPreview {
+                    grid-template-columns: minmax(0, 1fr);
+                }
+
+                .editorsChoicePreviewPanel {
+                    position: static;
+                    order: -1;
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .editorsChoiceSettingsPreview * {
+                    transition: none !important;
+                }
+            }
+
         </style>
 
         <div data-role="content">
             <div class="content-primary">
                 <form class="editorsChoiceConfigurationForm">
-                    <h1>EditorsChoice settings</h1>
+                    <div class="editorsChoiceSettingsHeader">
+                        <h1>Editor's Choice</h1>
+                        <p class="fieldDescription">Choose what the home page banner features and how it looks.</p>
+                        <div class="editorsChoiceTabs" role="tablist" aria-label="Settings sections">
+                            <button type="button" class="editorsChoiceTab" role="tab" id="EditorsChoiceTab-content" aria-controls="EditorsChoicePanel-content" data-tab="content">Content<span class="editorsChoiceTabDot" aria-hidden="true"></span><span class="editorsChoiceTabStatus editorsChoiceVisuallyHidden"></span></button>
+                            <button type="button" class="editorsChoiceTab" role="tab" id="EditorsChoiceTab-opening" aria-controls="EditorsChoicePanel-opening" data-tab="opening">Opening slide<span class="editorsChoiceTabDot" aria-hidden="true"></span><span class="editorsChoiceTabStatus editorsChoiceVisuallyHidden"></span></button>
+                            <button type="button" class="editorsChoiceTab" role="tab" id="EditorsChoiceTab-layout" aria-controls="EditorsChoicePanel-layout" data-tab="layout">Layout<span class="editorsChoiceTabDot" aria-hidden="true"></span><span class="editorsChoiceTabStatus editorsChoiceVisuallyHidden"></span></button>
+                            <button type="button" class="editorsChoiceTab" role="tab" id="EditorsChoiceTab-style" aria-controls="EditorsChoicePanel-style" data-tab="style">Style<span class="editorsChoiceTabDot" aria-hidden="true"></span><span class="editorsChoiceTabStatus editorsChoiceVisuallyHidden"></span></button>
+                            <button type="button" class="editorsChoiceTab" role="tab" id="EditorsChoiceTab-motion" aria-controls="EditorsChoicePanel-motion" data-tab="motion">Motion<span class="editorsChoiceTabDot" aria-hidden="true"></span><span class="editorsChoiceTabStatus editorsChoiceVisuallyHidden"></span></button>
+                            <button type="button" class="editorsChoiceTab" role="tab" id="EditorsChoiceTab-advanced" aria-controls="EditorsChoicePanel-advanced" data-tab="advanced">Advanced<span class="editorsChoiceTabDot" aria-hidden="true"></span><span class="editorsChoiceTabStatus editorsChoiceVisuallyHidden"></span></button>
+                        </div>
+                    </div>
 
-                    <hr />
-                    <h2>Content</h2>
-                    <h3>Opening slide</h3>
+                    <div class="editorsChoiceSettingsLayout">
+                        <div class="editorsChoiceSettingsPanels">
+
+                    <!-- Content -->
+                    <section id="EditorsChoicePanel-content" role="tabpanel" aria-labelledby="EditorsChoiceTab-content" data-tab-panel="content">
+                    <h2>Selection</h2>
+                    <div class="inputContainer">
+                        <label class="radio-label-block mdl-radio show-focus">
+                            <input type="radio" is="emby-radio" id="FavouritesMode" name="mode" value="FavouritesMode" class="mdl-radio__button" />
+                            <div class="mdl-radio__circles">
+                                <svg>
+                                    <defs>
+                                        <clipPath id="cutoff-fav"><circle cx="50%" cy="50%" r="50%"></circle></clipPath>
+                                    </defs>
+                                    <circle class="mdl-radio__outer-circle" cx="50%" cy="50%" r="50%" fill="none" stroke="currentcolor" stroke-width="0.26em" clip-path="url(#cutoff-fav)"></circle>
+                                    <circle class="mdl-radio__inner-circle" cx="50%" cy="50%" r="25%" fill="currentcolor"></circle>
+                                </svg>
+                                <div class="mdl-radio__focus-circle"></div>
+                            </div>
+                            <span class="radioButtonLabel mdl-radio__label">Favourites</span>
+                            <div class="fieldDescription">Shows items from the specified user's favourites</div>
+                        </label>
+
+                        <label class="radio-label-block mdl-radio show-focus">
+                            <input type="radio" is="emby-radio" id="RandomMode" name="mode" value="RandomMode" class="mdl-radio__button" />
+                            <div class="mdl-radio__circles">
+                                <svg>
+                                    <defs>
+                                        <clipPath id="cutoff-rand"><circle cx="50%" cy="50%" r="50%"></circle></clipPath>
+                                    </defs>
+                                    <circle class="mdl-radio__outer-circle" cx="50%" cy="50%" r="50%" fill="none" stroke="currentcolor" stroke-width="0.26em" clip-path="url(#cutoff-rand)"></circle>
+                                    <circle class="mdl-radio__inner-circle" cx="50%" cy="50%" r="25%" fill="currentcolor"></circle>
+                                </svg>
+                                <div class="mdl-radio__focus-circle"></div>
+                            </div>
+                            <span class="radioButtonLabel mdl-radio__label">Random</span>
+                            <div class="fieldDescription">Shows a random selection of items from your library</div>
+                        </label>
+
+                        <label class="radio-label-block mdl-radio show-focus">
+                            <input type="radio" is="emby-radio" id="CollectionsMode" name="mode" value="CollectionsMode" class="mdl-radio__button" />
+                            <div class="mdl-radio__circles">
+                                <svg>
+                                    <defs>
+                                        <clipPath id="cutoff-col"><circle cx="50%" cy="50%" r="50%"></circle></clipPath>
+                                    </defs>
+                                    <circle class="mdl-radio__outer-circle" cx="50%" cy="50%" r="50%" fill="none" stroke="currentcolor" stroke-width="0.26em" clip-path="url(#cutoff-col)"></circle>
+                                    <circle class="mdl-radio__inner-circle" cx="50%" cy="50%" r="25%" fill="currentcolor"></circle>
+                                </svg>
+                                <div class="mdl-radio__focus-circle"></div>
+                            </div>
+                            <span class="radioButtonLabel mdl-radio__label">Collections</span>
+                            <div class="fieldDescription">Shows items from the specified collections</div>
+                        </label>
+
+                        <label class="radio-label-block mdl-radio show-focus">
+                            <input type="radio" is="emby-radio" id="NewMode" name="mode" value="NewMode" class="mdl-radio__button" />
+                            <div class="mdl-radio__circles">
+                                <svg>
+                                    <defs>
+                                        <clipPath id="cutoff-new"><circle cx="50%" cy="50%" r="50%"></circle></clipPath>
+                                    </defs>
+                                    <circle class="mdl-radio__outer-circle" cx="50%" cy="50%" r="50%" fill="none" stroke="currentcolor" stroke-width="0.26em" clip-path="url(#cutoff-new)"></circle>
+                                    <circle class="mdl-radio__inner-circle" cx="50%" cy="50%" r="25%" fill="currentcolor"></circle>
+                                </svg>
+                                <div class="mdl-radio__focus-circle"></div>
+                            </div>
+                            <span class="radioButtonLabel mdl-radio__label">New</span>
+                            <div class="fieldDescription">Shows only movies and shows with episodes that premiered recently</div>
+                        </label>
+                    </div>
+
+                    <div id="LibraryList-container" style="display:none;">
+                        <h3 class="checkboxListLabel">Limit random items to these libraries:</h3>
+                        <div id="LibraryList" class="checkboxList"></div>
+                        <p>If no libraries are selected, Random mode uses all movie, TV, and mixed-content libraries.</p>
+                    </div>
+
+                    <div id="EditorUserId-container" class="selectContainer" style="display:none;">
+                        <label class="selectLabel" for="EditorUserId">User's favourites list</label>
+                        <select is="emby-select" id="EditorUserId" name="EditorUserId" class="emby-select-withcolor emby-select">
+                            <option value="none">None</option>
+                        </select>
+                    </div>
+
+                    <div id="NewTimeLimit-container" class="selectContainer" style="display:none;">
+                        <label class="selectLabel" for="NewTimeLimitSelect">Show items released in the last:</label>
+                        <select is="emby-select" id="NewTimeLimitSelect" name="NewTimeLimit" class="emby-select-withcolor emby-select">
+                            <option value="1month">1 month</option>
+                            <option value="2month">2 months</option>
+                            <option value="6month">6 months</option>
+                            <option value="1year">1 year</option>
+                            <option value="2year">2 years</option>
+                            <option value="5year">5 years</option>
+                        </select>
+                    </div>
+
+                    <div id="CollectionsList-container" style="display:none;">
+                        <h3 class="checkboxListLabel">Show items from these collections:</h3>
+                        <div id="CollectionsList" class="checkboxList"></div>
+                        <p>One collection will be shown at a time across the slider. If multiple are checked below, one of them will be randomly chosen each time it loads.</p>
+                    </div>
+                    <h2>Filtering</h2>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="RandomMediaCount">Maximum items shown</label>
+                        <input is="emby-input" type="number" id="RandomMediaCount" name="RandomMediaCount" min="1" />
+                        <div class="fieldDescription">This sets how many items to show in the banner, whether random or from the favourites list. Set to a massive number if you want to show all of your favourited items.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MinimumRating">Minimum community rating</label>
+                        <input is="emby-input" type="number" id="MinimumRating" name="MinimumRating" min="0" max="10" step="0.1" />
+                        <div class="fieldDescription">Only show shows or films that have a community rating at least this number (0.0 to 10.0). Set to 0 to ignore rating.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MinimumCriticRating">Minimum critic rating</label>
+                        <input is="emby-input" type="number" id="MinimumCriticRating" name="MinimumCriticRating" min="0" max="100" step="1" />
+                        <div class="fieldDescription">Only show shows or films that have a critic rating at least this number (0 to 100). Set to 0 to ignore rating.</div>
+                    </div>
+
+                    <div id="MaximumParentRating-container" class="selectContainer">
+                        <label class="selectLabel" for="MaximumParentRating">Maximum parental rating</label>
+                        <select is="emby-select" id="MaximumParentRating" name="MaximumParentRating" class="emby-select-withcolor emby-select">
+                            <option value="-2">User profile</option>
+                        </select>
+                        <div class="fieldDescription">Items with a parental rating higher than this will not be shown. Set to 'User profile' to limit to a user's specific parental access controls (default).</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="ShowPlayed" name="ShowPlayed" />
+                            <span class="checkboxLabel">Show played items</span>
+                        </label>
+                    </div>
+                    </section>
+
+                    <!-- Opening slide -->
+                    <section id="EditorsChoicePanel-opening" role="tabpanel" aria-labelledby="EditorsChoiceTab-opening" data-tab-panel="opening" hidden>
+                    <h2>Opening slide</h2>
                     <p class="fieldDescription">Optionally place one administrator-authored slide before the automatic featured selection.</p>
-
                     <div class="editorsChoiceOpeningPanel">
                         <div class="selectContainer">
                             <label class="selectLabel" for="OpeningSlideType">Opening content</label>
@@ -395,222 +1202,12 @@
                             <div class="fieldDescription">Turn this off to show only the opening slide.</div>
                         </div>
                     </div>
+                    </section>
 
-                    <h3>Selection</h3>
-                    <div class="inputContainer">
-                        <label class="radio-label-block mdl-radio show-focus">
-                            <input type="radio" is="emby-radio" id="FavouritesMode" name="mode" value="FavouritesMode" class="mdl-radio__button" />
-                            <div class="mdl-radio__circles">
-                                <svg>
-                                    <defs>
-                                        <clipPath id="cutoff-fav"><circle cx="50%" cy="50%" r="50%"></circle></clipPath>
-                                    </defs>
-                                    <circle class="mdl-radio__outer-circle" cx="50%" cy="50%" r="50%" fill="none" stroke="currentcolor" stroke-width="0.26em" clip-path="url(#cutoff-fav)"></circle>
-                                    <circle class="mdl-radio__inner-circle" cx="50%" cy="50%" r="25%" fill="currentcolor"></circle>
-                                </svg>
-                                <div class="mdl-radio__focus-circle"></div>
-                            </div>
-                            <span class="radioButtonLabel mdl-radio__label">Favourites</span>
-                            <div class="fieldDescription">Shows items from the specified user's favourites</div>
-                        </label>
-
-                        <label class="radio-label-block mdl-radio show-focus">
-                            <input type="radio" is="emby-radio" id="RandomMode" name="mode" value="RandomMode" class="mdl-radio__button" />
-                            <div class="mdl-radio__circles">
-                                <svg>
-                                    <defs>
-                                        <clipPath id="cutoff-rand"><circle cx="50%" cy="50%" r="50%"></circle></clipPath>
-                                    </defs>
-                                    <circle class="mdl-radio__outer-circle" cx="50%" cy="50%" r="50%" fill="none" stroke="currentcolor" stroke-width="0.26em" clip-path="url(#cutoff-rand)"></circle>
-                                    <circle class="mdl-radio__inner-circle" cx="50%" cy="50%" r="25%" fill="currentcolor"></circle>
-                                </svg>
-                                <div class="mdl-radio__focus-circle"></div>
-                            </div>
-                            <span class="radioButtonLabel mdl-radio__label">Random</span>
-                            <div class="fieldDescription">Shows a random selection of items from your library</div>
-                        </label>
-
-                        <label class="radio-label-block mdl-radio show-focus">
-                            <input type="radio" is="emby-radio" id="CollectionsMode" name="mode" value="CollectionsMode" class="mdl-radio__button" />
-                            <div class="mdl-radio__circles">
-                                <svg>
-                                    <defs>
-                                        <clipPath id="cutoff-col"><circle cx="50%" cy="50%" r="50%"></circle></clipPath>
-                                    </defs>
-                                    <circle class="mdl-radio__outer-circle" cx="50%" cy="50%" r="50%" fill="none" stroke="currentcolor" stroke-width="0.26em" clip-path="url(#cutoff-col)"></circle>
-                                    <circle class="mdl-radio__inner-circle" cx="50%" cy="50%" r="25%" fill="currentcolor"></circle>
-                                </svg>
-                                <div class="mdl-radio__focus-circle"></div>
-                            </div>
-                            <span class="radioButtonLabel mdl-radio__label">Collections</span>
-                            <div class="fieldDescription">Shows items from the specified collections</div>
-                        </label>
-
-                        <label class="radio-label-block mdl-radio show-focus">
-                            <input type="radio" is="emby-radio" id="NewMode" name="mode" value="NewMode" class="mdl-radio__button" />
-                            <div class="mdl-radio__circles">
-                                <svg>
-                                    <defs>
-                                        <clipPath id="cutoff-new"><circle cx="50%" cy="50%" r="50%"></circle></clipPath>
-                                    </defs>
-                                    <circle class="mdl-radio__outer-circle" cx="50%" cy="50%" r="50%" fill="none" stroke="currentcolor" stroke-width="0.26em" clip-path="url(#cutoff-new)"></circle>
-                                    <circle class="mdl-radio__inner-circle" cx="50%" cy="50%" r="25%" fill="currentcolor"></circle>
-                                </svg>
-                                <div class="mdl-radio__focus-circle"></div>
-                            </div>
-                            <span class="radioButtonLabel mdl-radio__label">New</span>
-                            <div class="fieldDescription">Shows only movies and shows with episodes that premiered recently</div>
-                        </label>
-                    </div>
-
-                    <div id="LibraryList-container" style="display:none;">
-                        <h3 class="checkboxListLabel">Limit random items to these libraries:</h3>
-                        <div id="LibraryList" class="checkboxList"></div>
-                        <p>If no libraries are selected, Random mode uses all movie, TV, and mixed-content libraries.</p>
-                    </div>
-
-                    <div id="EditorUserId-container" class="selectContainer" style="display:none;">
-                        <label class="selectLabel" for="EditorUserId">User's favourites list</label>
-                        <select is="emby-select" id="EditorUserId" name="EditorUserId" class="emby-select-withcolor emby-select">
-                            <option value="none">None</option>
-                        </select>
-                    </div>
-
-                    <div id="NewTimeLimit-container" class="selectContainer" style="display:none;">
-                        <label class="selectLabel" for="NewTimeLimitSelect">Show items released in the last:</label>
-                        <select is="emby-select" id="NewTimeLimitSelect" name="NewTimeLimit" class="emby-select-withcolor emby-select">
-                            <option value="1month">1 month</option>
-                            <option value="2month">2 months</option>
-                            <option value="6month">6 months</option>
-                            <option value="1year">1 year</option>
-                            <option value="2year">2 years</option>
-                            <option value="5year">5 years</option>
-                        </select>
-                    </div>
-
-                    <div id="CollectionsList-container" style="display:none;">
-                        <h3 class="checkboxListLabel">Show items from these collections:</h3>
-                        <div id="CollectionsList" class="checkboxList"></div>
-                        <p>One collection will be shown at a time across the slider. If multiple are checked below, one of them will be randomly chosen each time it loads.</p>
-                    </div>
-
-                    <h3>Filtering</h3>
-
-                    <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="RandomMediaCount">Maximum items shown</label>
-                        <input is="emby-input" type="number" id="RandomMediaCount" name="RandomMediaCount" min="1" />
-                        <div class="fieldDescription">This sets how many items to show in the banner, whether random or from the favourites list. Set to a massive number if you want to show all of your favourited items.</div>
-                    </div>
-
-                    <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="MinimumRating">Minimum community rating</label>
-                        <input is="emby-input" type="number" id="MinimumRating" name="MinimumRating" min="0" max="10" step="0.1" />
-                        <div class="fieldDescription">Only show shows or films that have a community rating at least this number (0.0 to 10.0). Set to 0 to ignore rating.</div>
-                    </div>
-
-                    <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="MinimumCriticRating">Minimum critic rating</label>
-                        <input is="emby-input" type="number" id="MinimumCriticRating" name="MinimumCriticRating" min="0" max="100" step="1" />
-                        <div class="fieldDescription">Only show shows or films that have a critic rating at least this number (0 to 100). Set to 0 to ignore rating.</div>
-                    </div>
-
-                    <div id="MaximumParentRating-container" class="selectContainer">
-                        <label class="selectLabel" for="MaximumParentRating">Maximum parental rating</label>
-                        <select is="emby-select" id="MaximumParentRating" name="MaximumParentRating" class="emby-select-withcolor emby-select">
-                            <option value="-2">User profile</option>
-                        </select>
-                        <div class="fieldDescription">Items with a parental rating higher than this will not be shown. Set to 'User profile' to limit to a user's specific parental access controls (default).</div>
-                    </div>
-
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label class="emby-checkbox-label">
-                            <input is="emby-checkbox" type="checkbox" id="ShowPlayed" name="ShowPlayed" />
-                            <span class="checkboxLabel">Show played items</span>
-                        </label>
-                    </div>
-
-                    <hr />
-                    <h3>Display</h3>
-
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label class="emby-checkbox-label">
-                            <input is="emby-checkbox" type="checkbox" id="ShowNavigationArrows" name="ShowNavigationArrows" />
-                            <span class="checkboxLabel">Show navigation arrows</span>
-                        </label>
-                    </div>
-
-
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label class="emby-checkbox-label">
-                            <input is="emby-checkbox" type="checkbox" id="ShowPlayButton" name="ShowPlayButton" />
-                            <span class="checkboxLabel">Show Play Button</span>
-                        </label>
-                    </div>
-
-                    <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="PlayButtonText">Custom Play Button Text</label>
-                        <input is="emby-input" type="text" id="PlayButtonText" name="PlayButtonText" />
-                        <div class="fieldDescription">Change “Watch Now” for items with no viewing progress. Resume, next episode, and replay labels remain automatic. Leave empty for the default.</div>
-                    </div>
-
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label class="emby-checkbox-label">
-                            <input is="emby-checkbox" type="checkbox" id="UseCustomPlayButtonColors" />
-                            <span class="checkboxLabel">Customize Watch now button colors</span>
-                        </label>
-                        <div class="fieldDescription">Applies to the primary play, resume, continue, and replay button on media slides.</div>
-                    </div>
-                    <div id="PlayButtonColors-container" class="editorsChoiceButtonStyleGrid">
-                        <div class="inputContainer">
-                            <label class="inputLabel" for="PlayButtonBackgroundColor">Button background</label>
-                            <input is="emby-input" type="color" id="PlayButtonBackgroundColor" />
-                        </div>
-                        <div class="inputContainer">
-                            <label class="inputLabel" for="PlayButtonTextColor">Button text</label>
-                            <input is="emby-input" type="color" id="PlayButtonTextColor" />
-                        </div>
-                    </div>
-
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label class="emby-checkbox-label">
-                            <input is="emby-checkbox" type="checkbox" id="ShowDesc" name="ShowDesc" />
-                            <span class="checkboxLabel">Show description</span>
-                        </label>
-                    </div>
-
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label class="emby-checkbox-label">
-                            <input is="emby-checkbox" type="checkbox" id="HideOnTvLayout" name="HideOnTvLayout" />
-                            <span class="checkboxLabel">Hide on TVs</span>
-                        </label>
-                        <div class="fieldDescription">When enabled, the Editors Choice banner will not be injected on TV interfaces.</div>
-                    </div>
-
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label class="emby-checkbox-label">
-                            <input id="EnableSelectionCache" type="checkbox" is="emby-checkbox" />
-                            <span>Cache featured selections on the server</span>
-                        </label>
-                        <div class="fieldDescription">Prepare a separate selection for each user in advance. Enabled by default; playback progress stays current.</div>
-                    </div>
-                    <div id="SelectionRefreshMinutes-container" class="inputContainer">
-                        <label class="inputLabel" for="SelectionRefreshMinutes">Refresh selection every (minutes)</label>
-                        <input id="SelectionRefreshMinutes" type="number" is="emby-input" min="1" max="1440" step="1" required />
-                        <div class="fieldDescription">Default: 30 minutes. New selections appear on subsequent banner loads. This is separate from the slideshow interval.</div>
-                    </div>
-
-                    <hr />
-                    <h2>Appearance</h2>
+                    <!-- Layout -->
+                    <section id="EditorsChoicePanel-layout" role="tabpanel" aria-labelledby="EditorsChoiceTab-layout" data-tab-panel="layout" hidden>
+                    <h2>Size</h2>
                     <p class="fieldDescription">The home page always uses the Hero banner. Its loading placeholder reserves the configured height before content arrives.</p>
-
-                    <div id="HeroBackdropPosition-container" class="selectContainer">
-                        <label class="selectLabel" for="HeroBackdropPositionSelect">Image position</label>
-                        <select is="emby-select" id="HeroBackdropPositionSelect" name="HeroBackdropPositionSelect" class="emby-select-withcolor emby-select">
-                            <option value="center">Center (Default)</option>
-                            <option value="top">Top</option>
-                            <option value="bottom">Bottom</option>
-                        </select>
-                    </div>
 
                     <div class="selectContainer">
                         <label class="selectLabel" for="BannerHeightMode">Banner height</label>
@@ -668,6 +1265,157 @@
                     </div>
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="HideOnTvLayout" name="HideOnTvLayout" />
+                            <span class="checkboxLabel">Hide on TVs</span>
+                        </label>
+                        <div class="fieldDescription">When enabled, the Editors Choice banner will not be injected on TV interfaces.</div>
+                    </div>
+
+                    <h2>Composition</h2>
+                    <div class="editorsChoiceFieldGrid">
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="HeroContentAlignment">Text alignment</label>
+                            <select is="emby-select" id="HeroContentAlignment" class="emby-select-withcolor emby-select">
+                                <option value="left">Left</option>
+                                <option value="center">Center</option>
+                                <option value="right">Right</option>
+                            </select>
+                        </div>
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="HeroContentVerticalPosition">Vertical position</label>
+                            <select is="emby-select" id="HeroContentVerticalPosition" class="emby-select-withcolor emby-select">
+                                <option value="center">Middle</option>
+                                <option value="top">Top</option>
+                                <option value="bottom">Bottom</option>
+                            </select>
+                        </div>
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="HeroContentMaxWidth">Text block width</label>
+                            <select is="emby-select" id="HeroContentMaxWidth" class="emby-select-withcolor emby-select">
+                                <option value="0">Automatic (650px)</option>
+                                <option value="40">40% of the banner</option>
+                                <option value="50">50% of the banner</option>
+                                <option value="60">60% of the banner</option>
+                                <option value="70">70% of the banner</option>
+                                <option value="80">80% of the banner</option>
+                                <option value="90">90% of the banner</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="editorsChoiceFieldGrid">
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="HeroPosterMode">Poster</label>
+                            <select is="emby-select" id="HeroPosterMode" class="emby-select-withcolor emby-select">
+                                <option value="auto">Left of the text</option>
+                                <option value="right">Right of the text</option>
+                                <option value="hidden">Hidden</option>
+                            </select>
+                        </div>
+                        <div id="HeroPosterSize-container" class="selectContainer">
+                            <label class="selectLabel" for="HeroPosterSize">Poster size</label>
+                            <select is="emby-select" id="HeroPosterSize" class="emby-select-withcolor emby-select">
+                                <option value="medium">Medium</option>
+                                <option value="small">Small</option>
+                                <option value="large">Large</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="editorsChoiceFieldGrid">
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="HeroFrameStyle">Frame</label>
+                            <select is="emby-select" id="HeroFrameStyle" class="emby-select-withcolor emby-select">
+                                <option value="bleed">Full width</option>
+                                <option value="inset">Inset card</option>
+                            </select>
+                        </div>
+                        <div id="HeroCornerRadius-container" class="inputContainer">
+                            <label class="inputLabel" for="HeroCornerRadius">Corner radius (px)</label>
+                            <input is="emby-input" type="number" id="HeroCornerRadius" min="0" max="32" step="1" required />
+                        </div>
+                    </div>
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="MobileContentAlignment">Text alignment on phones (below 500px wide)</label>
+                        <select is="emby-select" id="MobileContentAlignment" class="emby-select-withcolor emby-select">
+                            <option value="inherit">Same as desktop</option>
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                        </select>
+                    </div>
+                    <div class="checkboxContainer">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="MobileHidePoster" />
+                            <span class="checkboxLabel">Hide the poster on phones</span>
+                        </label>
+                    </div>
+
+                    <h2>Backdrop</h2>
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="HeroBackdropImageType">Image</label>
+                        <select is="emby-select" id="HeroBackdropImageType" class="emby-select-withcolor emby-select">
+                            <option value="Backdrop">Backdrop</option>
+                            <option value="Thumb">Thumb</option>
+                            <option value="Primary">Primary (poster)</option>
+                        </select>
+                        <div class="fieldDescription">Titles without this image type use their backdrop instead.</div>
+                    </div>
+                    <div id="HeroBackdropPosition-container" class="selectContainer">
+                        <label class="selectLabel" for="HeroBackdropPositionSelect">Image position</label>
+                        <select is="emby-select" id="HeroBackdropPositionSelect" name="HeroBackdropPositionSelect" class="emby-select-withcolor emby-select">
+                            <option value="center">Center (Default)</option>
+                            <option value="top">Top</option>
+                            <option value="bottom">Bottom</option>
+                            <option value="custom">Custom focus point</option>
+                        </select>
+                    </div>
+                    <div id="HeroBackdropFocus-container" class="editorsChoiceFieldGrid">
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="HeroBackdropFocusX">Horizontal focus (%)</label>
+                            <input is="emby-input" type="number" id="HeroBackdropFocusX" min="0" max="100" step="1" required />
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="HeroBackdropFocusY">Vertical focus (%)</label>
+                            <input is="emby-input" type="number" id="HeroBackdropFocusY" min="0" max="100" step="1" required />
+                        </div>
+                    </div>
+                    <div class="editorsChoiceFieldGrid">
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="HeroBackdropBlur">Blur (px)</label>
+                            <input is="emby-input" type="number" id="HeroBackdropBlur" min="0" max="20" step="1" required />
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="HeroBackdropBrightness">Brightness (%)</label>
+                            <input is="emby-input" type="number" id="HeroBackdropBrightness" min="50" max="150" step="1" required />
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="HeroBackdropSaturation">Saturation (%)</label>
+                            <input is="emby-input" type="number" id="HeroBackdropSaturation" min="0" max="150" step="1" required />
+                        </div>
+                    </div>
+
+                    <h2>Readability</h2>
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="HeroScrimStyle">Scrim</label>
+                        <select is="emby-select" id="HeroScrimStyle" class="emby-select-withcolor emby-select">
+                            <option value="auto">Automatic (measured from the artwork)</option>
+                            <option value="side">Side gradient</option>
+                            <option value="bottom">Bottom gradient</option>
+                            <option value="vignette">Vignette</option>
+                            <option value="none">None</option>
+                        </select>
+                        <div class="fieldDescription">A gradient over the backdrop that keeps text readable. Automatic and side gradients follow the text alignment.</div>
+                    </div>
+                    <div id="HeroScrimOptions-container" class="editorsChoiceFieldGrid">
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="HeroScrimColor">Scrim color</label>
+                            <input is="emby-input" type="color" id="HeroScrimColor" />
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="HeroScrimStrength">Scrim strength (%)</label>
+                            <input is="emby-input" type="number" id="HeroScrimStrength" min="0" max="100" step="1" required />
+                        </div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
                             <input is="emby-checkbox" type="checkbox" id="EnableBackgroundDimming" />
                             <span class="checkboxLabel">Dim background artwork and video</span>
                         </label>
@@ -677,43 +1425,224 @@
                         <label class="inputLabel" for="BackgroundDimmingPercent">Additional dimming (%)</label>
                         <input is="emby-input" type="number" id="BackgroundDimmingPercent" min="0" max="100" step="1" required />
                     </div>
+                    </section>
 
-                    <h3>Fonts</h3>
-                    <p class="fieldDescription">Choose a font for each text tier. Uses local fonts with device-appropriate fallbacks; no remote font downloads. Title fonts apply to text titles, not image logos.</p>
-                    <div class="selectContainer">
-                        <label class="selectLabel" for="TitleFont">Title font</label>
-                        <select is="emby-select" id="TitleFont" class="emby-select-withcolor emby-select"></select>
+                    <!-- Style -->
+                    <section id="EditorsChoicePanel-style" role="tabpanel" aria-labelledby="EditorsChoiceTab-style" data-tab-panel="style" hidden>
+                    <h2>Theme</h2>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="UseHeroAccentColor" />
+                            <span class="checkboxLabel">Use a custom accent color</span>
+                        </label>
+                        <div class="fieldDescription">Colors the play button, resume progress and slide indicators. Leave this off to follow the active Jellyfin theme.</div>
                     </div>
-                    <div class="selectContainer">
-                        <label class="selectLabel" for="MetadataFont">Metadata (year, rating, runtime) font</label>
-                        <select is="emby-select" id="MetadataFont" class="emby-select-withcolor emby-select"></select>
+                    <div id="HeroAccentColor-container" class="inputContainer">
+                        <label class="inputLabel" for="HeroAccentColor">Accent color</label>
+                        <input is="emby-input" type="color" id="HeroAccentColor" />
                     </div>
-                    <div class="selectContainer">
-                        <label class="selectLabel" for="DescriptionFont">Description font</label>
-                        <select is="emby-select" id="DescriptionFont" class="emby-select-withcolor emby-select"></select>
-                    </div>
-                    <div class="selectContainer">
-                        <label class="selectLabel" for="ButtonFont">Buttons font</label>
-                        <select is="emby-select" id="ButtonFont" class="emby-select-withcolor emby-select"></select>
-                    </div>
-                    <div class="inputContainer">
-                        <h3>Banner preview</h3>
-                        <label class="selectLabel" for="BannerPreviewDevice">Preview size</label>
-                        <select is="emby-select" id="BannerPreviewDevice" class="emby-select-withcolor emby-select">
-                            <option value="desktop">Desktop</option>
-                            <option value="mobile">Mobile</option>
-                        </select>
-                        <div id="BannerPreview" class="editorsChoiceSettingsPreview" aria-hidden="true">
-                            <div class="editorsChoicePreviewScene"></div>
-                            <div class="editorsChoicePreviewCopy"><strong>Featured tonight</strong><small>2026 · Series</small><span>Your next great watch</span><span class="editorsChoicePreviewButton">Watch now</span></div>
+
+                    <h2>Title</h2>
+                    <div class="editorsChoiceFieldGrid">
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="HeroTitleDisplay">Show</label>
+                            <select is="emby-select" id="HeroTitleDisplay" class="emby-select-withcolor emby-select">
+                                <option value="logo">Logo when available</option>
+                                <option value="title">Title text</option>
+                                <option value="both">Logo and title</option>
+                            </select>
                         </div>
-                        <p id="BannerPreviewSummary" class="fieldDescription" aria-live="polite"></p>
-                        <button is="emby-button" type="button" id="PreviewTransition" class="raised button-submit emby-button"><span>Preview transition</span></button>
-                        <div class="fieldDescription">Illustrative preview; artwork cropping and header size depend on your device. Changes apply to the home page after saving and refreshing.</div>
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="HeroTitleSize">Size</label>
+                            <select is="emby-select" id="HeroTitleSize" class="emby-select-withcolor emby-select">
+                                <option value="medium">Medium</option>
+                                <option value="small">Small</option>
+                                <option value="large">Large</option>
+                                <option value="xlarge">Extra large</option>
+                            </select>
+                            <div class="fieldDescription">Applies to logos and text titles.</div>
+                        </div>
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="TitleFont">Title font</label>
+                            <select is="emby-select" id="TitleFont" class="emby-select-withcolor emby-select"></select>
+                            <div class="fieldDescription">Device fonts only. Logos are images and keep their own lettering.</div>
+                        </div>
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="HeroTextShadow">Text shadow</label>
+                            <select is="emby-select" id="HeroTextShadow" class="emby-select-withcolor emby-select">
+                                <option value="none">None</option>
+                                <option value="soft">Soft</option>
+                                <option value="strong">Strong</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="UseCustomTextColors" />
+                            <span class="checkboxLabel">Use custom text colors</span>
+                        </label>
+                    </div>
+                    <div id="HeroTextColors-container" class="editorsChoiceFieldGrid">
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="HeroTitleColor">Title color</label>
+                            <input is="emby-input" type="color" id="HeroTitleColor" />
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="HeroTextColor">Metadata and description color</label>
+                            <input is="emby-input" type="color" id="HeroTextColor" />
+                        </div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="ShowTagline" />
+                            <span class="checkboxLabel">Show tagline</span>
+                        </label>
+                        <div class="fieldDescription">Uses the tagline from the title's metadata, when it has one.</div>
                     </div>
 
-                    <hr />
-                    <h2>Motion</h2>
+                    <h2>Metadata</h2>
+                    <p class="fieldDescription">Choose which details appear under the title, and their order.</p>
+                    <ul id="HeroMetadataFieldList" class="editorsChoiceMetadataFields"></ul>
+                    <input type="hidden" id="HeroMetadataOrder" />
+                    <div class="editorsChoiceFieldGrid">
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="HeroMetadataSeparator">Style</label>
+                            <select is="emby-select" id="HeroMetadataSeparator" class="emby-select-withcolor emby-select">
+                                <option value="pill">Outlined pills</option>
+                                <option value="dot">Separated by dots</option>
+                                <option value="pipe">Separated by bars</option>
+                                <option value="none">Spacing only</option>
+                            </select>
+                        </div>
+                        <div id="HeroMaxGenres-container" class="inputContainer">
+                            <label class="inputLabel" for="HeroMaxGenres">Maximum genres</label>
+                            <input is="emby-input" type="number" id="HeroMaxGenres" min="1" max="5" step="1" required />
+                        </div>
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="MetadataFont">Metadata font</label>
+                            <select is="emby-select" id="MetadataFont" class="emby-select-withcolor emby-select"></select>
+                        </div>
+                    </div>
+
+                    <h2>Description</h2>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="ShowDesc" name="ShowDesc" />
+                            <span class="checkboxLabel">Show description</span>
+                        </label>
+                    </div>
+                    <div id="HeroDescriptionOptions-container">
+                        <div class="editorsChoiceFieldGrid">
+                            <div class="inputContainer">
+                                <label class="inputLabel" for="HeroOverviewMaxLines">Maximum lines</label>
+                                <input is="emby-input" type="number" id="HeroOverviewMaxLines" min="1" max="8" step="1" required />
+                                <div class="fieldDescription">Short banners show fewer lines to fit.</div>
+                            </div>
+                            <div class="selectContainer">
+                                <label class="selectLabel" for="HeroOverviewSize">Text size</label>
+                                <select is="emby-select" id="HeroOverviewSize" class="emby-select-withcolor emby-select">
+                                    <option value="medium">Medium</option>
+                                    <option value="small">Small</option>
+                                    <option value="large">Large</option>
+                                </select>
+                            </div>
+                            <div class="selectContainer">
+                                <label class="selectLabel" for="DescriptionFont">Description font</label>
+                                <select is="emby-select" id="DescriptionFont" class="emby-select-withcolor emby-select"></select>
+                            </div>
+                        </div>
+                        <div class="checkboxContainer">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="MobileHideDescription" />
+                                <span class="checkboxLabel">Hide the description on phones</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <h2>Buttons</h2>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="ShowPlayButton" name="ShowPlayButton" />
+                            <span class="checkboxLabel">Show Play Button</span>
+                        </label>
+                    </div>
+                    <div id="PlayButtonText-container" class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="PlayButtonText">Custom Play Button Text</label>
+                        <input is="emby-input" type="text" id="PlayButtonText" name="PlayButtonText" />
+                        <div class="fieldDescription">Change “Watch Now” for items with no viewing progress. Resume, next episode, and replay labels remain automatic. Leave empty for the default.</div>
+                    </div>
+                    <div class="checkboxContainer">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="ShowInfoButton" />
+                            <span class="checkboxLabel">Show the details button</span>
+                        </label>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="ShowTrailerButton" />
+                            <span class="checkboxLabel">Show a trailer button</span>
+                        </label>
+                        <div class="fieldDescription">Appears only on titles that have a trailer. The poster also plays the trailer.</div>
+                    </div>
+                    <div class="checkboxContainer">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="ShowResumeProgress" />
+                            <span class="checkboxLabel">Show resume progress under the play button</span>
+                        </label>
+                    </div>
+                    <div class="editorsChoiceFieldGrid">
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="HeroButtonShape">Shape</label>
+                            <select is="emby-select" id="HeroButtonShape" class="emby-select-withcolor emby-select">
+                                <option value="default">Jellyfin theme</option>
+                                <option value="rounded">Rounded</option>
+                                <option value="pill">Pill</option>
+                                <option value="square">Square</option>
+                            </select>
+                        </div>
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="HeroButtonVariant">Style</label>
+                            <select is="emby-select" id="HeroButtonVariant" class="emby-select-withcolor emby-select">
+                                <option value="filled">Filled</option>
+                                <option value="outline">Outline</option>
+                                <option value="glass">Frosted glass</option>
+                            </select>
+                        </div>
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="HeroButtonSize">Size</label>
+                            <select is="emby-select" id="HeroButtonSize" class="emby-select-withcolor emby-select">
+                                <option value="medium">Medium</option>
+                                <option value="small">Small</option>
+                                <option value="large">Large</option>
+                            </select>
+                        </div>
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="ButtonFont">Buttons font</label>
+                            <select is="emby-select" id="ButtonFont" class="emby-select-withcolor emby-select"></select>
+                        </div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="UseCustomPlayButtonColors" />
+                            <span class="checkboxLabel">Customize Watch now button colors</span>
+                        </label>
+                        <div class="fieldDescription">Applies to the primary play, resume, continue, and replay button on media slides, and takes priority over the accent color.</div>
+                    </div>
+                    <div id="PlayButtonColors-container" class="editorsChoiceButtonStyleGrid">
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="PlayButtonBackgroundColor">Button background</label>
+                            <input is="emby-input" type="color" id="PlayButtonBackgroundColor" />
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="PlayButtonTextColor">Button text</label>
+                            <input is="emby-input" type="color" id="PlayButtonTextColor" />
+                        </div>
+                    </div>
+                    </section>
+
+                    <!-- Motion -->
+                    <section id="EditorsChoicePanel-motion" role="tabpanel" aria-labelledby="EditorsChoiceTab-motion" data-tab-panel="motion" hidden>
+                    <h2>Transitions</h2>
                     <div id="effect-container" class="selectContainer">
                         <label class="selectLabel" for="TransitionEffectSelect">Transition effect</label>
                         <select is="emby-select" id="TransitionEffectSelect" class="emby-select-withcolor emby-select">
@@ -729,12 +1658,67 @@
                         <input is="emby-input" type="number" id="TransitionDurationMs" min="0" max="3000" step="1" required />
                         <div class="fieldDescription">0 uses the default of 650ms. This is separate from the autoplay interval.</div>
                     </div>
+                    <div id="TransitionEasing-container">
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="TransitionEasing">Animation curve</label>
+                            <select is="emby-select" id="TransitionEasing" class="emby-select-withcolor emby-select"></select>
+                            <div class="fieldDescription">Shapes slide transitions, the text reveal, and the artwork zoom. Start from a template, then drag the handles or edit the numbers to make your own.</div>
+                        </div>
+                        <div class="editorsChoiceEasingEditor">
+                            <svg id="TransitionEasingGraph" class="editorsChoiceEasingGraph" viewBox="0 0 200 200" role="group" aria-label="Animation curve editor">
+                                <g class="editorsChoiceEasingAxes">
+                                    <line class="editorsChoiceEasingBaseline" x1="0" y1="200" x2="200" y2="200"></line>
+                                    <line class="editorsChoiceEasingBaseline" x1="0" y1="0" x2="200" y2="0"></line>
+                                    <line class="editorsChoiceEasingDiagonal" x1="0" y1="200" x2="200" y2="0"></line>
+                                    <text x="4" y="196">start</text>
+                                    <text x="196" y="12" text-anchor="end">end</text>
+                                </g>
+                                <line class="editorsChoiceEasingArm" data-arm="1"></line>
+                                <line class="editorsChoiceEasingArm" data-arm="2"></line>
+                                <path class="editorsChoiceEasingCurve"></path>
+                                <circle class="editorsChoiceEasingHandle" data-handle="1" r="7" tabindex="0" role="slider" aria-label="First control point"></circle>
+                                <circle class="editorsChoiceEasingHandle" data-handle="2" r="7" tabindex="0" role="slider" aria-label="Second control point"></circle>
+                            </svg>
+                            <div class="editorsChoiceEasingControls">
+                                <div class="editorsChoiceEasingFields">
+                                    <div class="inputContainer">
+                                        <label class="inputLabel" for="TransitionEasingX1">X1</label>
+                                        <input is="emby-input" type="number" id="TransitionEasingX1" min="0" max="1" step="0.01" required />
+                                    </div>
+                                    <div class="inputContainer">
+                                        <label class="inputLabel" for="TransitionEasingY1">Y1</label>
+                                        <input is="emby-input" type="number" id="TransitionEasingY1" min="-2" max="3" step="0.01" required />
+                                    </div>
+                                    <div class="inputContainer">
+                                        <label class="inputLabel" for="TransitionEasingX2">X2</label>
+                                        <input is="emby-input" type="number" id="TransitionEasingX2" min="0" max="1" step="0.01" required />
+                                    </div>
+                                    <div class="inputContainer">
+                                        <label class="inputLabel" for="TransitionEasingY2">Y2</label>
+                                        <input is="emby-input" type="number" id="TransitionEasingY2" min="-2" max="3" step="0.01" required />
+                                    </div>
+                                </div>
+                                <code id="TransitionEasingValue" class="editorsChoiceEasingValue"></code>
+                                <div class="editorsChoiceEasingDemo" aria-hidden="true"><span></span></div>
+                                <button is="emby-button" type="button" id="TransitionEasingPlay" class="raised emby-button"><span>Play curve</span></button>
+                                <div class="fieldDescription">X values stay between 0 and 1. Y values below 0 or above 1 make the motion pull back or overshoot. Use the arrow keys to move a focused handle; hold Shift for larger steps.</div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label class="emby-checkbox-label">
                             <input is="emby-checkbox" type="checkbox" id="EnableBackgroundMotion" />
                             <span class="checkboxLabel">Animate background artwork</span>
                         </label>
                         <div class="fieldDescription">On by default. Controls artwork zoom, independently of slide transitions.</div>
+                    </div>
+                    <div id="BackgroundMotionIntensity-container" class="selectContainer">
+                        <label class="selectLabel" for="BackgroundMotionIntensity">Artwork zoom</label>
+                        <select is="emby-select" id="BackgroundMotionIntensity" class="emby-select-withcolor emby-select">
+                            <option value="normal">Normal</option>
+                            <option value="subtle">Subtle</option>
+                            <option value="strong">Strong</option>
+                        </select>
                     </div>
                     <div id="EnableThemeVideos-container" class="checkboxContainer checkboxContainer-withDescription">
                         <label class="emby-checkbox-label">
@@ -743,11 +1727,29 @@
                         </label>
                         <div class="fieldDescription">On by default. Play available theme videos, muted, in Hero style on desktop. When off, videos are not loaded.</div>
                     </div>
+                    <div id="ThemeVideoStartDelaySeconds-container" class="inputContainer">
+                        <label class="inputLabel" for="ThemeVideoStartDelaySeconds">Theme video delay (seconds)</label>
+                        <input is="emby-input" type="number" id="ThemeVideoStartDelaySeconds" min="0" max="10" step="1" required />
+                        <div class="fieldDescription">Show the artwork for this long before the video starts.</div>
+                    </div>
                     <p class="fieldDescription">The device's reduced-motion preference disables animated transitions, background motion, video playback, and automatic slide advancement.</p>
+
+                    <h2>Autoplay</h2>
                     <div class="checkboxContainer">
                         <label class="emby-checkbox-label">
                             <input is="emby-checkbox" type="checkbox" id="EnableAutoplay" name="EnableAutoplay" />
                             <span class="checkboxLabel">Enable autoplay</span>
+                        </label>
+                    </div>
+                    <div id="AutoplayInterval-container" class="inputContainer">
+                        <label class="inputLabel" for="AutoplayInterval">Autoplay interval (seconds)</label>
+                        <input is="emby-input" type="number" id="AutoplayInterval" name="AutoplayInterval" min="1" step="1" />
+                        <div class="fieldDescription">Time each item stays visible before advancing. Default: 10 seconds.</div>
+                    </div>
+                    <div id="PauseOnHover-container" class="checkboxContainer">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="PauseOnHover" />
+                            <span class="checkboxLabel">Pause while the pointer is over the banner</span>
                         </label>
                     </div>
                     <div id="ShowAutoplayButton-container" class="checkboxContainer">
@@ -756,15 +1758,49 @@
                             <span class="checkboxLabel">Show autoplay button</span>
                         </label>
                     </div>
-                    <div id="AutoplayInterval-container" class="inputContainer">
-                        <label class="inputLabel" for="AutoplayInterval">Autoplay interval (seconds)</label>
-                        <input is="emby-input" type="number" id="AutoplayInterval" name="AutoplayInterval" min="1" step="1" />
-                        <div class="fieldDescription">Time each item stays visible before advancing. Default: 10 seconds.</div>
+
+                    <h2>Navigation</h2>
+                    <div class="editorsChoiceFieldGrid">
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="HeroIndicatorStyle">Slide indicator</label>
+                            <select is="emby-select" id="HeroIndicatorStyle" class="emby-select-withcolor emby-select">
+                                <option value="dots">Dots</option>
+                                <option value="bars">Bars</option>
+                                <option value="counter">Counter (1 / 5)</option>
+                                <option value="progress">Autoplay progress bar</option>
+                                <option value="none">None</option>
+                            </select>
+                            <div class="fieldDescription">Phones always use the counter, except with None or the progress bar. The progress bar needs autoplay; without it, dots are shown.</div>
+                        </div>
+                        <div id="HeroIndicatorPosition-container" class="selectContainer">
+                            <label class="selectLabel" for="HeroIndicatorPosition">Indicator position</label>
+                            <select is="emby-select" id="HeroIndicatorPosition" class="emby-select-withcolor emby-select">
+                                <option value="center">Bottom center</option>
+                                <option value="left">Bottom left</option>
+                                <option value="right">Bottom right</option>
+                            </select>
+                        </div>
                     </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="ShowNavigationArrows" name="ShowNavigationArrows" />
+                            <span class="checkboxLabel">Show navigation arrows</span>
+                        </label>
+                    </div>
+                    <div id="HeroArrowStyle-container" class="selectContainer">
+                        <label class="selectLabel" for="HeroArrowStyle">Arrow style</label>
+                        <select is="emby-select" id="HeroArrowStyle" class="emby-select-withcolor emby-select">
+                            <option value="circle">Circles</option>
+                            <option value="minimal">Minimal</option>
+                            <option value="hover">Show on hover only</option>
+                        </select>
+                        <div class="fieldDescription">Touch screens always show the controls.</div>
+                    </div>
+                    </section>
 
-                    <hr />
-                    <h2>Technical settings</h2>
-
+                    <!-- Advanced -->
+                    <section id="EditorsChoicePanel-advanced" role="tabpanel" aria-labelledby="EditorsChoiceTab-advanced" data-tab-panel="advanced" hidden>
+                    <h2>Loading</h2>
                     <div class="selectContainer">
                         <label class="selectLabel" for="FrontendInjectionMethod">Frontend injection method:</label>
                         <select is="emby-select" id="FrontendInjectionMethod" name="FrontendInjectionMethod" class="emby-select-withcolor emby-select">
@@ -787,9 +1823,76 @@
                         <div class="fieldDescription">This will make banner and logo images load faster for users and reduce network usage, but increase processing demand on your media server. Turn off if plugin is having a significant performance impact.</div>
                     </div>
 
-                    <hr />
-                    <div>
-                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                    <h2>Selection cache</h2>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="EnableSelectionCache" type="checkbox" is="emby-checkbox" />
+                            <span>Cache featured selections on the server</span>
+                        </label>
+                        <div class="fieldDescription">Prepare a separate selection for each user in advance. Enabled by default; playback progress stays current.</div>
+                    </div>
+                    <div id="SelectionRefreshMinutes-container" class="inputContainer">
+                        <label class="inputLabel" for="SelectionRefreshMinutes">Refresh selection every (minutes)</label>
+                        <input id="SelectionRefreshMinutes" type="number" is="emby-input" min="1" max="1440" step="1" required />
+                        <div class="fieldDescription">Default: 30 minutes. New selections appear on subsequent banner loads. This is separate from the slideshow interval.</div>
+                    </div>
+
+                    <h2>Custom CSS</h2>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="HeroCustomCss">Extra banner styles</label>
+                        <textarea is="emby-textarea" class="emby-textarea emby-input" id="HeroCustomCss" rows="8" maxlength="10000" spellcheck="false" placeholder=".editorsChoiceItemOverview { letter-spacing: .01em; }"></textarea>
+                        <div class="fieldDescription">Rules are nested inside the banner, so selectors only match banner elements. Sent to signed-in users' browsers; braces must be balanced.</div>
+                    </div>
+                    </section>
+                        </div>
+
+                        <aside id="BannerPreviewPanel" class="editorsChoicePreviewPanel" aria-label="Banner preview" hidden>
+                            <div class="editorsChoicePreviewHeading">
+                                <h3>Live preview</h3>
+                                <div class="editorsChoiceSegmented" role="group" aria-label="Preview size">
+                                    <button type="button" id="BannerPreviewDesktop" data-device="desktop" aria-pressed="true">Desktop</button>
+                                    <button type="button" id="BannerPreviewMobile" data-device="mobile" aria-pressed="false">Mobile</button>
+                                </div>
+                            </div>
+                            <div id="BannerPreviewStage" class="editorsChoicePreviewStage">
+                                <div class="editorsChoicePreviewViewport">
+                                    <div id="BannerPreview" class="editorsChoiceSettingsPreview" aria-hidden="true">
+                                        <div class="editorsChoicePreviewBackdrop"></div>
+                                        <div class="editorsChoicePreviewScrim"></div>
+                                        <div class="editorsChoicePreviewDimming"></div>
+                                        <div class="editorsChoicePreviewHeaderBar"><span>Home</span><span>Favorites</span></div>
+                                        <div class="editorsChoicePreviewContent">
+                                            <div class="editorsChoicePreviewPoster"></div>
+                                            <div class="editorsChoicePreviewInfo">
+                                                <div class="editorsChoicePreviewMain">
+                                                    <img class="editorsChoicePreviewLogo" alt="" />
+                                                    <strong class="editorsChoicePreviewTitle"></strong>
+                                                    <span class="editorsChoicePreviewSubtitle"></span>
+                                                    <em class="editorsChoicePreviewTagline"></em>
+                                                    <div class="editorsChoicePreviewMeta"></div>
+                                                    <p class="editorsChoicePreviewDescription"></p>
+                                                </div>
+                                                <div class="editorsChoicePreviewActions"></div>
+                                            </div>
+                                        </div>
+                                        <div class="editorsChoicePreviewControls"><span class="material-icons chevron_left"></span><span class="material-icons pause"></span><span class="material-icons chevron_right"></span></div>
+                                        <div class="editorsChoicePreviewIndicator"></div>
+                                        <div class="editorsChoicePreviewAutoplay"><span></span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="editorsChoicePreviewFooter">
+                                <button is="emby-button" type="button" id="PreviewTransition" class="raised emby-button"><span>Test transition</span></button>
+                                <p id="BannerPreviewSummary" class="fieldDescription" aria-live="polite"></p>
+                            </div>
+                            <div id="BannerPreviewSource" class="fieldDescription">Illustrative preview; artwork cropping and header size depend on your device. Changes apply to the home page after saving and refreshing.</div>
+                        </aside>
+                    </div>
+
+                    <div class="editorsChoiceSaveBar">
+                        <span id="EditorsChoiceSaveStatus" class="editorsChoiceSaveStatus" role="status">All changes saved</span>
+                        <button is="emby-button" type="button" id="EditorsChoiceDiscard" class="raised emby-button" disabled><span>Discard changes</span></button>
+                        <button is="emby-button" type="submit" class="raised button-submit emby-button">
                             <span>Save</span>
                         </button>
                     </div>
