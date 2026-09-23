@@ -13,8 +13,8 @@ The screenshot at the top of [README.md](README.md) shows the fork's Hero design
   script being available.
 - Added separate font dropdowns for titles, metadata, descriptions, and buttons.
   Options use device fonts with fallbacks; image logos are unaffected.
-- Added Slide, Fade, Fade + Zoom, Wipe, and Instant transitions, with a separate
-  duration control and settings preview.
+- Added Slide, Fade, Fade + Zoom, Wipe, Parallax slide, Dip to black, Staggered,
+  Iris, and Instant transitions, with a separate duration control and settings preview.
 - Added exact pixel heights, viewport percentages, full-screen heights, an option
   to subtract the Jellyfin header, and independent mobile heights.
 - Added background dimming (off by default), background motion (on by default),

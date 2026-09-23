@@ -25,6 +25,22 @@ public class BannerSettingsTests
         Assert.DoesNotContain("heroBackdropFocusX", settings.Keys);
     }
 
+    [Theory]
+    [InlineData("loop")]
+    [InlineData("fade")]
+    [InlineData("zoom")]
+    [InlineData("wipe")]
+    [InlineData("parallax")]
+    [InlineData("dip")]
+    [InlineData("stagger")]
+    [InlineData("iris")]
+    [InlineData("instant")]
+    public void EveryTransitionEffectReachesTheBrowser(string effect)
+    {
+        var settings = BannerSettings.Create(new PluginConfiguration { TransitionEffect = effect });
+        Assert.Equal(effect, settings["transitionEffect"]);
+    }
+
     [Fact]
     public void InvalidValuesFallBackToDefaults()
     {

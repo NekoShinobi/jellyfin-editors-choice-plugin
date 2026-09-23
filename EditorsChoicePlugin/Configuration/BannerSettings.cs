@@ -54,7 +54,8 @@ public static class BannerSettings
         response.Add("backgroundDimmingPercent", Math.Clamp(config.BackgroundDimmingPercent, 0, 100));
         response.Add("useHeroLayout", true);
         response.Add("transitionEasing", NormalizeEasing(config));
-        response.Add("transitionEffect", config.TransitionEffect is "fade" or "zoom" or "wipe" or "instant" ? config.TransitionEffect : "loop");
+        response.Add("transitionEffect", config.TransitionEffect is "fade" or "zoom" or "wipe" or "parallax" or "dip" or "stagger" or "iris" or "instant"
+            ? config.TransitionEffect : "loop");
         response.Add("showPlayButton", config.ShowPlayButton);
         response.Add("showNavigationArrows", config.ShowNavigationArrows);
         response.Add("hideOnTvLayout", config.HideOnTvLayout);

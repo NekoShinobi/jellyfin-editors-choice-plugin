@@ -12,8 +12,8 @@ const errors = [];
 // A valid blurhash (from the blurhash README).
 const HASH = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
 
-async function home(browser, data, { lang = 'en', tv = false } = {}) {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+async function home(browser, data, { lang = 'en', tv = false, viewport = { width: 1440, height: 900 } } = {}) {
+    const page = await browser.newPage({ viewport });
     page.on('pageerror', e => errors.push(e.message));
     page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
     await page.route('**/*', route => {
@@ -29,11 +29,13 @@ async function home(browser, data, { lang = 'en', tv = false } = {}) {
     await page.addScriptTag({ path: require.resolve('jquery') });
     await page.addScriptTag({ path: path.join(splideRoot, 'dist/js/splide.min.js') });
     await page.evaluate((data) => {
+        const { hash, ...settings } = data;
         const response = {
             favourites: [1, 2, 3].map(id => ({ id: String(id), name: 'Feature ' + id, item_type: 'Movie', runtime_minutes: 95,
-                overview_html: '<p>Overview.</p>', backdrop_blurhash: data.hash, has_trailer: true, hasPoster: true })),
+                overview_html: '<p>Overview.</p>', backdrop_blurhash: hash, has_trailer: true, hasPoster: true })),
             autoplay: false, showNavigationArrows: true, autoplayInterval: 60000, showPlayButton: true, showTrailerButton: true,
             bannerHeight: 360, heroMetadataFields: ['type', 'runtime'], isEditor: true,
+            ...settings,
         };
         window.ApiClient = { fetch: async () => ({ json: async () => response }), getUrl: u => 'http://banner.test/' + u,
             serverId: () => 'test', accessToken: () => 'test' };
@@ -41,7 +43,8 @@ async function home(browser, data, { lang = 'en', tv = false } = {}) {
         const Original = window.Splide;
         window.Splide = function (...args) { window.testSlider = new Original(...args); return window.testSlider; };
     }, { hash: HASH, ...data });
-    await page.addScriptTag({ content: 'const editorsChoiceBootstrap = {"bannerHeight":360};\n' + client });
+    const { hash, ...settings } = data;
+    await page.addScriptTag({ content: 'const editorsChoiceBootstrap = ' + JSON.stringify({ bannerHeight: 360, ...settings }) + ';\n' + client });
     await page.waitForSelector('.splide.is-initialized');
     return page;
 }
@@ -128,6 +131,78 @@ async function home(browser, data, { lang = 'en', tv = false } = {}) {
         assert.equal(fr.blurhash, false);
         console.log('PASS French strings, TV layout, invalid blurhash ignored');
         await page.close();
+
+        // Tall custom heights on narrow screens: buttons stay clear of the page indicator.
+        for (const [width, height] of [[390, 844], [700, 1100], [1440, 900]]) {
+            page = await home(browser, { bannerHeightMode: 'viewport', bannerViewportHeight: 80 }, { viewport: { width, height } });
+            const overlap = await page.evaluate(() => {
+                const slide = document.querySelector('.splide__slide.is-active:not(.splide__slide--clone)');
+                const actions = slide.querySelector('.editorsChoiceItemActions').getBoundingClientRect();
+                return Array.from(document.querySelectorAll('.splide__pagination, .editorsChoiceMobilePagination'))
+                    .filter(el => getComputedStyle(el).display !== 'none')
+                    .map(el => el.getBoundingClientRect())
+                    .some(box => box.height && actions.bottom > box.top && actions.top < box.bottom
+                        && actions.right > box.left && actions.left < box.right);
+            });
+            assert.equal(overlap, false, `buttons overlap the indicator at ${width}x${height}`);
+            await page.close();
+        }
+        console.log('PASS buttons clear the page indicator at 80% height on phone, tablet, and desktop');
+
+        // Freeze each effect partway through and check it is really animating.
+        for (const effect of ['parallax', 'dip', 'stagger', 'iris']) {
+            page = await home(browser, { transitionEffect: effect, transitionDurationMs: 1000 });
+            const sample = async (time) => page.evaluate((time) => {
+                for (const animation of document.getAnimations()) {
+                    if (animation.effect?.target?.closest?.('.splide__slide')) { animation.pause(); animation.currentTime = time; }
+                }
+                // Splide marks the destination active only after the move; use its index.
+                const incoming = testSlider.Components.Slides.getAt(testSlider.index).slide;
+                const outgoing = document.querySelector('.editorsChoiceTransitionOutgoing');
+                if (incoming === outgoing) throw new Error('Incoming and outgoing slides are the same.');
+                const style = el => getComputedStyle(el);
+                return {
+                    incomingOpacity: Number(style(incoming).opacity), outgoingOpacity: Number(style(outgoing).opacity),
+                    incomingClip: style(incoming).clipPath, incomingTransform: style(incoming).transform,
+                    backdropTranslate: style(incoming.querySelector('.editorsChoiceBackdrop')).translate,
+                    outgoingContentOpacity: Number(style(outgoing.querySelector('.editorsChoiceContent')).opacity),
+                    revealDelay: incoming.style.getPropertyValue('--ec-reveal-delay'),
+                    blurhashOpacity: Number(style(incoming.querySelector('.editorsChoiceBlurhash')).opacity),
+                };
+            }, time);
+            await page.evaluate(() => testSlider.go('>'));
+            await page.waitForSelector('.editorsChoiceTransitionOutgoing', { state: 'attached' });
+            const start = await sample(200);
+            const early = await sample(300);
+            const middle = await sample(500);
+            if (effect !== 'dip' && effect !== 'stagger') assert.equal(middle.incomingOpacity, 1, 'incoming slide is visible');
+            // The incoming slide shows its artwork (here the blurred preview) during the move.
+            assert.equal(middle.blurhashOpacity, 1, 'incoming artwork is shown during the transition');
+            if (effect === 'parallax') {
+                assert.notEqual(middle.incomingTransform, 'none');
+                assert.notEqual(middle.backdropTranslate, 'none');
+                assert.notEqual(middle.backdropTranslate, '0px');
+                assert.match(middle.incomingClip, /inset/);
+            } else if (effect === 'dip') {
+                assert.ok(early.outgoingOpacity < 0.5 && early.outgoingOpacity > 0);
+                assert.equal(middle.incomingOpacity, 0);
+                assert.equal(middle.outgoingOpacity, 0);
+                assert.equal(early.revealDelay, '550ms');
+            } else if (effect === 'stagger') {
+                assert.ok(start.outgoingContentOpacity < 0.5, 'old text leaves first');
+                assert.equal(start.incomingOpacity, 0, 'artwork crossfade waits for the text to leave');
+                assert.ok(middle.incomingOpacity > start.incomingOpacity);
+                assert.equal(early.revealDelay, '600ms');
+            } else {
+                assert.match(middle.incomingClip, /circle/);
+            }
+            await page.evaluate(() => document.getAnimations()
+                .filter(animation => animation.effect?.target?.closest?.('.splide__slide') && animation.effect.getComputedTiming().endTime !== Infinity)
+                .forEach(animation => animation.finish()));
+            await page.waitForFunction(() => !document.querySelector('.editorsChoiceTransitionOutgoing') && testSlider.index === 1);
+            await page.close();
+        }
+        console.log('PASS parallax, dip, staggered, and iris transitions animate');
         assert.deepEqual(errors, []);
         console.log('PASS no page errors');
     } finally {

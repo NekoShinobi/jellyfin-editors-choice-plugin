@@ -88,7 +88,7 @@ async function expectHeight(page, expected) {
     });
     try {
         for (const hero of [false, true]) {
-            for (const effect of ['loop', 'fade', 'zoom', 'wipe', 'instant']) {
+            for (const effect of ['loop', 'fade', 'zoom', 'wipe', 'parallax', 'dip', 'stagger', 'iris', 'instant']) {
                 const page = await home(browser, { useHeroLayout: hero, transitionEffect: effect,
                     transitionDurationMs: 160, enableThemeVideos: false, enableBackgroundMotion: false });
                 await expectHeight(page, 480);

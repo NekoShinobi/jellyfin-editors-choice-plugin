@@ -926,26 +926,24 @@ const container = `
     opacity: 0;
   }
 
-  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemPoster {
-    animation: editorsChoiceContentReveal 420ms 70ms var(--ec-easing, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  .editorsChoiceHeroMode .editorsChoiceItemBanner:is(.is-active, .editorsChoiceTransitionIncoming).editorsChoiceSlideReady .editorsChoiceItemPoster {
+    animation: editorsChoiceContentReveal 420ms calc(70ms + var(--ec-reveal-delay, 0ms)) var(--ec-easing, cubic-bezier(0.22, 1, 0.36, 1)) both;
   }
 
-  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemLogo,
-  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemTitle,
-  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemTagline {
-    animation: editorsChoiceContentReveal 420ms 120ms var(--ec-easing, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  .editorsChoiceHeroMode .editorsChoiceItemBanner:is(.is-active, .editorsChoiceTransitionIncoming).editorsChoiceSlideReady :is(.editorsChoiceItemLogo, .editorsChoiceItemTitle, .editorsChoiceItemTagline) {
+    animation: editorsChoiceContentReveal 420ms calc(120ms + var(--ec-reveal-delay, 0ms)) var(--ec-easing, cubic-bezier(0.22, 1, 0.36, 1)) both;
   }
 
-  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemMetadata {
-    animation: editorsChoiceContentReveal 420ms 175ms var(--ec-easing, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  .editorsChoiceHeroMode .editorsChoiceItemBanner:is(.is-active, .editorsChoiceTransitionIncoming).editorsChoiceSlideReady .editorsChoiceItemMetadata {
+    animation: editorsChoiceContentReveal 420ms calc(175ms + var(--ec-reveal-delay, 0ms)) var(--ec-easing, cubic-bezier(0.22, 1, 0.36, 1)) both;
   }
 
-  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemOverview {
-    animation: editorsChoiceContentReveal 420ms 225ms var(--ec-easing, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  .editorsChoiceHeroMode .editorsChoiceItemBanner:is(.is-active, .editorsChoiceTransitionIncoming).editorsChoiceSlideReady .editorsChoiceItemOverview {
+    animation: editorsChoiceContentReveal 420ms calc(225ms + var(--ec-reveal-delay, 0ms)) var(--ec-easing, cubic-bezier(0.22, 1, 0.36, 1)) both;
   }
 
-  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active.editorsChoiceSlideReady .editorsChoiceItemActions {
-    animation: editorsChoiceActionReveal 360ms 275ms ease both;
+  .editorsChoiceHeroMode .editorsChoiceItemBanner:is(.is-active, .editorsChoiceTransitionIncoming).editorsChoiceSlideReady .editorsChoiceItemActions {
+    animation: editorsChoiceActionReveal 360ms calc(275ms + var(--ec-reveal-delay, 0ms)) ease both;
   }
 
   @keyframes editorsChoiceContentReveal {
@@ -1041,6 +1039,13 @@ const container = `
     padding-top: 30px;
   }
   .editorsChoiceCustomHeight .editorsChoiceInfo { height: 100%; }
+  /* Tall portrait banners: keep the buttons under the text instead of at the far bottom. */
+  @media (orientation: portrait) {
+    .editorsChoiceCustomHeight .editorsChoiceInfo { height: auto; max-height: 100%; }
+  }
+  .editorsChoiceHeroMode .editorsChoiceItemBanner .editorsChoiceContent {
+    padding-bottom: max(30px, var(--ec-indicator-clearance, 0px));
+  }
   .editorsChoiceCustomHeight :is(.editorsChoiceItemPoster, .editorsChoicePosterButton) {
     height: min(100%, 36vw, 37.5rem);
   }
@@ -1060,6 +1065,14 @@ const container = `
   .editorsChoiceCustomHeight .editorsChoiceSkeleton { padding-top: 30px; }
   .editorsChoiceHeroMode .editorsChoiceCustomHeight .editorsChoiceScrollButtonsContainer { top: .5rem; }
   .editorsChoiceTransitionOutgoing .editorsChoiceBackdrop { opacity: 1 !important; }
+  /* Splide marks the incoming slide active only after the move, so custom transitions
+     show its artwork (or blurred preview) and start its text reveal from the start. */
+  .editorsChoiceHeroMode .editorsChoiceItemBanner.editorsChoiceTransitionIncoming.editorsChoiceSlideReady .editorsChoiceBackdrop {
+    opacity: 1;
+    transform: scale(1);
+    transition: transform 900ms var(--ec-easing, cubic-bezier(0.22, 1, 0.36, 1));
+  }
+  .editorsChoiceHeroMode .editorsChoiceItemBanner.editorsChoiceTransitionIncoming .editorsChoiceBlurhash { opacity: 1; }
   .editorsChoiceTransitionOutgoing :is(.editorsChoiceItemPoster, .editorsChoiceItemLogo, .editorsChoiceItemTitle, .editorsChoiceItemTagline, .editorsChoiceItemMetadata, .editorsChoiceItemOverview, .editorsChoiceItemActions),
   .editorsChoiceInstant .is-active.editorsChoiceSlideReady :is(.editorsChoiceItemPoster, .editorsChoiceItemLogo, .editorsChoiceItemTitle, .editorsChoiceItemTagline, .editorsChoiceItemMetadata, .editorsChoiceItemOverview, .editorsChoiceItemActions) {
     animation: none !important;
@@ -2377,6 +2390,8 @@ function bannerHeightPixels(data, mobile, viewportHeight, headerHeight) {
 
 // Fade layout supplies stacked, accessible slides; this component controls the
 // animation and tells Splide when it finishes so navigation cannot overlap it.
+const bannerTransitionEffects = ["loop", "fade", "zoom", "wipe", "parallax", "dip", "stagger", "iris", "instant"];
+
 function bannerTransition(effect) {
     return (slider, components) => {
         let previous = slider.index;
@@ -2414,7 +2429,11 @@ function bannerTransition(effect) {
                 cancel();
                 incoming = components.Slides.getAt(index)?.slide;
                 outgoing = components.Slides.getAt(previous)?.slide;
+                const previousIndex = previous;
                 previous = index;
+                // Kept until the next move so the text reveal continues once the slide is active.
+                slider.root.querySelectorAll(".editorsChoiceTransitionIncoming")
+                    .forEach((slide) => slide.classList.remove("editorsChoiceTransitionIncoming"));
                 const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : slider.options.speed;
                 if (!incoming || !outgoing || incoming === outgoing || !duration || effect === "instant" || !incoming.animate) {
                     done();
@@ -2424,16 +2443,16 @@ function bannerTransition(effect) {
                 incoming.style.zIndex = "2";
                 outgoing.style.zIndex = "1";
                 outgoing.classList.add("editorsChoiceTransitionOutgoing");
-                const position = `translateX(-${100 * index}%)`;
-                const wipeStart = direction > 0 ? "inset(0 0 0 100%)" : "inset(0 100% 0 0)";
-                const frames = effect === "wipe"
-                    ? [{ clipPath: wipeStart, opacity: 1 }, { clipPath: "inset(0 0% 0 0)", opacity: 1 }]
-                    : [{ opacity: 0, transform: `${position} scale(1.08)` }, { opacity: 1, transform: `${position} scale(1)` }];
-                const options = { duration, easing: slider.options.easing, fill: "both" };
-                animations = [
-                    incoming.animate(frames, options),
-                    outgoing.animate([{ opacity: 1 }, { opacity: effect === "wipe" ? 1 : 0 }], options),
-                ];
+                incoming.classList.add("editorsChoiceTransitionIncoming");
+                const { animations: started, revealDelay } = bannerTransitionAnimations(effect, {
+                    incoming, outgoing, direction, duration, easing: slider.options.easing,
+                    incomingPosition: `translateX(-${100 * index}%)`,
+                    outgoingPosition: `translateX(-${100 * previousIndex}%)`,
+                });
+                animations = started;
+                // Delays the incoming slide's text reveal until the effect has shown it.
+                incoming.style.setProperty("--ec-reveal-delay", `${Math.round(revealDelay)}ms`);
+                outgoing.style.removeProperty("--ec-reveal-delay");
                 Promise.all(animations.map((animation) => animation.finished)).then(() => {
                     if (run !== generation) return;
                     cancel();
@@ -2443,6 +2462,108 @@ function bannerTransition(effect) {
             cancel,
             destroy: cancel,
         };
+    };
+}
+
+// Keyframes for the effects that animate slides directly. Slides share one
+// position in Splide's fade layout; the incoming slide is drawn on top. Splide
+// keeps a slide transparent until it becomes active after the move, so every
+// effect sets the incoming slide's opacity itself.
+function bannerTransitionAnimations(effect, { incoming, outgoing, direction, duration, easing, incomingPosition, outgoingPosition }) {
+    const eased = { duration, easing, fill: "both" };
+    // Multi-step effects ease each step separately via per-keyframe easing.
+    const stepped = { duration, easing: "linear", fill: "both" };
+    const layers = (slide) => Array.from(slide.querySelectorAll(":scope > :is(.editorsChoiceBackdrop, .editorsChoiceBlurhash)"));
+
+    if (effect === "wipe") {
+        const wipeStart = direction > 0 ? "inset(0 0 0 100%)" : "inset(0 100% 0 0)";
+        return {
+            revealDelay: 0,
+            animations: [
+                incoming.animate([{ clipPath: wipeStart, opacity: 1 }, { clipPath: "inset(0 0% 0 0)", opacity: 1 }], eased),
+                outgoing.animate([{ opacity: 1 }, { opacity: 1 }], eased),
+            ],
+        };
+    }
+
+    if (effect === "parallax") {
+        // Slides push across while their artwork trails at half speed. Each slide is
+        // clipped to its own box so the offset artwork never covers its neighbour.
+        const shift = direction * 100;
+        return {
+            revealDelay: 0,
+            animations: [
+                incoming.animate([
+                    { transform: `${incomingPosition} translateX(${shift}%)`, clipPath: "inset(0)", opacity: 1 },
+                    { transform: incomingPosition, clipPath: "inset(0)", opacity: 1 },
+                ], eased),
+                outgoing.animate([
+                    { transform: outgoingPosition, clipPath: "inset(0)", opacity: 1 },
+                    { transform: `${outgoingPosition} translateX(${-shift}%)`, clipPath: "inset(0)", opacity: 1 },
+                ], eased),
+                ...layers(incoming).map((layer) => layer.animate([{ translate: `${-shift / 2}% 0` }, { translate: "0 0" }], eased)),
+                ...layers(outgoing).map((layer) => layer.animate([{ translate: "0 0" }, { translate: `${shift / 2}% 0` }], eased)),
+            ],
+        };
+    }
+
+    if (effect === "dip") {
+        // Out to the page background, a brief hold, then in.
+        return {
+            revealDelay: duration * 0.55,
+            animations: [
+                outgoing.animate([{ opacity: 1, easing }, { opacity: 0, offset: 0.45 }, { opacity: 0 }], stepped),
+                incoming.animate([{ opacity: 0 }, { opacity: 0, offset: 0.55, easing }, { opacity: 1 }], stepped),
+            ],
+        };
+    }
+
+    if (effect === "stagger") {
+        // Old text leaves first, the artwork crossfades, then the new text arrives
+        // piece by piece through the reveal delay.
+        const animations = [
+            incoming.animate([{ opacity: 0 }, { opacity: 0, offset: 0.25, easing }, { opacity: 1, offset: 0.75 }, { opacity: 1 }], stepped),
+            outgoing.animate([{ opacity: 1 }, { opacity: 1 }], stepped),
+        ];
+        const content = outgoing.querySelector(":scope > .editorsChoiceContent");
+        if (content) {
+            animations.push(content.animate([
+                { opacity: 1, transform: "translateY(0)", easing },
+                { opacity: 0, transform: "translateY(-0.6rem)", offset: 0.35 },
+                { opacity: 0, transform: "translateY(-0.6rem)" },
+            ], stepped));
+        }
+        return { revealDelay: duration * 0.6, animations };
+    }
+
+    if (effect === "iris") {
+        // A circle opens from the incoming poster, or the centre when none is shown.
+        const box = incoming.getBoundingClientRect();
+        const poster = incoming.querySelector(".editorsChoicePosterButton, .editorsChoiceItemPoster")?.getBoundingClientRect();
+        const origin = poster?.width
+            ? `${Math.round(poster.left + poster.width / 2 - box.left)}px ${Math.round(poster.top + poster.height / 2 - box.top)}px`
+            : "50% 50%";
+        // The diagonal covers every corner from any origin inside the slide.
+        const radius = Math.ceil(Math.hypot(box.width, box.height));
+        return {
+            revealDelay: duration * 0.3,
+            animations: [
+                incoming.animate([
+                    { clipPath: `circle(0px at ${origin})`, opacity: 1 },
+                    { clipPath: `circle(${radius}px at ${origin})`, opacity: 1 },
+                ], eased),
+                outgoing.animate([{ opacity: 1 }, { opacity: 1 }], eased),
+            ],
+        };
+    }
+
+    // Fade + Zoom.
+    return {
+        revealDelay: 0,
+        animations: [
+            incoming.animate([{ opacity: 0, transform: `${incomingPosition} scale(1.08)` }, { opacity: 1, transform: `${incomingPosition} scale(1)` }], eased),
+            outgoing.animate([{ opacity: 1 }, { opacity: 0 }], eased),
+        ],
     };
 }
 
@@ -2633,7 +2754,23 @@ function applyBannerGeometry(data, element) {
         offset = (data.bannerSubtractHeader !== false ? headerHeight : 0) - top;
     }
     element.style.setProperty("--ec-fullscreen-offset", `${offset}px`);
+    updateIndicatorClearance(element);
     return height;
+}
+
+// Reserves the height of whichever bottom indicator is showing (dots, bars, or the
+// counter pill) so slide buttons never sit behind it, whatever the banner height.
+function updateIndicatorClearance(element) {
+    const track = element.querySelector(".splide__track");
+    if (!track) return;
+    const bottom = track.getBoundingClientRect().bottom;
+    let clearance = 0;
+    for (const indicator of element.querySelectorAll(".splide__pagination, .editorsChoiceMobilePagination")) {
+        const box = indicator.getBoundingClientRect();
+        if (!box.height || getComputedStyle(indicator).display === "none") continue;
+        clearance = Math.max(clearance, bottom - box.top + 12);
+    }
+    element.style.setProperty("--ec-indicator-clearance", `${Math.ceil(clearance)}px`);
 }
 
 const pendingBanners = new Map();
@@ -3098,8 +3235,8 @@ async function setup() {
                     arrow.style.display = data.showNavigationArrows ? "" : "none";
                 });
 
-                const effect = ["loop", "fade", "zoom", "wipe", "instant"].includes(data.transitionEffect) ? data.transitionEffect : "loop";
-                const customTransition = ["zoom", "wipe", "instant"].includes(effect);
+                const effect = bannerTransitionEffects.includes(data.transitionEffect) ? data.transitionEffect : "loop";
+                const customTransition = !["loop", "fade"].includes(effect);
                 const slider = new Splide(`#${containerId} .splide`, {
                     type: effect === "loop" ? "loop" : "fade",
                     autoplay: autoplayEnabled,

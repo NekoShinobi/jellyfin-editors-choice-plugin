@@ -63,7 +63,12 @@ bars, counter, autoplay progress, or none) and their position, and arrow style.
 Advanced accepts custom CSS, nested inside the banner so it only affects banner
 elements. All defaults reproduce the previous layout.
 
-Slide, Fade, Fade + Zoom, Wipe, and Instant transitions are available. Transition
+Slide, Fade, Fade + Zoom, Wipe, Parallax slide, Dip to black, Staggered, Iris,
+and Instant transitions are available. Parallax slide moves the artwork at half
+the speed of the slide. Dip to black fades out, holds briefly, and fades in.
+Staggered fades the old text out, crossfades the artwork, then brings in the new
+title, details, and buttons one after another. Iris opens the next slide in a
+circle from its poster. Transition
 duration is independent of the autoplay interval; 0 retains the original layout
 default (650ms). The animation curve, which also shapes the text reveal and the
 artwork zoom, can use a template (Smooth, Ease, Ease in/out, Linear, Gentle,

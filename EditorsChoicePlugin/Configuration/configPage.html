@@ -21,6 +21,60 @@
                 margin-top: 0.5em;
             }
 
+            /* Selection modes are cards: the whole rectangle is the click target. */
+            .editorsChoiceModeOptions {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+                gap: .75rem;
+            }
+
+            .editorsChoiceModeOptions .radio-label-block {
+                display: grid;
+                grid-template-columns: auto minmax(0, 1fr);
+                align-items: center;
+                align-content: start;
+                column-gap: .75rem;
+                row-gap: .3rem;
+                margin: 0;
+                padding: .9rem 1rem;
+                border: 1px solid var(--ec-line);
+                border-radius: 8px;
+                background: rgba(128, 128, 128, .06);
+                cursor: pointer;
+                transition: border-color .15s ease, background-color .15s ease;
+            }
+
+            .editorsChoiceModeOptions .radio-label-block:hover {
+                border-color: rgba(128, 128, 128, .6);
+            }
+
+            .editorsChoiceModeOptions .radio-label-block:has(.mdl-radio__button:checked) {
+                border-color: var(--ec-accent);
+                background: color-mix(in srgb, var(--ec-accent) 12%, transparent);
+            }
+
+            .editorsChoiceModeOptions .radio-label-block:has(.mdl-radio__button:focus-visible) {
+                outline: 2px solid var(--ec-accent);
+                outline-offset: 2px;
+            }
+
+            .editorsChoiceModeOptions .mdl-radio__circles {
+                grid-row: 1;
+                margin: 0;
+            }
+
+            .editorsChoiceModeOptions .mdl-radio__label {
+                grid-row: 1;
+                grid-column: 2;
+                font-weight: 600;
+            }
+
+            .editorsChoiceModeOptions .radio-label-block .fieldDescription {
+                grid-row: 2;
+                grid-column: 2;
+                margin: 0;
+            }
+
             .mdl-radio__button {
                 appearance: none;
                 border: none;
@@ -184,6 +238,12 @@
                 display: none !important;
             }
 
+            /* Jellyfin's dashboard limits forms to 54em; use the page width instead. */
+            .editorsChoiceConfigurationPage form.editorsChoiceConfigurationForm {
+                max-width: none;
+                padding-top: var(--ec-header-offset, 0px);
+            }
+
             .editorsChoiceSettingsHeader {
                 position: sticky;
                 top: var(--ec-sticky-top, 0px);
@@ -217,9 +277,10 @@
                 display: inline-flex;
                 flex: none;
                 align-items: center;
-                gap: .45rem;
+                justify-content: center;
                 margin: 0 0 -1px;
-                padding: .8rem 1rem .85rem;
+                padding: .8rem 1.1rem .85rem;
+                text-align: center;
                 border: 0;
                 border-bottom: 2px solid transparent;
                 color: inherit;
@@ -244,7 +305,11 @@
                 outline-offset: -2px;
             }
 
+            /* Positioned so the label stays centred over the underline. */
             .editorsChoiceTabDot {
+                position: absolute;
+                top: .7rem;
+                right: .35rem;
                 width: .45rem;
                 height: .45rem;
                 border-radius: 50%;
@@ -279,15 +344,33 @@
 
             .editorsChoiceSettingsPanels {
                 min-width: 0;
-                max-width: 54rem;
+            }
+
+            /* Each heading's settings form a card; cards sit side by side when space allows. */
+            .editorsChoiceSettingsPanels section[data-tab-panel] {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+                gap: 1.25rem;
+                align-items: start;
+            }
+
+            .editorsChoiceGroup {
+                min-width: 0;
+                padding: 1.25rem 1.25rem .5rem;
+                border: 1px solid var(--ec-line);
+                border-radius: 10px;
+                background: rgba(128, 128, 128, .04);
+                /* Keep headings clear of the sticky tab bar when scrolled into view. */
+                scroll-margin-top: calc(var(--ec-sticky-top, 0px) + var(--ec-tabs-height, 0px) + 1rem);
+            }
+
+            /* A tab with a single group uses the full width. */
+            .editorsChoiceGroup:only-child {
+                grid-column: 1 / -1;
             }
 
             .editorsChoiceSettingsPanels h2 {
-                margin: 2rem 0 1rem;
-            }
-
-            .editorsChoiceSettingsPanels section > h2:first-child {
-                margin-top: 0;
+                margin: 0 0 1rem;
             }
 
             .editorsChoiceFieldGrid {
@@ -908,8 +991,9 @@
 
                     <!-- Content -->
                     <section id="EditorsChoicePanel-content" role="tabpanel" aria-labelledby="EditorsChoiceTab-content" data-tab-panel="content">
+                    <div class="editorsChoiceGroup">
                     <h2>Selection</h2>
-                    <div class="inputContainer">
+                    <div class="inputContainer editorsChoiceModeOptions" role="radiogroup" aria-label="Selection mode">
                         <label class="radio-label-block mdl-radio show-focus">
                             <input type="radio" is="emby-radio" id="FavouritesMode" name="mode" value="FavouritesMode" class="mdl-radio__button" />
                             <div class="mdl-radio__circles">
@@ -1058,6 +1142,8 @@
                         <div id="CollectionsList" class="checkboxList"></div>
                         <p>One collection will be shown at a time across the slider. If multiple are checked below, one of them will be randomly chosen each time it loads.</p>
                     </div>
+                    </div>
+                    <div class="editorsChoiceGroup">
                     <h2>Filtering</h2>
                     <div id="RandomMediaCount-container" class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="RandomMediaCount">Maximum items shown</label>
@@ -1099,10 +1185,12 @@
                         </label>
                         <div class="fieldDescription">Each new selection skips titles the viewer was already shown until every eligible title has appeared. Near the end of a rotation, the banner shows only the titles that remain rather than repeating any.</div>
                     </div>
+                    </div>
                     </section>
 
                     <!-- Opening slide -->
                     <section id="EditorsChoicePanel-opening" role="tabpanel" aria-labelledby="EditorsChoiceTab-opening" data-tab-panel="opening" hidden>
+                    <div class="editorsChoiceGroup">
                     <h2>Opening slide</h2>
                     <p class="fieldDescription">Optionally place one administrator-authored slide before the automatic featured selection.</p>
                     <div class="editorsChoiceOpeningPanel">
@@ -1263,10 +1351,12 @@
                             <div class="fieldDescription">Turn this off to show only the opening slide.</div>
                         </div>
                     </div>
+                    </div>
                     </section>
 
                     <!-- Layout -->
                     <section id="EditorsChoicePanel-layout" role="tabpanel" aria-labelledby="EditorsChoiceTab-layout" data-tab-panel="layout" hidden>
+                    <div class="editorsChoiceGroup">
                     <h2>Size</h2>
                     <p class="fieldDescription">The home page always uses the Hero banner. Its loading placeholder reserves the configured height before content arrives.</p>
 
@@ -1331,7 +1421,8 @@
                         </label>
                         <div class="fieldDescription">When enabled, the Editors Choice banner will not be injected on TV interfaces.</div>
                     </div>
-
+                    </div>
+                    <div class="editorsChoiceGroup">
                     <h2>Composition</h2>
                     <div class="editorsChoiceFieldGrid">
                         <div class="selectContainer">
@@ -1408,7 +1499,8 @@
                             <span class="checkboxLabel">Hide the poster on phones</span>
                         </label>
                     </div>
-
+                    </div>
+                    <div class="editorsChoiceGroup">
                     <h2>Backdrop</h2>
                     <div class="selectContainer">
                         <label class="selectLabel" for="HeroBackdropImageType">Image</label>
@@ -1452,7 +1544,8 @@
                             <input is="emby-input" type="number" id="HeroBackdropSaturation" min="0" max="150" step="1" required />
                         </div>
                     </div>
-
+                    </div>
+                    <div class="editorsChoiceGroup">
                     <h2>Readability</h2>
                     <div class="selectContainer">
                         <label class="selectLabel" for="HeroScrimStyle">Scrim</label>
@@ -1486,10 +1579,12 @@
                         <label class="inputLabel" for="BackgroundDimmingPercent">Additional dimming (%)</label>
                         <input is="emby-input" type="number" id="BackgroundDimmingPercent" min="0" max="100" step="1" required />
                     </div>
+                    </div>
                     </section>
 
                     <!-- Style -->
                     <section id="EditorsChoicePanel-style" role="tabpanel" aria-labelledby="EditorsChoiceTab-style" data-tab-panel="style" hidden>
+                    <div class="editorsChoiceGroup">
                     <h2>Theme</h2>
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label class="emby-checkbox-label">
@@ -1502,7 +1597,8 @@
                         <label class="inputLabel" for="HeroAccentColor">Accent color</label>
                         <input is="emby-input" type="color" id="HeroAccentColor" />
                     </div>
-
+                    </div>
+                    <div class="editorsChoiceGroup">
                     <h2>Title</h2>
                     <div class="editorsChoiceFieldGrid">
                         <div class="selectContainer">
@@ -1560,7 +1656,8 @@
                         </label>
                         <div class="fieldDescription">Uses the tagline from the title's metadata, when it has one.</div>
                     </div>
-
+                    </div>
+                    <div class="editorsChoiceGroup">
                     <h2>Metadata</h2>
                     <p class="fieldDescription">Choose which details appear under the title, and their order.</p>
                     <ul id="HeroMetadataFieldList" class="editorsChoiceMetadataFields"></ul>
@@ -1584,7 +1681,8 @@
                             <select is="emby-select" id="MetadataFont" class="emby-select-withcolor emby-select"></select>
                         </div>
                     </div>
-
+                    </div>
+                    <div class="editorsChoiceGroup">
                     <h2>Description</h2>
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label class="emby-checkbox-label">
@@ -1619,7 +1717,8 @@
                             </label>
                         </div>
                     </div>
-
+                    </div>
+                    <div class="editorsChoiceGroup">
                     <h2>Buttons</h2>
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label class="emby-checkbox-label">
@@ -1699,10 +1798,12 @@
                             <input is="emby-input" type="color" id="PlayButtonTextColor" />
                         </div>
                     </div>
+                    </div>
                     </section>
 
                     <!-- Motion -->
                     <section id="EditorsChoicePanel-motion" role="tabpanel" aria-labelledby="EditorsChoiceTab-motion" data-tab-panel="motion" hidden>
+                    <div class="editorsChoiceGroup">
                     <h2>Transitions</h2>
                     <div id="effect-container" class="selectContainer">
                         <label class="selectLabel" for="TransitionEffectSelect">Transition effect</label>
@@ -1711,6 +1812,10 @@
                             <option value="fade">Fade</option>
                             <option value="zoom">Fade + Zoom</option>
                             <option value="wipe">Wipe</option>
+                            <option value="parallax">Parallax slide</option>
+                            <option value="dip">Dip to black</option>
+                            <option value="stagger">Staggered</option>
+                            <option value="iris">Iris</option>
                             <option value="instant">Instant</option>
                         </select>
                     </div>
@@ -1794,7 +1899,8 @@
                         <div class="fieldDescription">Show the artwork for this long before the video starts.</div>
                     </div>
                     <p class="fieldDescription">The device's reduced-motion preference disables animated transitions, background motion, video playback, and automatic slide advancement.</p>
-
+                    </div>
+                    <div class="editorsChoiceGroup">
                     <h2>Autoplay</h2>
                     <div class="checkboxContainer">
                         <label class="emby-checkbox-label">
@@ -1819,7 +1925,8 @@
                             <span class="checkboxLabel">Show autoplay button</span>
                         </label>
                     </div>
-
+                    </div>
+                    <div class="editorsChoiceGroup">
                     <h2>Navigation</h2>
                     <div class="editorsChoiceFieldGrid">
                         <div class="selectContainer">
@@ -1857,10 +1964,12 @@
                         </select>
                         <div class="fieldDescription">Touch screens always show the controls.</div>
                     </div>
+                    </div>
                     </section>
 
                     <!-- Advanced -->
                     <section id="EditorsChoicePanel-advanced" role="tabpanel" aria-labelledby="EditorsChoiceTab-advanced" data-tab-panel="advanced" hidden>
+                    <div class="editorsChoiceGroup">
                     <h2>Loading</h2>
                     <div class="selectContainer">
                         <label class="selectLabel" for="FrontendInjectionMethod">Frontend injection method:</label>
@@ -1883,7 +1992,8 @@
                         </label>
                         <div class="fieldDescription">This will make banner and logo images load faster for users and reduce network usage, but increase processing demand on your media server. Turn off if plugin is having a significant performance impact.</div>
                     </div>
-
+                    </div>
+                    <div class="editorsChoiceGroup">
                     <h2>Selection cache</h2>
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label class="emby-checkbox-label">
@@ -1897,12 +2007,14 @@
                         <input id="SelectionRefreshMinutes" type="number" is="emby-input" min="1" max="1440" step="1" required />
                         <div class="fieldDescription">Default: 30 minutes. New selections appear on subsequent banner loads. This is separate from the slideshow interval.</div>
                     </div>
-
+                    </div>
+                    <div class="editorsChoiceGroup">
                     <h2>Custom CSS</h2>
                     <div class="inputContainer">
                         <label class="inputLabel" for="HeroCustomCss">Extra banner styles</label>
                         <textarea is="emby-textarea" class="emby-textarea emby-input" id="HeroCustomCss" rows="8" maxlength="10000" spellcheck="false" placeholder=".editorsChoiceItemOverview { letter-spacing: .01em; }"></textarea>
                         <div class="fieldDescription">Rules are nested inside the banner, so selectors only match banner elements. Sent to signed-in users' browsers; braces must be balanced.</div>
+                    </div>
                     </div>
                     </section>
                         </div>

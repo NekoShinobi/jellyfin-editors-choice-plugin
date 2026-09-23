@@ -399,8 +399,15 @@ export default function (view) {
             if (position === "fixed" || position === "sticky") top = Math.max(top, header.getBoundingClientRect().bottom);
         }
         const scroller = findScrollParent(form);
-        if (scroller) top = Math.max(0, top - scroller.getBoundingClientRect().top);
+        const scrollerTop = scroller ? scroller.getBoundingClientRect().top : 0;
+        if (scroller) top = Math.max(0, top - scrollerTop);
         view.style.setProperty("--ec-sticky-top", `${Math.round(top)}px`);
+        // A sticky element whose offset exceeds its resting position is pushed down over
+        // the settings below it. Pad the form so the header rests clear of Jellyfin's header.
+        // The form's own padding does not move its box, so this stays stable across calls.
+        const scrolled = scroller ? scroller.scrollTop : window.scrollY;
+        const restingTop = form.getBoundingClientRect().top - scrollerTop + scrolled;
+        view.style.setProperty("--ec-header-offset", `${Math.max(0, Math.ceil(top - restingTop))}px`);
         view.style.setProperty("--ec-tabs-height", `${view.querySelector(".editorsChoiceSettingsHeader").offsetHeight}px`);
         view.style.setProperty("--ec-settings-bg", findBackground(form));
     }
@@ -1008,9 +1015,12 @@ export default function (view) {
         state.previewIndex++;
         updatePreview();
         if (reduced || effect === "instant") return;
-        const frames = effect === "loop" ? [{ transform: "translateX(100%)" }, { transform: "translateX(0)" }]
+        // One preview surface, so these approximate how the next slide arrives.
+        const frames = ["loop", "parallax"].includes(effect) ? [{ transform: "translateX(100%)" }, { transform: "translateX(0)" }]
             : effect === "wipe" ? [{ clipPath: "inset(0 0 0 100%)" }, { clipPath: "inset(0 0 0 0)" }]
             : effect === "zoom" ? [{ opacity: 0, transform: "scale(1.08)" }, { opacity: 1, transform: "scale(1)" }]
+            : effect === "dip" ? [{ opacity: 1 }, { opacity: 0, offset: 0.45 }, { opacity: 0, offset: 0.55 }, { opacity: 1 }]
+            : effect === "iris" ? [{ clipPath: "circle(0% at 25% 50%)" }, { clipPath: "circle(150% at 25% 50%)" }]
             : [{ opacity: 0 }, { opacity: 1 }];
         previewAnimation = field("BannerPreview").animate(frames, {
             duration: boundedNumber("TransitionDurationMs", 0, 0, 3000) || 650,
@@ -1294,7 +1304,8 @@ export default function (view) {
             field(id).value = options.includes(value) ? value : options[0];
         }
         for (const [id, fallback] of Object.entries(presentationColors)) field(id).value = normalizeColor(config[id], fallback);
-        field("TransitionEffectSelect").value = ["loop", "fade", "zoom", "wipe", "instant"].includes(config.TransitionEffect) ? config.TransitionEffect : "loop";
+        field("TransitionEffectSelect").value = Array.from(field("TransitionEffectSelect").options).some((option) => option.value === config.TransitionEffect)
+            ? config.TransitionEffect : "loop";
         const easing = Object.hasOwn(easingPresets, config.TransitionEasing) || config.TransitionEasing === "custom"
             ? config.TransitionEasing : "smooth";
         field("TransitionEasing").value = easing;
