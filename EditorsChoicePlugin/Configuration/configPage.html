@@ -973,6 +973,59 @@
                             <span class="radioButtonLabel mdl-radio__label">New</span>
                             <div class="fieldDescription">Shows only movies and shows with episodes that premiered recently</div>
                         </label>
+
+                        <label class="radio-label-block mdl-radio show-focus">
+                            <input type="radio" is="emby-radio" id="MixedMode" name="mode" value="MixedMode" class="mdl-radio__button" />
+                            <div class="mdl-radio__circles">
+                                <svg>
+                                    <defs>
+                                        <clipPath id="cutoff-mixed"><circle cx="50%" cy="50%" r="50%"></circle></clipPath>
+                                    </defs>
+                                    <circle class="mdl-radio__outer-circle" cx="50%" cy="50%" r="50%" fill="none" stroke="currentcolor" stroke-width="0.26em" clip-path="url(#cutoff-mixed)"></circle>
+                                    <circle class="mdl-radio__inner-circle" cx="50%" cy="50%" r="25%" fill="currentcolor"></circle>
+                                </svg>
+                                <div class="mdl-radio__focus-circle"></div>
+                            </div>
+                            <span class="radioButtonLabel mdl-radio__label">Mixed</span>
+                            <div class="fieldDescription">Combines several sources, for example two favourites, two new titles and one random title</div>
+                        </label>
+                    </div>
+
+                    <div id="MixedSources-container" style="display:none;">
+                        <h3 class="checkboxListLabel">Titles from each source</h3>
+                        <p class="fieldDescription">Set a source to 0 to leave it out. Each source's own settings appear below when it is in use.</p>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="MixedFavouritesCount">Favourites</label>
+                            <input is="emby-input" type="number" id="MixedFavouritesCount" min="0" max="50" step="1" />
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="MixedNewCount">New</label>
+                            <input is="emby-input" type="number" id="MixedNewCount" min="0" max="50" step="1" />
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="MixedCollectionsCount">Collections</label>
+                            <input is="emby-input" type="number" id="MixedCollectionsCount" min="0" max="50" step="1" />
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="MixedRandomCount">Random</label>
+                            <input is="emby-input" type="number" id="MixedRandomCount" min="0" max="50" step="1" />
+                        </div>
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="MixedOrder">Slide order</label>
+                            <select is="emby-select" id="MixedOrder" class="emby-select-withcolor emby-select">
+                                <option value="interleave">Alternate sources</option>
+                                <option value="grouped">Group by source</option>
+                                <option value="shuffle">Shuffle</option>
+                            </select>
+                            <div class="fieldDescription">Alternate takes one title from each source in turn. Group shows favourites, then new, collections, and random titles.</div>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="MixedFillWithRandom" />
+                                <span class="checkboxLabel">Fill shortfalls with random titles</span>
+                            </label>
+                            <div class="fieldDescription">When a source has fewer titles than requested, random titles keep the banner at its full length.</div>
+                        </div>
                     </div>
 
                     <div id="LibraryList-container" style="display:none;">
@@ -1006,7 +1059,7 @@
                         <p>One collection will be shown at a time across the slider. If multiple are checked below, one of them will be randomly chosen each time it loads.</p>
                     </div>
                     <h2>Filtering</h2>
-                    <div class="inputContainer">
+                    <div id="RandomMediaCount-container" class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="RandomMediaCount">Maximum items shown</label>
                         <input is="emby-input" type="number" id="RandomMediaCount" name="RandomMediaCount" min="1" />
                         <div class="fieldDescription">This sets how many items to show in the banner, whether random or from the favourites list. Set to a massive number if you want to show all of your favourited items.</div>
@@ -1037,6 +1090,14 @@
                             <input is="emby-checkbox" type="checkbox" id="ShowPlayed" name="ShowPlayed" />
                             <span class="checkboxLabel">Show played items</span>
                         </label>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="AvoidRepeats" />
+                            <span class="checkboxLabel">Rotate through titles before repeating</span>
+                        </label>
+                        <div class="fieldDescription">Each new selection skips titles the viewer was already shown until every eligible title has appeared. Near the end of a rotation, the banner shows only the titles that remain rather than repeating any.</div>
                     </div>
                     </section>
 

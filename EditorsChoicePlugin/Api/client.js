@@ -893,6 +893,25 @@ const container = `
     transform: scale(1);
   }
 
+  /* Blurred preview shown while the active slide's artwork downloads. */
+  .editorsChoiceHeroMode .editorsChoiceItemBanner .editorsChoiceBlurhash {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 240ms ease;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 40%, rgba(0,0,0,0.9) 55%, rgba(0,0,0,0.4) 70%, rgba(0,0,0,0) 100%);
+    pointer-events: none;
+  }
+
+  .editorsChoiceHeroMode .editorsChoiceItemBanner.is-active .editorsChoiceBlurhash { opacity: 1; }
+
+  /* TV layout: the remote's Left/Right keys replace the arrow buttons. */
+  .layout-tv .editorsChoiceContainer .editorsChoiceScrollButtonsContainer,
+  .layout-tv .editorsChoiceContainer .editorsChoiceMobilePagination { display: none; }
+
   .editorsChoiceHeroMode .editorsChoiceItemPoster,
   .editorsChoiceHeroMode .editorsChoiceItemLogo,
   .editorsChoiceHeroMode .editorsChoiceItemTitle,
@@ -1395,16 +1414,22 @@ const container = `
 </style>
 `;
 
-const GUID = "70bb2ec1-f19e-46b5-b49a-942e6b96ebae";
 const HOME_CONTAINER_SELECTOR = "#indexPage:not(.hide) #homeTab.is-active .homeSectionsContainer";
 const EDITORS_CHOICE_ADDED_CLASS = "editorsChoiceAdded";
 const EDITORS_CHOICE_LOADING_CLASS = "editorsChoiceLoading";
 const initializingContainers = new WeakSet();
+let currentUserIsEditor = false;
 const initializedContainers = new WeakSet();
 
 /* ===== Utils ===== */
 
-function getLocalizedString(key) {
+// Jellyfin sets the page language to the user's display language.
+function getLanguage() {
+    return (document.documentElement.lang || navigator.language || "en").slice(0, 2).toLowerCase();
+}
+
+// Replaces each %s with the next argument, e.g. getLocalizedString("slideLabel", 2, 5).
+function getLocalizedString(key, ...args) {
     const localization = {
         watchNow: {
             en: "Watch Now",
@@ -1505,10 +1530,331 @@ function getLocalizedString(key) {
             ja: "予告編",
             ru: "Трейлер",
         },
+        previous: {
+            en: "Previous",
+            fr: "Précédent",
+            es: "Anterior",
+            de: "Zurück",
+            it: "Precedente",
+            pt: "Anterior",
+            zh: "上一个",
+            ja: "前へ",
+            ru: "Назад",
+        },
+        next: {
+            en: "Next",
+            fr: "Suivant",
+            es: "Siguiente",
+            de: "Weiter",
+            it: "Successivo",
+            pt: "Próximo",
+            zh: "下一个",
+            ja: "次へ",
+            ru: "Далее",
+        },
+        previousItem: {
+            en: "Previous item",
+            fr: "Élément précédent",
+            es: "Elemento anterior",
+            de: "Vorheriger Titel",
+            it: "Elemento precedente",
+            pt: "Item anterior",
+            zh: "上一项",
+            ja: "前の項目",
+            ru: "Предыдущий элемент",
+        },
+        nextItem: {
+            en: "Next item",
+            fr: "Élément suivant",
+            es: "Elemento siguiente",
+            de: "Nächster Titel",
+            it: "Elemento successivo",
+            pt: "Próximo item",
+            zh: "下一项",
+            ja: "次の項目",
+            ru: "Следующий элемент",
+        },
+        carouselPages: {
+            en: "Carousel pages",
+            fr: "Pages du carrousel",
+            es: "Páginas del carrusel",
+            de: "Karussellseiten",
+            it: "Pagine del carosello",
+            pt: "Páginas do carrossel",
+            zh: "轮播页面",
+            ja: "カルーセルのページ",
+            ru: "Страницы карусели",
+        },
+        featuredContent: {
+            en: "Featured content",
+            fr: "Contenu à la une",
+            es: "Contenido destacado",
+            de: "Empfohlene Inhalte",
+            it: "Contenuti in evidenza",
+            pt: "Conteúdo em destaque",
+            zh: "精选内容",
+            ja: "おすすめコンテンツ",
+            ru: "Рекомендуемое",
+        },
+        carousel: {
+            en: "carousel",
+            fr: "carrousel",
+            es: "carrusel",
+            de: "Karussell",
+            it: "carosello",
+            pt: "carrossel",
+            zh: "轮播",
+            ja: "カルーセル",
+            ru: "карусель",
+        },
+        slide: {
+            en: "slide",
+            fr: "diapositive",
+            es: "diapositiva",
+            de: "Folie",
+            it: "diapositiva",
+            pt: "slide",
+            zh: "幻灯片",
+            ja: "スライド",
+            ru: "слайд",
+        },
+        slideLabel: {
+            en: "%s of %s",
+            fr: "%s sur %s",
+            es: "%s de %s",
+            de: "%s von %s",
+            it: "%s di %s",
+            pt: "%s de %s",
+            zh: "第 %s 项，共 %s 项",
+            ja: "%s / %s",
+            ru: "%s из %s",
+        },
+        goToSlide: {
+            en: "Go to slide %s",
+            fr: "Aller à la diapositive %s",
+            es: "Ir a la diapositiva %s",
+            de: "Zu Folie %s wechseln",
+            it: "Vai alla diapositiva %s",
+            pt: "Ir para o slide %s",
+            zh: "转到第 %s 张",
+            ja: "スライド %s へ移動",
+            ru: "Перейти к слайду %s",
+        },
+        selectSlide: {
+            en: "Select a slide to show",
+            fr: "Sélectionnez une diapositive à afficher",
+            es: "Selecciona una diapositiva para mostrar",
+            de: "Folie zum Anzeigen auswählen",
+            it: "Seleziona una diapositiva da mostrare",
+            pt: "Selecione um slide para mostrar",
+            zh: "选择要显示的幻灯片",
+            ja: "表示するスライドを選択",
+            ru: "Выберите слайд для показа",
+        },
+        startAutoplay: {
+            en: "Start autoplay",
+            fr: "Lancer le défilement automatique",
+            es: "Iniciar reproducción automática",
+            de: "Automatische Wiedergabe starten",
+            it: "Avvia scorrimento automatico",
+            pt: "Iniciar reprodução automática",
+            zh: "开始自动播放",
+            ja: "自動再生を開始",
+            ru: "Включить автопрокрутку",
+        },
+        pauseAutoplay: {
+            en: "Pause autoplay",
+            fr: "Suspendre le défilement automatique",
+            es: "Pausar reproducción automática",
+            de: "Automatische Wiedergabe pausieren",
+            it: "Metti in pausa lo scorrimento automatico",
+            pt: "Pausar reprodução automática",
+            zh: "暂停自动播放",
+            ja: "自動再生を一時停止",
+            ru: "Приостановить автопрокрутку",
+        },
+        playTrailer: {
+            en: "Play trailer",
+            fr: "Lire la bande-annonce",
+            es: "Reproducir tráiler",
+            de: "Trailer abspielen",
+            it: "Riproduci trailer",
+            pt: "Reproduzir trailer",
+            zh: "播放预告片",
+            ja: "予告編を再生",
+            ru: "Смотреть трейлер",
+        },
+        hideThemeVideo: {
+            en: "Hide theme video",
+            fr: "Masquer la vidéo thème",
+            es: "Ocultar vídeo temático",
+            de: "Titelvideo ausblenden",
+            it: "Nascondi video tematico",
+            pt: "Ocultar vídeo temático",
+            zh: "隐藏主题视频",
+            ja: "テーマ動画を非表示",
+            ru: "Скрыть тематическое видео",
+        },
+        showThemeVideo: {
+            en: "Show theme video",
+            fr: "Afficher la vidéo thème",
+            es: "Mostrar vídeo temático",
+            de: "Titelvideo einblenden",
+            it: "Mostra video tematico",
+            pt: "Mostrar vídeo temático",
+            zh: "显示主题视频",
+            ja: "テーマ動画を表示",
+            ru: "Показать тематическое видео",
+        },
+        playbackProgress: {
+            en: "Playback progress",
+            fr: "Progression de la lecture",
+            es: "Progreso de reproducción",
+            de: "Wiedergabefortschritt",
+            it: "Avanzamento della riproduzione",
+            pt: "Progresso da reprodução",
+            zh: "播放进度",
+            ja: "再生の進行状況",
+            ru: "Прогресс просмотра",
+        },
+        moreInformation: {
+            en: "More information",
+            fr: "Plus d'informations",
+            es: "Más información",
+            de: "Weitere Informationen",
+            it: "Altre informazioni",
+            pt: "Mais informações",
+            zh: "更多信息",
+            ja: "詳細情報",
+            ru: "Подробнее",
+        },
+        communityRating: {
+            en: "Community rating %s",
+            fr: "Note de la communauté %s",
+            es: "Valoración de la comunidad %s",
+            de: "Community-Bewertung %s",
+            it: "Voto della community %s",
+            pt: "Avaliação da comunidade %s",
+            zh: "社区评分 %s",
+            ja: "コミュニティ評価 %s",
+            ru: "Рейтинг зрителей %s",
+        },
+        criticRating: {
+            en: "Critic rating %s",
+            fr: "Note des critiques %s",
+            es: "Valoración de la crítica %s",
+            de: "Kritikerbewertung %s",
+            it: "Voto della critica %s",
+            pt: "Avaliação da crítica %s",
+            zh: "影评人评分 %s",
+            ja: "批評家の評価 %s",
+            ru: "Рейтинг критиков %s",
+        },
+        noDescription: {
+            en: "No description available",
+            fr: "Aucune description disponible",
+            es: "No hay descripción disponible",
+            de: "Keine Beschreibung verfügbar",
+            it: "Nessuna descrizione disponibile",
+            pt: "Nenhuma descrição disponível",
+            zh: "暂无简介",
+            ja: "説明はありません",
+            ru: "Описание отсутствует",
+        },
+        welcome: {
+            en: "Welcome",
+            fr: "Bienvenue",
+            es: "Bienvenido",
+            de: "Willkommen",
+            it: "Benvenuto",
+            pt: "Bem-vindo",
+            zh: "欢迎",
+            ja: "ようこそ",
+            ru: "Добро пожаловать",
+        },
+        retry: {
+            en: "Retry",
+            fr: "Réessayer",
+            es: "Reintentar",
+            de: "Erneut versuchen",
+            it: "Riprova",
+            pt: "Tentar novamente",
+            zh: "重试",
+            ja: "再試行",
+            ru: "Повторить",
+        },
+        noFeaturedItems: {
+            en: "No featured items available.",
+            fr: "Aucun contenu à la une disponible.",
+            es: "No hay contenido destacado disponible.",
+            de: "Keine empfohlenen Inhalte verfügbar.",
+            it: "Nessun contenuto in evidenza disponibile.",
+            pt: "Nenhum conteúdo em destaque disponível.",
+            zh: "暂无精选内容。",
+            ja: "おすすめのコンテンツはありません。",
+            ru: "Нет рекомендуемого контента.",
+        },
+        loadFailed: {
+            en: "Featured content could not be loaded.",
+            fr: "Impossible de charger le contenu à la une.",
+            es: "No se pudo cargar el contenido destacado.",
+            de: "Empfohlene Inhalte konnten nicht geladen werden.",
+            it: "Impossibile caricare i contenuti in evidenza.",
+            pt: "Não foi possível carregar o conteúdo em destaque.",
+            zh: "无法加载精选内容。",
+            ja: "おすすめコンテンツを読み込めませんでした。",
+            ru: "Не удалось загрузить рекомендуемое.",
+        },
+        movie: {
+            en: "Movie",
+            fr: "Film",
+            es: "Película",
+            de: "Film",
+            it: "Film",
+            pt: "Filme",
+            zh: "电影",
+            ja: "映画",
+            ru: "Фильм",
+        },
+        series: {
+            en: "Series",
+            fr: "Série",
+            es: "Serie",
+            de: "Serie",
+            it: "Serie",
+            pt: "Série",
+            zh: "剧集",
+            ja: "シリーズ",
+            ru: "Сериал",
+        },
+        poster: {
+            en: "%s poster",
+            fr: "Affiche de %s",
+            es: "Póster de %s",
+            de: "Poster von %s",
+            it: "Locandina di %s",
+            pt: "Pôster de %s",
+            zh: "%s 海报",
+            ja: "%s のポスター",
+            ru: "Постер: %s",
+        },
+        editorNotice: {
+            en: "You are the featured items editor! Your favourites will be displayed on the home page for all users, if enabled.",
+            fr: "Vous êtes l'éditeur des contenus à la une ! Si l'option est activée, vos favoris seront affichés sur la page d'accueil de tous les utilisateurs.",
+            es: "¡Eres el editor del contenido destacado! Si está activado, tus favoritos se mostrarán en la página de inicio de todos los usuarios.",
+            de: "Sie sind der Redakteur der empfohlenen Inhalte! Falls aktiviert, werden Ihre Favoriten allen Benutzern auf der Startseite angezeigt.",
+            it: "Sei l'editor dei contenuti in evidenza! Se l'opzione è attiva, i tuoi preferiti verranno mostrati nella home page di tutti gli utenti.",
+            pt: "Você é o editor dos destaques! Se ativado, seus favoritos serão exibidos na página inicial de todos os usuários.",
+            zh: "你是精选内容编辑！启用后，你的收藏将显示在所有用户的主页上。",
+            ja: "あなたはおすすめコンテンツの編集者です。有効な場合、お気に入りはすべてのユーザーのホーム画面に表示されます。",
+            ru: "Вы редактор рекомендуемого! Если функция включена, ваше избранное будет показано на главной странице всем пользователям.",
+        },
     };
 
-    const lang = (navigator.language || "en").slice(0, 2);
-    return (localization[key] && (localization[key][lang] || localization[key].en)) || "";
+    const lang = getLanguage();
+    const text = (localization[key] && (localization[key][lang] || localization[key].en)) || "";
+    let index = 0;
+    return text.replace(/%s/g, () => String(args[index++] ?? ""));
 }
 
 function escapeHtml(value) {
@@ -1533,13 +1879,22 @@ function buildCustomButtonStyle(backgroundColor, textColor, opacity = 100) {
     };
 }
 
+function formatDurationUnit(value, unit, fallbackSuffix) {
+    try {
+        return new Intl.NumberFormat(getLanguage(), { style: "unit", unit, unitDisplay: "narrow" }).format(value);
+    } catch {
+        return value + fallbackSuffix;
+    }
+}
+
 function formatRuntime(totalMinutes) {
     if (!Number.isFinite(totalMinutes) || totalMinutes <= 0) return "";
     const minutes = Math.round(totalMinutes);
     const hours = Math.floor(minutes / 60);
     const remainder = minutes % 60;
-    if (!hours) return minutes + "m";
-    return remainder ? hours + "h " + remainder + "m" : hours + "h";
+    if (!hours) return formatDurationUnit(minutes, "minute", "m");
+    const hourText = formatDurationUnit(hours, "hour", "h");
+    return remainder ? hourText + " " + formatDurationUnit(remainder, "minute", "m") : hourText;
 }
 
 const heroMetadataFields = ["type", "rating", "critic", "year", "runtime", "official", "genres", "ends"];
@@ -1564,16 +1919,21 @@ function formatEndTime(item) {
     return getLocalizedString("endsAt") + " " + end.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
+function mediaTypeLabel(type) {
+    return type === "Movie" ? getLocalizedString("movie") : type === "Series" ? getLocalizedString("series") : type;
+}
+
 function buildMetadata(item, data = {}) {
     const rating = typeof item.community_rating === "number" ? Number(item.community_rating.toFixed(1)) : 0;
     const builders = {
-        type: () => item.item_type ? metadataItem(escapeHtml(item.item_type), " editorsChoiceMediaType") : "",
+        type: () => item.item_type ? metadataItem(escapeHtml(mediaTypeLabel(item.item_type)), " editorsChoiceMediaType") : "",
         rating: () => rating > 0
-            ? metadataItem('<span class="material-icons starIcon star" aria-hidden="true"></span>' + rating)
+            ? metadataItem('<span class="material-icons starIcon star" aria-hidden="true"></span>' + rating,
+                "", getLocalizedString("communityRating", rating))
             : "",
         critic: () => Number.isFinite(item.critic_rating) && item.critic_rating > 0
             ? metadataItem('<span class="material-icons editorsChoiceCriticIcon thumb_up" aria-hidden="true"></span>' +
-                Math.round(item.critic_rating) + "%", "", `Critic rating ${Math.round(item.critic_rating)}%`)
+                Math.round(item.critic_rating) + "%", "", getLocalizedString("criticRating", Math.round(item.critic_rating) + "%"))
             : "",
         year: () => Number.isInteger(item.year) && item.year > 0 ? metadataItem(String(item.year)) : "",
         runtime: () => {
@@ -1645,17 +2005,17 @@ function buildPoster(item, data) {
     );
     const requestedHeight = Math.min(600, Math.max(180, Math.ceil(largestConfiguredHeight - 60)));
     const posterSize = data.reduceImageSizes ? `?height=${requestedHeight}` : "";
-    const image = `<img class="editorsChoiceItemPoster" src="../Items/${escapeHtml(item.id)}/Images/Primary/0${posterSize}" alt="${escapeHtml(item.name)} poster" loading="lazy" decoding="async"/>`;
+    const image = `<img class="editorsChoiceItemPoster" src="../Items/${escapeHtml(item.id)}/Images/Primary/0${posterSize}" alt="${escapeHtml(getLocalizedString("poster", item.name))}" loading="lazy" decoding="async"/>`;
 
     if (!item.has_trailer) return image;
 
-    return `<button type="button" is="emby-button" class="editorsChoicePosterButton itemAction emby-button" ${trailerAttributes(item)} title="Play trailer" aria-label="Play trailer: ${escapeHtml(item.name)}">${image}<span class="material-icons editorsChoiceTrailerIcon play_circle_filled" aria-hidden="true"></span></button>`;
+    return `<button type="button" is="emby-button" class="editorsChoicePosterButton itemAction emby-button" ${trailerAttributes(item)} title="${escapeHtml(getLocalizedString("playTrailer"))}" aria-label="${escapeHtml(getLocalizedString("playTrailer"))}: ${escapeHtml(item.name)}">${image}<span class="material-icons editorsChoiceTrailerIcon play_circle_filled" aria-hidden="true"></span></button>`;
 }
 
 function buildThemeVideo(item) {
     if (!item.theme_video_id) return "";
 
-    return `<div class="editorsChoiceThemeVideo" aria-hidden="true"><video class="editorsChoiceThemeVideoPlayer" muted loop playsinline preload="auto" data-theme-video-id="${escapeHtml(item.theme_video_id)}"></video></div><button type="button" is="emby-button" class="editorsChoiceThemeVideoToggle emby-button" aria-label="Hide theme video" title="Hide theme video" aria-pressed="false"><span class="material-icons videocam_off" aria-hidden="true"></span></button>`;
+    return `<div class="editorsChoiceThemeVideo" aria-hidden="true"><video class="editorsChoiceThemeVideoPlayer" muted loop playsinline preload="auto" data-theme-video-id="${escapeHtml(item.theme_video_id)}"></video></div><button type="button" is="emby-button" class="editorsChoiceThemeVideoToggle emby-button" aria-label="${escapeHtml(getLocalizedString("hideThemeVideo"))}" title="${escapeHtml(getLocalizedString("hideThemeVideo"))}" aria-pressed="false"><span class="material-icons videocam_off" aria-hidden="true"></span></button>`;
 }
 
 function buildOverview(item, fallback = "") {
@@ -1690,7 +2050,7 @@ function buildPlayButton(item, data) {
         ? Math.max(0, Math.min(100, item.playback_progress_percent))
         : 0;
     const progressBar = progress > 0 && data.showResumeProgress !== false
-        ? `<span class="editorsChoicePlaybackProgress" role="progressbar" aria-label="Playback progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><span class="editorsChoicePlaybackProgressFill" style="width:${progress}%"></span></span>`
+        ? `<span class="editorsChoicePlaybackProgress" role="progressbar" aria-label="${escapeHtml(getLocalizedString("playbackProgress"))}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><span class="editorsChoicePlaybackProgressFill" style="width:${progress}%"></span></span>`
         : "";
     const customStyle = data.useCustomPlayButtonColors
         ? buildCustomButtonStyle(data.playButtonBackgroundColor, data.playButtonTextColor)
@@ -1701,7 +2061,7 @@ function buildPlayButton(item, data) {
 
 function buildInfoButton(item, data) {
     if (data.showInfoButton === false) return "";
-    return `<button type="button" is="emby-button" class="editorsChoiceInfoButton editorsChoiceButton editorsChoiceButton--secondary itemAction raised emby-button" data-action="link" data-id="${escapeHtml(item.id)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(item.item_type)}" data-mediatype="Video" data-isfolder="${item.play_is_folder ? "true" : "false"}" aria-label="More information: ${escapeHtml(item.name)}"><span class="material-icons editorsChoiceInfoIcon info" aria-hidden="true"></span></button>`;
+    return `<button type="button" is="emby-button" class="editorsChoiceInfoButton editorsChoiceButton editorsChoiceButton--secondary itemAction raised emby-button" data-action="link" data-id="${escapeHtml(item.id)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(item.item_type)}" data-mediatype="Video" data-isfolder="${item.play_is_folder ? "true" : "false"}" aria-label="${escapeHtml(getLocalizedString("moreInformation"))}: ${escapeHtml(item.name)}"><span class="material-icons editorsChoiceInfoIcon info" aria-hidden="true"></span></button>`;
 }
 
 function buildTrailerButton(item, data) {
@@ -1722,6 +2082,116 @@ function buildBannerSizeParam(reduceImageSizes) {
 }
 
 const backdropLoadCache = new Map();
+
+/* ===== Blurhash placeholders ===== */
+
+// Decoder for Jellyfin's image blurhashes (https://github.com/woltapp/blurhash).
+const blurhashDigits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#$%*+,-.:;=?@[]^_{|}~";
+const blurhashCache = new Map();
+
+function decodeBase83(text, start, end) {
+    let value = 0;
+    for (let index = start; index < end; index++) {
+        const digit = blurhashDigits.indexOf(text[index]);
+        if (digit < 0) throw new Error("Invalid blurhash.");
+        value = value * 83 + digit;
+    }
+    return value;
+}
+
+function srgbToLinear(value) {
+    const channel = value / 255;
+    return channel <= 0.04045 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
+}
+
+function linearToSrgb(value) {
+    const channel = Math.max(0, Math.min(1, value));
+    return Math.round((channel <= 0.0031308 ? channel * 12.92 : 1.055 * Math.pow(channel, 1 / 2.4) - 0.055) * 255);
+}
+
+function decodeBlurhash(hash, width, height) {
+    const size = decodeBase83(hash, 0, 1);
+    const componentsX = (size % 9) + 1;
+    const componentsY = Math.floor(size / 9) + 1;
+    if (hash.length !== 4 + 2 * componentsX * componentsY) throw new Error("Invalid blurhash length.");
+
+    const maximum = (decodeBase83(hash, 1, 2) + 1) / 166;
+    const signedSquare = (value) => Math.sign(value) * value * value;
+    const colors = [];
+    const dc = decodeBase83(hash, 2, 6);
+    colors.push([srgbToLinear(dc >> 16), srgbToLinear((dc >> 8) & 255), srgbToLinear(dc & 255)]);
+    for (let index = 1; index < componentsX * componentsY; index++) {
+        const ac = decodeBase83(hash, 4 + index * 2, 6 + index * 2);
+        colors.push([
+            signedSquare((Math.floor(ac / 361) - 9) / 9) * maximum,
+            signedSquare((Math.floor(ac / 19) % 19 - 9) / 9) * maximum,
+            signedSquare((ac % 19 - 9) / 9) * maximum,
+        ]);
+    }
+
+    const pixels = new Uint8ClampedArray(width * height * 4);
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            let red = 0;
+            let green = 0;
+            let blue = 0;
+            for (let j = 0; j < componentsY; j++) {
+                for (let i = 0; i < componentsX; i++) {
+                    const basis = Math.cos(Math.PI * x * i / width) * Math.cos(Math.PI * y * j / height);
+                    const color = colors[i + j * componentsX];
+                    red += color[0] * basis;
+                    green += color[1] * basis;
+                    blue += color[2] * basis;
+                }
+            }
+            const offset = 4 * (x + y * width);
+            pixels[offset] = linearToSrgb(red);
+            pixels[offset + 1] = linearToSrgb(green);
+            pixels[offset + 2] = linearToSrgb(blue);
+            pixels[offset + 3] = 255;
+        }
+    }
+    return pixels;
+}
+
+// Returns a small data URL, or "" when the hash is missing or invalid.
+function blurhashDataUrl(hash) {
+    if (typeof hash !== "string" || hash.length < 6) return "";
+    if (blurhashCache.has(hash)) return blurhashCache.get(hash);
+
+    let url = "";
+    try {
+        const width = 32;
+        const height = 18;
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d");
+        if (context) {
+            context.putImageData(new ImageData(decodeBlurhash(hash, width, height), width, height), 0, 0);
+            url = canvas.toDataURL();
+        }
+    } catch (error) {
+        console.debug("Editors Choice: blurhash placeholder unavailable.", error);
+    }
+    blurhashCache.set(hash, url);
+    return url;
+}
+
+// Paints each slide's placeholder before Splide clones the slides.
+function applyBlurhashPlaceholders(list) {
+    for (const placeholder of list.querySelectorAll(".editorsChoiceBlurhash[data-blurhash]")) {
+        const url = blurhashDataUrl(placeholder.dataset.blurhash);
+        if (url) placeholder.style.backgroundImage = `url("${url}")`;
+        else placeholder.remove();
+    }
+}
+
+function buildBlurhash(hash, data) {
+    return typeof hash === "string" && hash
+        ? `<div class="editorsChoiceBlurhash"${backdropFocusStyle(data)} data-blurhash="${escapeHtml(hash)}" aria-hidden="true"></div>`
+        : "";
+}
 
 function measureBackdropScrim(image) {
     const fallback = { strong: 0.95, mid: 0.85, soft: 0.55, faint: 0.25 };
@@ -2168,6 +2638,18 @@ function applyBannerGeometry(data, element) {
 
 const pendingBanners = new Map();
 
+// The shell template is parsed before Jellyfin applies the user's language.
+function localizeBannerShell(element) {
+    const label = (selector, attribute, key) => {
+        for (const node of element.querySelectorAll(selector)) node.setAttribute(attribute, getLocalizedString(key));
+    };
+    label(".splide__arrow--prev", "title", "previous");
+    label(".splide__arrow--next", "title", "next");
+    label(".editorsChoiceMobilePagination", "aria-label", "carouselPages");
+    label(".editorsChoiceMobilePagePrev", "aria-label", "previousItem");
+    label(".editorsChoiceMobilePageNext", "aria-label", "nextItem");
+}
+
 function createBannerShell(parent, data) {
     const template = document.createElement("template");
     template.innerHTML = container.trim();
@@ -2175,7 +2657,7 @@ function createBannerShell(parent, data) {
     element.id = `editorsChoice-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     element.classList.add("editorsChoiceIsLoading");
     element.setAttribute("aria-busy", "true");
-    element.setAttribute("aria-label", "Featured content");
+    localizeBannerShell(element);
     parent.closest("#homeTab")?.classList.add("editorsChoiceHeroMode");
     parent.classList.add(EDITORS_CHOICE_ADDED_CLASS);
     parent.prepend(template.content);
@@ -2218,7 +2700,7 @@ function showBannerMessage(element, text, retry) {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "emby-button raised";
-        button.textContent = "Retry";
+        button.textContent = getLocalizedString("retry");
         button.addEventListener("click", retry, { once: true });
         message.append(button);
     }
@@ -2330,7 +2812,7 @@ function renderHeroSlide(item, data) {
     const metadata = buildMetadata(item, data);
     const logoOrTitle = buildLogoOrTitle(item, data);
     const tagline = buildTagline(item, data);
-    const overview = buildOverview(item, "No Description Found");
+    const overview = buildOverview(item, getLocalizedString("noDescription"));
     const actions = buildActions(item, data);
     const poster = buildPoster(item, data);
     const themeVideo = data.enableThemeVideos !== false ? buildThemeVideo(item) : "";
@@ -2345,7 +2827,7 @@ function renderHeroSlide(item, data) {
         data.heroBackdropPosition === "top" ? "editorsChoiceBackdropTop" :
         data.heroBackdropPosition === "bottom" ? "editorsChoiceBackdropBottom" : "";
 
-    return `<article class="${bannerClass}"><div class="editorsChoiceBackdrop ${extraClass}"${backdropFocusStyle(data)} data-backdrop-url="${escapeHtml(backdropUrl)}"></div>${themeVideo}<div class="editorsChoiceDimming" aria-hidden="true"></div><div class="${contentClass}">${poster}<div class="${infoClass}"><div class="editorsChoiceContentMain">${logoOrTitle}${tagline}${metadata}${overview}</div>${actions}</div></div></article>`;
+    return `<article class="${bannerClass}">${buildBlurhash(item.backdrop_blurhash, data)}<div class="editorsChoiceBackdrop ${extraClass}"${backdropFocusStyle(data)} data-backdrop-url="${escapeHtml(backdropUrl)}"></div>${themeVideo}<div class="editorsChoiceDimming" aria-hidden="true"></div><div class="${contentClass}">${poster}<div class="${infoClass}"><div class="editorsChoiceContentMain">${logoOrTitle}${tagline}${metadata}${overview}</div>${actions}</div></div></article>`;
 }
 
 function renderOpeningActions(actions) {
@@ -2364,6 +2846,81 @@ function renderOpeningActions(actions) {
     return buttons ? `<div class="editorsChoiceItemActions">${buttons}</div>` : "";
 }
 
+// Lets the browser fetch a neighbouring slide's lazy poster and logo early.
+function preloadSlideImages(slides, index) {
+    if (!slides.length) return;
+    const slide = slides[((index % slides.length) + slides.length) % slides.length];
+    for (const image of slide.querySelectorAll('img[loading="lazy"]')) image.loading = "eager";
+}
+
+// Loop mode also marks the off-screen clone of the current slide as active.
+const ACTIVE_SLIDE_SELECTOR = ".splide__slide.is-active:not(.splide__slide--clone)";
+
+// Only the current slide's controls can take focus, so Tab and TV spatial
+// navigation never land on buttons in off-screen slides or Splide's clones.
+function updateSlideInertness(list) {
+    for (const slide of list.querySelectorAll(".splide__slide")) {
+        slide.toggleAttribute("inert", !slide.matches(ACTIVE_SLIDE_SELECTOR));
+    }
+}
+
+const bannerKeyDirections = {
+    ArrowLeft: -1, Left: -1, MediaTrackPrevious: -1, MediaRewind: -1,
+    ArrowRight: 1, Right: 1, MediaTrackNext: 1, MediaFastForward: 1,
+};
+
+// Keyboard and TV remote navigation. Left/Right move between a slide's buttons
+// and change slides at either end, like a TV home screen. Keys handled here stop
+// propagating so Jellyfin's spatial navigation does not also move focus away.
+function bindBannerKeyboard(containerElem, slider) {
+    let focusAfterMove = null;
+
+    const focusableIn = (slide) => Array.from(slide?.querySelectorAll(
+        ".editorsChoicePosterButton, .editorsChoiceItemActions .emby-button, .editorsChoiceOpeningAction, .editorsChoiceThemeVideoToggle"
+    ) || []).filter((element) => element.offsetParent !== null && !element.disabled);
+
+    containerElem.addEventListener("keydown", (event) => {
+        const direction = bannerKeyDirections[event.key];
+        if (!direction || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || slider.length <= 1) return;
+
+        const activeSlide = event.target.closest?.(ACTIVE_SLIDE_SELECTOR);
+        if (!activeSlide) return;
+
+        const buttons = focusableIn(activeSlide);
+        const position = buttons.indexOf(document.activeElement);
+        const isMediaKey = event.key.startsWith("Media");
+        if (!isMediaKey && position >= 0) {
+            const target = buttons[position + direction];
+            if (target) {
+                event.preventDefault();
+                event.stopPropagation();
+                target.focus();
+                return;
+            }
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        // Moving right lands on the first button, moving left on the last.
+        focusAfterMove = direction > 0 ? "first" : "last";
+        slider.go(direction > 0 ? ">" : "<");
+    });
+
+    slider.on("moved", () => {
+        if (!focusAfterMove) return;
+        const edge = focusAfterMove;
+        focusAfterMove = null;
+        // Splide marks the new slide active (and updateSlideInertness un-inerts it)
+        // after this listener runs, so wait a frame before moving focus.
+        window.requestAnimationFrame(() => {
+            if (!containerElem.contains(document.activeElement) && document.activeElement !== document.body) return;
+            const buttons = focusableIn(containerElem.querySelector(ACTIVE_SLIDE_SELECTOR));
+            const target = edge === "first" ? buttons[0] : buttons[buttons.length - 1];
+            target?.focus({ preventScroll: true });
+        });
+    });
+}
+
 function renderOpeningMessage(slide, data) {
     const backdropSize = buildBannerSizeParam(data.reduceImageSizes);
     const backdropUrl = slide.backgroundType === "media" && slide.backgroundItemId
@@ -2380,7 +2937,7 @@ function renderOpeningMessage(slide, data) {
     const infoClass = `editorsChoiceInfo${actions ? " editorsChoiceInfo--withAction" : ""}`;
     const body = slide.bodyHtml ? `<div class="editorsChoiceItemOverview">${slide.bodyHtml}</div>` : "";
 
-    return `<article class="editorsChoiceItemBanner editorsChoiceOpeningSlide editorsChoiceOpeningSlide--${alignment}${backgroundClass} splide__slide"><div class="editorsChoiceBackdrop ${extraClass}"${backdropFocusStyle(data)} data-backdrop-url="${escapeHtml(backdropUrl)}"></div><div class="editorsChoiceDimming" aria-hidden="true"></div><div class="editorsChoiceContent"><div class="${infoClass}"><div class="editorsChoiceContentMain"><div class="editorsChoiceItemMetadata" role="list"><span role="listitem" class="editorsChoiceMetadataItem">${escapeHtml(slide.eyebrow || "Welcome")}</span></div><h1 class="editorsChoiceItemTitle">${escapeHtml(slide.title || "Welcome")}</h1>${body}</div>${actions}</div></div></article>`;
+    return `<article class="editorsChoiceItemBanner editorsChoiceOpeningSlide editorsChoiceOpeningSlide--${alignment}${backgroundClass} splide__slide">${slide.backgroundType === "media" ? buildBlurhash(slide.backgroundBlurhash, data) : ""}<div class="editorsChoiceBackdrop ${extraClass}"${backdropFocusStyle(data)} data-backdrop-url="${escapeHtml(backdropUrl)}"></div><div class="editorsChoiceDimming" aria-hidden="true"></div><div class="editorsChoiceContent"><div class="${infoClass}"><div class="editorsChoiceContentMain"><div class="editorsChoiceItemMetadata" role="list"><span role="listitem" class="editorsChoiceMetadataItem">${escapeHtml(slide.eyebrow || getLocalizedString("welcome"))}</span></div><h1 class="editorsChoiceItemTitle">${escapeHtml(slide.title || getLocalizedString("welcome"))}</h1>${body}</div>${actions}</div></div></article>`;
 }
 
 /* ===== Main setup ===== */
@@ -2442,6 +2999,7 @@ async function setup() {
             .then(() => ApiClient.fetch({ url: ApiClient.getUrl("/EditorsChoice/favourites"), type: "GET" }))
             .then((response) => response.json())
             .then((data) => {
+                currentUserIsEditor = data.isEditor === true;
                 if (!elem.isConnected || !elem.matches(HOME_CONTAINER_SELECTOR)) return;
 
                 if (data.hideOnTvLayout && document.documentElement.classList.contains("layout-tv")) {
@@ -2489,12 +3047,12 @@ async function setup() {
                     ? bannerNumber(data.backgroundDimmingPercent, 30, 0, 100) / 100 : 0);
                 const $containerElem = $(containerElem);
                 if (!slides.length) {
-                    showBannerMessage(containerElem, "No featured items available.");
+                    showBannerMessage(containerElem, getLocalizedString("noFeaturedItems"));
                     initializedContainers.add(elem);
                     return;
                 }
 
-                // TV focus workaround
+                // TV focus workaround for layouts where the arrows are still focusable.
                 let focusResolved = false;
                 containerElem.querySelectorAll(".emby-scrollbuttons button").forEach((button) => {
                     button.addEventListener("focus", () => {
@@ -2516,6 +3074,14 @@ async function setup() {
                         : renderHeroSlide(slide.value, data);
                     list.insertAdjacentHTML("beforeend", html);
                 }
+                // Splide keeps an existing aria-label, so screen readers hear "2 of 5: Title".
+                Array.from(list.children).forEach((slideElement, index) => {
+                    const slide = slides[index];
+                    const title = slide.type === "message" ? slide.value.title || getLocalizedString("welcome") : slide.value.name;
+                    const position = getLocalizedString("slideLabel", index + 1, slides.length);
+                    slideElement.setAttribute("aria-label", title ? `${position}: ${title}` : position);
+                });
+                applyBlurhashPlaceholders(list);
 
                 $list.find(".editorsChoiceItemOverview a")
                     .attr("target", "_blank")
@@ -2543,7 +3109,24 @@ async function setup() {
                     pauseOnHover: data.pauseOnHover !== false,
                     pauseOnFocus: true,
                     pagination: ["dots", "bars"].includes(bannerIndicatorStyle(data, autoplayEnabled)),
-                    keyboard: true,
+                    // bindBannerKeyboard handles arrows only while focus is in the banner;
+                    // Splide's global handler would also fire during TV page navigation.
+                    keyboard: false,
+                    label: getLocalizedString("featuredContent"),
+                    i18n: {
+                        prev: getLocalizedString("previousItem"),
+                        next: getLocalizedString("nextItem"),
+                        first: getLocalizedString("previousItem"),
+                        last: getLocalizedString("nextItem"),
+                        slideX: getLocalizedString("goToSlide", "%s"),
+                        pageX: getLocalizedString("goToSlide", "%s"),
+                        play: getLocalizedString("startAutoplay"),
+                        pause: getLocalizedString("pauseAutoplay"),
+                        carousel: getLocalizedString("carousel"),
+                        select: getLocalizedString("selectSlide"),
+                        slide: getLocalizedString("slide"),
+                        slideLabel: getLocalizedString("slideLabel", "%s", "%s"),
+                    },
                     waitForTransition: true,
                     speed: effect === "instant" || prefersReducedMotion ? 0 : bannerNumber(data.transitionDurationMs, 0, 0, 3000) || 650,
                     easing: bannerEasing(data),
@@ -2598,10 +3181,14 @@ async function setup() {
                     return prepareThemeVideo(videoSlide, true);
                 };
 
+                // Warm both neighbours so either direction lands on loaded artwork.
                 const preloadFollowingSlide = () => {
-                    if (slider.length > 1) {
-                        prepareSlideAt(slider.index + 1, "low").catch((error) => {
-                            console.debug("Editors Choice: following hero media preload unavailable.", error);
+                    if (slider.length <= 1) return;
+                    const neighbours = slider.length > 2 ? [slider.index + 1, slider.index - 1] : [slider.index + 1];
+                    for (const index of neighbours) {
+                        preloadSlideImages(getOriginalSlides(), index);
+                        prepareSlideAt(index, "low").catch((error) => {
+                            console.debug("Editors Choice: neighbouring hero media preload unavailable.", error);
                         });
                     }
                 };
@@ -2609,6 +3196,9 @@ async function setup() {
                 slider.on("mounted", () => {
                     updateMobilePagination();
                     $containerElem.toggleClass("editorsChoiceSingleSlide", slider.length <= 1);
+                    updateSlideInertness(list);
+                    // The blurred preview can replace the skeleton while the artwork downloads.
+                    if (list.querySelector(".splide__slide.is-active .editorsChoiceBlurhash")) finishBannerLoading(containerElem);
 
                     {
                         prepareSlideAt(slider.index, "high")
@@ -2625,6 +3215,8 @@ async function setup() {
                         preloadFollowingSlide();
                     }
                 });
+
+                slider.on("active", () => updateSlideInertness(list));
 
                 slider.on("move", (newIndex) => {
                     pauseThemeVideos($containerElem[0]);
@@ -2665,9 +3257,10 @@ async function setup() {
 
                     const hidden = !$containerElem.hasClass("editorsChoiceThemeVideoHidden");
                     $containerElem.toggleClass("editorsChoiceThemeVideoHidden", hidden);
+                    const toggleLabel = getLocalizedString(hidden ? "showThemeVideo" : "hideThemeVideo");
                     $containerElem.find(".editorsChoiceThemeVideoToggle")
-                        .attr("aria-label", hidden ? "Show theme video" : "Hide theme video")
-                        .attr("title", hidden ? "Show theme video" : "Hide theme video")
+                        .attr("aria-label", toggleLabel)
+                        .attr("title", toggleLabel)
                         .attr("aria-pressed", hidden ? "true" : "false")
                         .find(".material-icons")
                         .toggleClass("videocam_off", !hidden)
@@ -2682,16 +3275,23 @@ async function setup() {
                     }
                 });
 
+                bindBannerKeyboard(containerElem, slider);
+
                 pendingBanners.get(containerElem)?.();
                 slider.mount({ Presentation: bannerPresentation(data, containerElem) }, customTransition ? bannerTransition(effect) : undefined);
                 bannerSliders.set(containerElem, slider);
+                // Remote users change slides with Left/Right; keep spatial navigation on the
+                // slide's buttons rather than the tiny indicator buttons.
+                if (document.documentElement.classList.contains("layout-tv")) {
+                    containerElem.querySelector(".splide__pagination")?.setAttribute("inert", "");
+                }
 
                 initializedContainers.add(elem);
                 elem.classList.add(EDITORS_CHOICE_ADDED_CLASS);
             })
             .catch((e) => {
                 if (!containerElem.isConnected) return;
-                showBannerMessage(containerElem, "Featured content could not be loaded.", retry);
+                showBannerMessage(containerElem, getLocalizedString("loadFailed"), retry);
                 initializedContainers.delete(elem);
                 elem.classList.remove(EDITORS_CHOICE_ADDED_CLASS);
                 console.warn("Editors Choice: failed to fetch/render.", e);
@@ -2772,11 +3372,8 @@ function initializeEditorsChoice() {
         const ratingButton = event.target.closest?.('[is="emby-ratingbutton"]');
         if (!ratingButton || ratingButton.classList.contains("ratingbutton-withrating")) return;
 
-        ApiClient.getPluginConfiguration(GUID).then((data) => {
-            if (ApiClient.getCurrentUserId() === data.EditorUserId) {
-                Dashboard.confirm("You are the featured items editor! Your favourites will be displayed on the home page for all users, if enabled.");
-            }
-        });
+        // Plugin configuration is admin-only; the banner response says whether this user is the editor.
+        if (currentUserIsEditor) Dashboard.confirm(getLocalizedString("editorNotice"));
     });
 }
 

@@ -33,22 +33,34 @@ public sealed class HeroSelectionCache : BackgroundService
         config.MinimumRating, config.MinimumCriticRating, config.MaximumParentRating,
         config.MaximumParentRatingSubscore, config.FilteredLibraries, config.SelectedCollections,
         config.NewTimeLimit, config.ShowPlayed, config.SelectionRefreshMinutes,
+        config.MixedFavouritesCount, config.MixedNewCount, config.MixedCollectionsCount,
+        config.MixedRandomCount, config.MixedOrder, config.MixedFillWithRandom, config.AvoidRepeats,
+        config.EnableSelectionCache,
     });
 
-    private Guid[] GetIds(User user, PluginConfiguration config) => _store.Get(
+    private List<BaseItem> Select(User user, PluginConfiguration config, SelectionHistory history) =>
+        new HeroSelectionQuery(_users, _library, config).Select(user, config.AvoidRepeats ? history : null);
+
+    private Guid[] GetIds(User user, PluginConfiguration config, bool served) => _store.Get(
         user.Id, ConfigurationKey(config), TimeSpan.FromMinutes(Math.Clamp(config.SelectionRefreshMinutes, 1, 1440)),
-        () => new HeroSelectionQuery(_users, _library, config).Select(user).Select(item => item.Id).ToArray());
+        history => Select(user, config, history).Select(item => item.Id).ToArray(), served);
 
     public List<BaseItem> GetSelection(User user, PluginConfiguration config)
     {
         if (user.HasPermission(PermissionKind.IsDisabled)) return [];
         if (!config.EnableSelectionCache)
         {
-            _store.Clear();
-            return new HeroSelectionQuery(_users, _library, config).Select(user);
+            // Select on every request, but keep the history so titles still rotate.
+            List<BaseItem> items = [];
+            _store.Get(user.Id, ConfigurationKey(config), TimeSpan.Zero, history =>
+            {
+                items = Select(user, config, history);
+                return items.Select(item => item.Id).ToArray();
+            });
+            return items;
         }
 
-        var ids = GetIds(user, config);
+        var ids = GetIds(user, config, served: true);
         // An empty ItemIds query can mean "all items" in Jellyfin.
         if (ids.Length == 0) return [];
 
@@ -65,11 +77,8 @@ public sealed class HeroSelectionCache : BackgroundService
 
     public void WarmSelections(PluginConfiguration config, CancellationToken cancellationToken)
     {
-        if (!config.EnableSelectionCache)
-        {
-            _store.Clear();
-            return;
-        }
+        // Uncached selections happen per request; keep their rotation history.
+        if (!config.EnableSelectionCache) return;
 
 #if NET10_0_OR_GREATER
         var allUsers = _users.GetUsers();
@@ -83,7 +92,7 @@ public sealed class HeroSelectionCache : BackgroundService
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                GetIds(user, config);
+                GetIds(user, config, served: false);
             }
             catch (Exception exception)
             {

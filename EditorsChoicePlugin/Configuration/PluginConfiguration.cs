@@ -45,6 +45,23 @@ public class PluginConfiguration : BasePluginConfiguration
 
     public string NewTimeLimit { get; set; } = "1month";
 
+    // MIXED mode: titles taken from each source. Zero leaves a source out.
+    public int MixedFavouritesCount { get; set; } = 2;
+
+    public int MixedNewCount { get; set; } = 2;
+
+    public int MixedCollectionsCount { get; set; } = 0;
+
+    public int MixedRandomCount { get; set; } = 1;
+
+    // "interleave" alternates sources, "grouped" keeps each source together, "shuffle" randomizes.
+    public string MixedOrder { get; set; } = "interleave";
+
+    public bool MixedFillWithRandom { get; set; } = true;
+
+    // Cycle through every eligible title before featuring one again.
+    public bool AvoidRepeats { get; set; } = true;
+
     public bool ShowDescription { get; set; } = true;
 
     public bool HideOnTvLayout { get; set; } = false;

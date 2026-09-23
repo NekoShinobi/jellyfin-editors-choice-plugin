@@ -97,17 +97,8 @@ public class EditorsChoiceActivityController : ControllerBase
 
             Dictionary<string, object> response;
             List<object> items;
-            // Get active user - haven't found a better way than this
-            string name = "";
-            if (User.Identity != null)
-            {
-                if (User.Identity.Name != null)
-                {
-                    name = User.Identity.Name;
-                }
-            }
 
-            Jellyfin.Database.Implementations.Entities.User? activeUser = _userManager.GetUserByName(name);
+            Jellyfin.Database.Implementations.Entities.User? activeUser = GetActiveUser();
             if (activeUser == null) return NotFound();
 
             var openingSlide = CreateOpeningSlide(activeUser);
@@ -122,6 +113,9 @@ public class EditorsChoiceActivityController : ControllerBase
             foreach (BaseItem item in result) items.Add(CreateMediaItem(item, activeUser));
 
             response.Add("favourites", items);
+            // Lets the editor's client warn that their favourites are public without
+            // reading the plugin configuration, which only administrators may do.
+            response.Add("isEditor", Guid.TryParse(_config.EditorUserId, out Guid editorId) && editorId == activeUser.Id);
             if (openingSlide is not null) response.Add("openingSlide", openingSlide);
             foreach (var setting in BannerSettings.Create(_config)) response.Add(setting.Key, setting.Value);
             // Kept out of the pre-login bootstrap: it is only needed once slides render.
@@ -139,6 +133,21 @@ public class EditorsChoiceActivityController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
 
+    }
+
+    // Jellyfin's authentication handler stores the user ID in this claim
+    // (Jellyfin.Api.Constants.InternalClaimTypes.UserId). Names can change; IDs cannot.
+    private const string UserIdClaimType = "Jellyfin-UserId";
+
+    private Jellyfin.Database.Implementations.Entities.User? GetActiveUser()
+    {
+        if (Guid.TryParse(User.FindFirst(UserIdClaimType)?.Value, out Guid userId) && userId != Guid.Empty)
+        {
+            return _userManager.GetUserById(userId);
+        }
+
+        // Fall back to the name for authentication schemes without the ID claim.
+        return User.Identity?.Name is { Length: > 0 } name ? _userManager.GetUserByName(name) : null;
     }
 
     private Dictionary<string, object> CreateMediaItem(
@@ -185,7 +194,12 @@ public class EditorsChoiceActivityController : ControllerBase
             itemObject.Add("genres", genres.Take(Math.Clamp(_config.HeroMaxGenres, 1, 5)).ToArray());
         }
 
-        if (GetBackdropImageType(item) is { } backdropType) itemObject.Add("backdrop_type", backdropType);
+        MediaBrowser.Model.Entities.ImageType? backdropType = GetBackdropImageType(item);
+        if (backdropType is { } chosenType) itemObject.Add("backdrop_type", chosenType.ToString());
+        if (GetBlurHash(item, backdropType ?? MediaBrowser.Model.Entities.ImageType.Backdrop) is { } blurHash)
+        {
+            itemObject.Add("backdrop_blurhash", blurHash);
+        }
         if (item.ProductionYear.HasValue) itemObject.Add("year", item.ProductionYear.Value);
         if (itemKind == BaseItemKind.Movie && item.RunTimeTicks.HasValue)
         {
@@ -208,7 +222,7 @@ public class EditorsChoiceActivityController : ControllerBase
     }
 
     // Falls back to the Backdrop image (by returning null) when the title lacks the chosen type.
-    private string? GetBackdropImageType(BaseItem item)
+    private MediaBrowser.Model.Entities.ImageType? GetBackdropImageType(BaseItem item)
     {
         MediaBrowser.Model.Entities.ImageType? type = _config.HeroBackdropImageType switch
         {
@@ -216,8 +230,12 @@ public class EditorsChoiceActivityController : ControllerBase
             "Primary" => MediaBrowser.Model.Entities.ImageType.Primary,
             _ => null
         };
-        return type is { } imageType && item.HasImage(imageType) ? imageType.ToString() : null;
+        return type is { } imageType && item.HasImage(imageType) ? imageType : null;
     }
+
+    // A tiny preview the client paints while the full image downloads.
+    private static string? GetBlurHash(BaseItem item, MediaBrowser.Model.Entities.ImageType type) =>
+        item.GetImageInfo(type, 0)?.BlurHash is { Length: > 0 } blurHash ? blurHash : null;
 
     private Dictionary<string, object>? CreateOpeningSlide(
         Jellyfin.Database.Implementations.Entities.User activeUser)
@@ -255,6 +273,10 @@ public class EditorsChoiceActivityController : ControllerBase
             if (background is not null && background.HasImage(MediaBrowser.Model.Entities.ImageType.Backdrop))
             {
                 slide.Add("backgroundItemId", background.Id.ToString());
+                if (GetBlurHash(background, MediaBrowser.Model.Entities.ImageType.Backdrop) is { } blurHash)
+                {
+                    slide.Add("backgroundBlurhash", blurHash);
+                }
             }
             else
             {

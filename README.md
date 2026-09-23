@@ -9,7 +9,11 @@ for the full list of fork changes and implementation status.
 ## About
 Editor's Choice is a plugin for the Jellyfin web UI that adds a full-width slider to the main page to feature selected content, similar to the main Netflix home page.
 
-The featured content list is drawn from a specified user's favourited items, or a totally random selection of shows and films. Random mode can be limited to specific movie, TV, or mixed-content libraries, and the selection can also be filtered by minimum community or critic rating.
+The featured content list is drawn from a specified user's favourited items, selected collections, recent releases, or a totally random selection of shows and films. Random mode can be limited to specific movie, TV, or mixed-content libraries, and the selection can also be filtered by minimum community or critic rating.
+
+**Mixed** mode combines these sources, for example two favourites, two new titles and one random title. Each source's count is set separately (0 leaves it out), and slides can alternate between sources, stay grouped by source, or be shuffled. A title picked by one source is never repeated by another. When a source has fewer titles than requested, random titles can fill the gap.
+
+By default, each viewer's selections rotate through every eligible title before any is featured again. Near the end of a rotation, the banner shows only the titles that remain rather than repeating one; the next selection starts a new rotation. Only selections a viewer is actually served count, so background cache refreshes don't use up titles nobody saw. Turn off **Rotate through titles before repeating** under Content to draw from the whole pool each time.
 
 Banner descriptions use the item's Jellyfin overview and support safe Markdown formatting, including emphasis, lists, headings, block quotes, code, tables, and links. Raw HTML is disabled and rendered links are sanitised.
 
@@ -138,6 +142,10 @@ also be started manually with a custom changelog by running the **Build and
 release** workflow from the `main` branch. Each release replaces the fourth
 component of the version in `Directory.Build.props` with the workflow run
 number.
+
+Banner text follows the viewer's Jellyfin display language, with translations for English, French, Spanish, German, Italian, Portuguese, Chinese, Japanese, and Russian. While each backdrop downloads, the banner shows a blurred preview built from Jellyfin's image blurhash, and it preloads the artwork on both sides of the current slide. Screen readers announce the banner as a carousel and each slide by position and title, for example "2 of 5: Title".
+
+With a keyboard or TV remote, Left and Right move between a slide's buttons and, at either end, change slides. Arrow keys pressed elsewhere on the page no longer move the banner. In Jellyfin's TV layout, the arrow and indicator buttons are hidden from focus so the remote stays on the slide's actions.
 
 Note that the plugin only works for the web UI (and therefore also the mobile app), but does not and can not work for the Android TV app or other apps due to limitations of those platforms.
 

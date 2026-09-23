@@ -4,7 +4,9 @@ These checks use Chromium with the actual Splide carousel and mocked Jellyfin
 responses. They cover all transitions with Hero and legacy layout settings, cleanup during navigation,
 pixel/percentage/fullscreen heights, mobile overrides, header resizing, reduced
 motion, dimming, video suppression, font choices, settings validation/save/reload, early skeleton height, stable
-hydration, empty results, and error recovery.
+hydration, empty results, and error recovery. `features.cjs` covers blurhash
+placeholders, carousel labels, keyboard and TV remote navigation, neighbour
+preloading, translations, and the editor reminder.
 
 From the repository root, install the test dependencies outside the source tree:
 
@@ -12,6 +14,7 @@ From the repository root, install the test dependencies outside the source tree:
 npm install --prefix /tmp/editors-choice-browser-tests playwright@1.63.0 @splidejs/splide@4.1.4 jquery@4.0.0
 /tmp/editors-choice-browser-tests/node_modules/.bin/playwright install chromium
 NODE_PATH=/tmp/editors-choice-browser-tests/node_modules node tests/browser/presentation.cjs
+NODE_PATH=/tmp/editors-choice-browser-tests/node_modules node tests/browser/features.cjs
 ```
 
 On a minimal Linux host, install the browser's OS libraries using Playwright's
