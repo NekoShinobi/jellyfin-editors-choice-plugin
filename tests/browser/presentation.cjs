@@ -129,6 +129,46 @@ async function expectHeight(page, expected) {
         }
         console.log('PASS exact custom heights, mobile overrides, dimming');
 
+        const fittedItem = {
+            id: 'poster-fit', name: 'Poster Fit', item_type: 'Movie', hasPoster: true,
+            has_trailer: true, overview_html: '<p>One line of text followed by enough words to create several more lines and verify that every visible description line remains complete at constrained banner heights.</p>',
+        };
+        const fittedData = {
+            enableThemeVideos: false, reduceImageSizes: true,
+            bannerHeightMode: 'pixels', bannerCustomHeight: 720,
+            favourites: [fittedItem],
+        };
+        const fitted = await home(browser, fittedData);
+        await fitted.setViewportSize({ width: 900, height: 900 });
+        await expectHeight(fitted, 720);
+        const fittedSlide = fitted.locator('.splide__slide:not(.splide__slide--clone)');
+        const poster = await fittedSlide.locator('.editorsChoicePosterButton').evaluate(el => {
+            const box = el.getBoundingClientRect();
+            const content = el.closest('.editorsChoiceContent').getBoundingClientRect();
+            return { width: box.width, height: box.height, top: box.top, bottom: box.bottom,
+                contentTop: content.top, contentBottom: content.bottom };
+        });
+        assert.ok(Math.abs(poster.width / poster.height - 2 / 3) < 0.01);
+        assert.ok(poster.top >= poster.contentTop && poster.bottom <= poster.contentBottom);
+        assert.match(await fittedSlide.locator('.editorsChoiceItemPoster').getAttribute('src'), /height=600/);
+        await fitted.close();
+        const compact = await home(browser, { ...fittedData, bannerCustomHeight: 420 });
+        await compact.setViewportSize({ width: 900, height: 900 });
+        await expectHeight(compact, 420);
+        const overview = await compact.locator('.splide__slide:not(.splide__slide--clone) .editorsChoiceItemOverview').evaluate(el => {
+            const style = getComputedStyle(el);
+            return { height: el.getBoundingClientRect().height, lineHeight: parseFloat(style.lineHeight), display: style.display };
+        });
+        assert.notEqual(overview.display, 'none');
+        assert.ok(Math.abs(overview.height / overview.lineHeight - Math.round(overview.height / overview.lineHeight)) < 0.02);
+        await compact.close();
+        const short = await home(browser, { ...fittedData, bannerCustomHeight: 320 });
+        await short.setViewportSize({ width: 900, height: 900 });
+        await expectHeight(short, 320);
+        assert.equal(await short.locator('.splide__slide:not(.splide__slide--clone) .editorsChoiceItemOverview').evaluate(el => getComputedStyle(el).display), 'none');
+        await short.close();
+        console.log('PASS custom-height poster scaling and complete description lines');
+
         const wipe = await home(browser, {
             transitionEffect: 'wipe', transitionDurationMs: 1000,
             enableThemeVideos: false, enableBackgroundDimming: true, backgroundDimmingPercent: 50,
@@ -291,7 +331,7 @@ async function expectHeight(page, expected) {
         settings.on('pageerror', error => errors.push(error.message));
         await settings.setContent(fs.readFileSync(path.join(root, 'EditorsChoicePlugin/Configuration/configPage.html'), 'utf8'));
         await settings.evaluate(() => {
-            window.config = { Mode: 'RANDOM', BannerHeight: 500, UseHeroLayout: true, EnableAutoplay: true,
+            window.config = { Mode: 'RANDOM', BannerHeight: 500, UseHeroLayout: true, EnableAutoplay: true, ShowPlayButton: true,
                 AutoplayInterval: 10, RandomMediaCount: 5, MinimumRating: 0, MinimumCriticRating: 0 };
             window.ApiClient = { getPluginConfiguration: async () => window.config,
                 getItems: async (_, query) => ({ Items: query?.SearchTerm

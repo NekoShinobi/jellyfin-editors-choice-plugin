@@ -379,9 +379,9 @@ const container = `
 
   .editorsChoiceItemPoster {
     display: block;
-    height: 75%;
+    height: min(75%, 36vw, 37.5rem);
     width: auto;
-    max-width: min(24vw, 25rem);
+    max-width: none;
     aspect-ratio: 2 / 3;
     align-self: center;
     object-fit: cover;
@@ -394,8 +394,8 @@ const container = `
     position: relative;
     display: block;
     width: auto;
-    height: 75%;
-    max-width: min(24vw, 25rem);
+    height: min(75%, 36vw, 37.5rem);
+    max-width: none;
     aspect-ratio: 2 / 3;
     align-self: center;
     margin: 0;
@@ -671,17 +671,15 @@ const container = `
     }
 
     .editorsChoiceItemPoster {
-      width: min(27vw, 8rem);
-      height: auto;
+      width: auto;
+      height: min(65%, 40.5vw, 12rem);
       max-width: none;
-      max-height: 65%;
     }
 
     .editorsChoicePosterButton {
-      width: min(27vw, 8rem);
-      height: auto;
+      width: auto;
+      height: min(65%, 40.5vw, 12rem);
       max-width: none;
-      max-height: 65%;
     }
 
     .editorsChoicePosterButton .editorsChoiceItemPoster {
@@ -1023,6 +1021,23 @@ const container = `
   .editorsChoiceHeroMode .editorsChoiceCustomHeight .editorsChoiceItemBanner .editorsChoiceContent {
     padding-top: 30px;
   }
+  .editorsChoiceCustomHeight .editorsChoiceInfo { height: 100%; }
+  .editorsChoiceCustomHeight :is(.editorsChoiceItemPoster, .editorsChoicePosterButton) {
+    height: min(100%, 36vw, 37.5rem);
+  }
+  .editorsChoiceCustomHeight .editorsChoiceItemOverview { flex-shrink: 0; }
+  .editorsChoiceCompactHeight .editorsChoiceItemOverview {
+    max-height: 2.9em;
+    -webkit-line-clamp: 2;
+  }
+  .editorsChoiceShortHeight :is(.editorsChoiceItemLogo, .editorsChoiceItemTitle) { height: 3rem; }
+  .editorsChoiceShortHeight .editorsChoiceItemMetadata { margin-top: 0.4em; }
+  .editorsChoiceShortHeight .editorsChoiceItemOverview { display: none; }
+  @media screen and (max-width: 500px) {
+    .editorsChoiceCustomHeight :is(.editorsChoiceItemPoster, .editorsChoicePosterButton) {
+      height: min(100%, 40.5vw, 12rem);
+    }
+  }
   .editorsChoiceCustomHeight .editorsChoiceSkeleton { padding-top: 30px; }
   .editorsChoiceHeroMode .editorsChoiceCustomHeight .editorsChoiceScrollButtonsContainer { top: .5rem; }
   .editorsChoiceTransitionOutgoing .editorsChoiceBackdrop { opacity: 1 !important; }
@@ -1275,8 +1290,14 @@ function buildLogoOrTitle(item, reduceImageSizes) {
 function buildPoster(item, data) {
     if (!item.hasPoster) return "";
 
-    const configuredHeight = Number(data.bannerHeight) || 360;
-    const posterSize = data.reduceImageSizes ? `?height=${Math.ceil(configuredHeight * 0.75)}` : "";
+    const viewportHeight = window.visualViewport?.height || window.innerHeight;
+    const headerHeight = document.querySelector(".skinHeader")?.getBoundingClientRect().height || 0;
+    const largestConfiguredHeight = Math.max(
+        bannerHeightPixels(data, false, viewportHeight, headerHeight),
+        bannerHeightPixels(data, true, viewportHeight, headerHeight)
+    );
+    const requestedHeight = Math.min(600, Math.max(180, Math.ceil(largestConfiguredHeight - 60)));
+    const posterSize = data.reduceImageSizes ? `?height=${requestedHeight}` : "";
     const image = `<img class="editorsChoiceItemPoster" src="../Items/${escapeHtml(item.id)}/Images/Primary/0${posterSize}" alt="${escapeHtml(item.name)} poster" loading="lazy" decoding="async"/>`;
 
     if (!item.has_trailer) return image;
@@ -1631,6 +1652,8 @@ function applyBannerGeometry(data, element) {
     const previousOffset = parseFloat(element.style.getPropertyValue("--ec-fullscreen-offset")) || 0;
     element.classList.toggle("editorsChoiceCustomHeight", mode !== "preset");
     const height = bannerHeightPixels(data, mobile, viewportHeight, headerHeight);
+    element.classList.toggle("editorsChoiceCompactHeight", mode !== "preset" && height < 480);
+    element.classList.toggle("editorsChoiceShortHeight", mode !== "preset" && height < 360);
     root.style.height = `${height}px`;
     let offset = 0;
     if (mode === "fullscreen") {

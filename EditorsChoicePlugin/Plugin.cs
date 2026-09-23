@@ -37,6 +37,10 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         return new[] {
             new PluginPageInfo {
                 Name = this.Name,
+                DisplayName = "Editor's Choice",
+                EnableInMainMenu = true,
+                MenuSection = "plugins",
+                MenuIcon = "star",
                 EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.configPage.html", GetType().Namespace)
             },
             new PluginPageInfo {
