@@ -9,6 +9,22 @@
     "imageUrl": "https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/logo.png",
     "versions": [
       {
+        "changelog": "feat: mixed sources, title rotation, blurhash, translations, and TV navigation\n\nSelection\n- Add Mixed mode: per-source counts for favourites, new, collections and\n  random titles; alternate, grouped or shuffled order; no duplicates across\n  sources; optional random fill for shortfalls.\n- Rotate through every eligible title per viewer and source before\n  repeating. The end of a rotation shows only the remaining titles; only\n  served selections count, so background refreshes don't use up titles.\n- New mode finds recent series with one episode query instead of a season\n  and episode query per series. A series now counts as new when any\n  episode premiered in the window.\n- Identify the viewer by the Jellyfin-UserId claim, falling back to name.\n- Malformed editor/collection IDs, missing editor accounts and orphaned\n  episodes no longer throw.\n\nBanner\n- Show blurhash previews while backdrops load; preload both neighbours.\n- Translate all banner strings; follow the Jellyfin display language.\n- Label the carousel and slides (\"2 of 5: Title\"); make off-screen slides\n  and clones inert.\n- Left/Right move between a slide's buttons, then\n  keyboards and TV remotes; stop reacting to arrow keys outside the banner.\n  TV layout hides arrows and indicators from focus.\n- Replace the admin-only configuration request in the editor reminder\n  with an isEditor flag in the banner response.",
+        "targetAbi": "12.0.0.0",
+        "version": "2.0.0.31",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.31/EditorsChoicePlugin_2.0.0.31.zip",
+        "checksum": "ECE5DE976B01C8EA636686223220B61B",
+        "timestamp": "2026-09-23T18:42:53Z"
+      },
+      {
+        "changelog": "feat: mixed sources, title rotation, blurhash, translations, and TV navigation\n\nSelection\n- Add Mixed mode: per-source counts for favourites, new, collections and\n  random titles; alternate, grouped or shuffled order; no duplicates across\n  sources; optional random fill for shortfalls.\n- Rotate through every eligible title per viewer and source before\n  repeating. The end of a rotation shows only the remaining titles; only\n  served selections count, so background refreshes don't use up titles.\n- New mode finds recent series with one episode query instead of a season\n  and episode query per series. A series now counts as new when any\n  episode premiered in the window.\n- Identify the viewer by the Jellyfin-UserId claim, falling back to name.\n- Malformed editor/collection IDs, missing editor accounts and orphaned\n  episodes no longer throw.\n\nBanner\n- Show blurhash previews while backdrops load; preload both neighbours.\n- Translate all banner strings; follow the Jellyfin display language.\n- Label the carousel and slides (\"2 of 5: Title\"); make off-screen slides\n  and clones inert.\n- Left/Right move between a slide's buttons, then\n  keyboards and TV remotes; stop reacting to arrow keys outside the banner.\n  TV layout hides arrows and indicators from focus.\n- Replace the admin-only configuration request in the editor reminder\n  with an isEditor flag in the banner response.",
+        "targetAbi": "10.11.0.0",
+        "version": "1.5.2.31",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.31/EditorsChoicePlugin_1.5.2.31.zip",
+        "checksum": "F3D7ADF4256A599163AFEBD943002F45",
+        "timestamp": "2026-09-23T18:42:53Z"
+      },
+      {
         "changelog": "fix: add custom css flags that are specific to editor's choice.",
         "targetAbi": "12.0.0.0",
         "version": "2.0.0.29",
