@@ -9,6 +9,22 @@
     "imageUrl": "https://raw.githubusercontent.com/NekoShinobi/jellyfin-editors-choice-plugin/main/logo.png",
     "versions": [
       {
+        "changelog": "feat: configuration menu complete reorganization again.",
+        "targetAbi": "12.0.0.0",
+        "version": "2.0.0.28",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.28/EditorsChoicePlugin_2.0.0.28.zip",
+        "checksum": "8B77C4FE552E8AEFCDC79459F8B0A703",
+        "timestamp": "2026-09-23T16:48:25Z"
+      },
+      {
+        "changelog": "feat: configuration menu complete reorganization again.",
+        "targetAbi": "10.11.0.0",
+        "version": "1.5.2.28",
+        "sourceUrl": "https://github.com/NekoShinobi/jellyfin-editors-choice-plugin/releases/download/2.0.0.28/EditorsChoicePlugin_1.5.2.28.zip",
+        "checksum": "04A9C43396BB26B297C2EEBA76F865C5",
+        "timestamp": "2026-09-23T16:48:25Z"
+      },
+      {
         "changelog": "fix: minor fixes and add to sidebar in settings.",
         "targetAbi": "12.0.0.0",
         "version": "2.0.0.27",
