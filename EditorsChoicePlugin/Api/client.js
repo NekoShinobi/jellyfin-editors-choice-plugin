@@ -1038,6 +1038,10 @@ const container = `
   .editorsChoiceHeroMode .editorsChoiceCustomHeight .editorsChoiceItemBanner .editorsChoiceContent {
     padding-top: 30px;
   }
+  /* A definite row lets the poster's and text column's percentage heights resolve
+     against the banner; an auto row grows to the poster image's natural size and
+     pushes the poster and title below the banner on shorter heights. */
+  .editorsChoiceCustomHeight .editorsChoiceItemBanner > .editorsChoiceContent { grid-template-rows: minmax(0, 1fr); }
   .editorsChoiceCustomHeight .editorsChoiceInfo { height: 100%; }
   /* Tall portrait banners: keep the buttons under the text instead of at the far bottom. */
   @media (orientation: portrait) {
@@ -1077,6 +1081,7 @@ const container = `
   .editorsChoiceInstant .is-active.editorsChoiceSlideReady :is(.editorsChoiceItemPoster, .editorsChoiceItemLogo, .editorsChoiceItemTitle, .editorsChoiceItemTagline, .editorsChoiceItemMetadata, .editorsChoiceItemOverview, .editorsChoiceItemActions) {
     animation: none !important;
     opacity: 1 !important;
+    transform: none !important;
   }
   .editorsChoiceInstant .editorsChoiceBackdrop { transition-duration: 0ms !important; }
   @media (prefers-reduced-motion: reduce) {

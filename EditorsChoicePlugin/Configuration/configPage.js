@@ -392,12 +392,49 @@ export default function (view) {
 
     // The tab bar, preview and save bar are sticky; keep them clear of Jellyfin's
     // fixed header and give them an opaque background matching the theme.
+    // Fixed or sticky page chrome (Jellyfin's header bar) found by hit-testing the top
+    // of the screen above the form, so it works whatever the header's class names are.
+    function coveringHeaders() {
+        const headers = new Set(document.querySelectorAll(".skinHeader, .MuiAppBar-positionFixed"));
+        const box = form.getBoundingClientRect();
+        if (!box.width) return headers;
+        for (const x of [box.left + 8, box.left + box.width / 2, box.right - 8]) {
+            for (const element of document.elementsFromPoint(x, 1)) {
+                if (view.contains(element)) continue;
+                for (let node = element; node && node !== document.body && node !== document.documentElement; node = node.parentElement) {
+                    const position = getComputedStyle(node).position;
+                    if (position !== "fixed" && position !== "sticky") continue;
+                    // Skip full-screen layers such as Jellyfin's fixed backdrop container.
+                    if (node.getBoundingClientRect().height < window.innerHeight * 0.4) headers.add(node);
+                    break;
+                }
+            }
+        }
+        return headers;
+    }
+
+    let observedHeaders = new Set();
+    let layoutTimers = [];
+    let layoutFrame = 0;
+    const layoutObserver = typeof ResizeObserver === "function"
+        ? new ResizeObserver(() => {
+            window.cancelAnimationFrame(layoutFrame);
+            layoutFrame = window.requestAnimationFrame(updateStickyLayout);
+        })
+        : null;
+
     function updateStickyLayout() {
         let top = 0;
-        for (const header of document.querySelectorAll(".skinHeader, .MuiAppBar-positionFixed")) {
+        const headers = coveringHeaders();
+        for (const header of headers) {
             const position = getComputedStyle(header).position;
             if (position === "fixed" || position === "sticky") top = Math.max(top, header.getBoundingClientRect().bottom);
         }
+        // Re-measure when the header bar changes height, e.g. once its tabs render.
+        for (const header of headers) {
+            if (!observedHeaders.has(header)) layoutObserver?.observe(header);
+        }
+        observedHeaders = headers;
         const scroller = findScrollParent(form);
         const scrollerTop = scroller ? scroller.getBoundingClientRect().top : 0;
         if (scroller) top = Math.max(0, top - scrollerTop);
@@ -1450,6 +1487,10 @@ export default function (view) {
     async function handleShow() {
         updateStickyLayout();
         window.addEventListener("resize", updateStickyLayout);
+        // Jellyfin can still be laying out its header and this page when it is shown.
+        window.requestAnimationFrame(updateStickyLayout);
+        layoutTimers = [300, 1000].map((delay) => window.setTimeout(updateStickyLayout, delay));
+        layoutObserver?.observe(view);
         if (state.loaded || state.loading) return;
 
         state.loading = true;
@@ -1571,6 +1612,9 @@ export default function (view) {
         previewAnimation?.cancel();
         easingDemo?.cancel();
         window.removeEventListener("resize", updateStickyLayout);
+        layoutTimers.forEach((timer) => window.clearTimeout(timer));
+        layoutObserver?.disconnect();
+        observedHeaders = new Set();
     });
     view.addEventListener("viewshow", handleShow);
 }
