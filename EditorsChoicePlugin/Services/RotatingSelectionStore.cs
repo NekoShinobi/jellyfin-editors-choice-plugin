@@ -8,6 +8,7 @@ public sealed class RotatingSelectionStore
     private sealed class Slot
     {
         public readonly object Gate = new();
+        public readonly SelectionHistory History = new();
         public Guid[]? Ids;
         public string Key = "";
         public DateTimeOffset ExpiresAt;
@@ -18,20 +19,35 @@ public sealed class RotatingSelectionStore
 
     public RotatingSelectionStore(TimeProvider? clock = null) => _clock = clock ?? TimeProvider.System;
 
-    public Guid[] Get(Guid userId, string configurationKey, TimeSpan lifetime, Func<Guid[]> select)
+    public Guid[] Get(Guid userId, string configurationKey, TimeSpan lifetime, Func<Guid[]> select) =>
+        Get(userId, configurationKey, lifetime, _ => select());
+
+    // A zero lifetime selects on every call while still keeping the user's history.
+    // Served is false for background warming, so unseen selections do not count as shown.
+    public Guid[] Get(
+        Guid userId,
+        string configurationKey,
+        TimeSpan lifetime,
+        Func<SelectionHistory, Guid[]> select,
+        bool served = true)
     {
         var slot = _slots.GetOrAdd(userId, _ => new Slot());
         lock (slot.Gate)
         {
             if (slot.Ids is null || slot.Key != configurationKey || slot.ExpiresAt <= _clock.GetUtcNow())
             {
+                // A different configuration means a different pool; start a new cycle.
+                if (slot.Key != configurationKey) slot.History.Clear();
+
                 // Publish only successful refreshes. Each user has their own lock.
-                var ids = select().Distinct().ToArray();
+                slot.History.BeginSelection();
+                var ids = select(slot.History).Distinct().ToArray();
                 slot.Ids = ids;
                 slot.Key = configurationKey;
                 slot.ExpiresAt = _clock.GetUtcNow() + lifetime;
             }
 
+            if (served) slot.History.CommitPending();
             return slot.Ids.ToArray();
         }
     }

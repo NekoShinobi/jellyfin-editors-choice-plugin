@@ -2,8 +2,11 @@ using EditorsChoicePlugin.Configuration;
 using Jellyfin.Data.Enums;
 using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Database.Implementations.Enums;
+using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Entities;
 
 namespace EditorsChoicePlugin.Services;
 
@@ -11,9 +14,26 @@ namespace EditorsChoicePlugin.Services;
 // The caller supplies the user; all library queries remain user-scoped.
 public sealed class HeroSelectionQuery
 {
+    public const string Favourites = "FAVOURITES";
+    public const string Random = "RANDOM";
+    public const string Collections = "COLLECTIONS";
+    public const string New = "NEW";
+    public const string Mixed = "MIXED";
+
+    private static readonly string[] Modes = [Favourites, Random, Collections, New, Mixed];
+
+    // Upper bound for one source in Mixed mode, matching the settings page.
+    public const int MaximumMixedCount = 50;
+
     private readonly IUserManager _userManager;
     private readonly ILibraryManager _libraryManager;
     private readonly PluginConfiguration _config;
+
+    private sealed record Filters(
+        float? MinimumRating,
+        int? MinimumCriticRating,
+        ParentalRatingScore? MaximumParentalRating,
+        bool? MustHaveParentalRating);
 
     public HeroSelectionQuery(IUserManager users, ILibraryManager library, PluginConfiguration config)
     {
@@ -22,344 +42,317 @@ public sealed class HeroSelectionQuery
         _config = config;
     }
 
-    public List<BaseItem> Select(User activeUser)
+    public static string NormalizeMode(PluginConfiguration config)
     {
-        InternalItemsQuery query;
-        List<BaseItem> initialResult = [];
-        List<BaseItem> result = [];
-        bool resultsEmpty = false;
-        int? maximumParentRating = -2;
-        int maximumParentRatingSubscore = 0;
-        bool? mustHaveParentRating = null;
+        if (Modes.Contains(config.Mode)) return config.Mode;
+        return string.IsNullOrEmpty(config.Mode) && !config.ShowRandomMedia ? Favourites : Random;
+    }
 
-        // Don't have any minimum rating set if config is set to 0
-        float? minimumRating = null;
-        int? minimumCriticRating = null;
+    // Mixed sources in display order, with the number of titles each contributes.
+    public static IReadOnlyList<(string Source, int Count)> MixedSources(PluginConfiguration config) =>
+        new[]
+        {
+            (Favourites, config.MixedFavouritesCount),
+            (New, config.MixedNewCount),
+            (Collections, config.MixedCollectionsCount),
+            (Random, config.MixedRandomCount),
+        }
+        .Select(source => (source.Item1, Math.Clamp(source.Item2, 0, MaximumMixedCount)))
+        .Where(source => source.Item2 > 0)
+        .ToList();
 
-        if (_config.MinimumRating > 0) minimumRating = _config.MinimumRating;
-        if (_config.MinimumCriticRating > 0) minimumCriticRating = _config.MinimumCriticRating;
+    // With a history, each source skips titles it featured earlier in the cycle.
+    public List<BaseItem> Select(User activeUser, SelectionHistory? history = null)
+    {
+        var filters = CreateFilters(activeUser);
+        var picked = new HashSet<Guid>();
+        string mode = NormalizeMode(_config);
 
-        // If the config is set to be user profile specific, then we need to set the rating to the user's max age rating.
+        if (mode == Mixed)
+        {
+            var sources = MixedSources(_config);
+            var groups = sources
+                .Select(source => Take(source.Source, source.Count, activeUser, filters, picked, history))
+                .ToList();
+
+            int shortfall = sources.Sum(source => source.Count) - groups.Sum(group => group.Count);
+            if (_config.MixedFillWithRandom && shortfall > 0)
+            {
+                groups.Add(Take(Random, shortfall, activeUser, filters, picked, history));
+            }
+
+            return Arrange(groups, _config.MixedOrder);
+        }
+
+        int count = Math.Max(1, _config.RandomMediaCount);
+        var result = Take(mode, count, activeUser, filters, picked, history);
+
+        // A source with nothing the user can see falls back to the whole library.
+        if (result.Count == 0 && mode != Random)
+        {
+            result = Take(Random, count, activeUser, filters, picked, history);
+        }
+
+        return result;
+    }
+
+    private List<BaseItem> Take(
+        string source,
+        int count,
+        User user,
+        Filters filters,
+        HashSet<Guid> picked,
+        SelectionHistory? history)
+    {
+        var seen = history?.Seen(source) ?? new HashSet<Guid>();
+        var result = Candidates(source, count, user, filters, [.. picked, .. seen]);
+
+        // Every eligible title has been featured: start the source's next cycle.
+        if (result.Count == 0 && seen.Count > 0)
+        {
+            history!.Reset(source);
+            result = Candidates(source, count, user, filters, picked);
+        }
+
+        var ids = result.Select(item => item.Id).ToList();
+        history?.Record(source, ids);
+        picked.UnionWith(ids);
+        return result;
+    }
+
+    private List<BaseItem> Candidates(string source, int count, User user, Filters filters, HashSet<Guid> exclude) =>
+        source switch
+        {
+            Favourites => FavouriteCandidates(count, user, filters, exclude),
+            Collections => CollectionCandidates(count, user, filters, exclude),
+            New => NewCandidates(count, user, filters, exclude),
+            _ => RandomCandidates(count, user, filters, exclude),
+        };
+
+    private Filters CreateFilters(User activeUser)
+    {
+        // Zero means no minimum.
+        float? minimumRating = _config.MinimumRating > 0 ? _config.MinimumRating : null;
+        int? minimumCriticRating = _config.MinimumCriticRating > 0 ? _config.MinimumCriticRating : null;
+
+        int? maximumParentRating;
+        int maximumParentRatingSubscore;
+        bool? mustHaveParentRating;
+
+        // -2 follows each user's own parental rating limit.
         if (_config.MaximumParentRating == -2)
         {
             maximumParentRating = activeUser.MaxParentalRatingScore;
             maximumParentRatingSubscore = 0;
-            if (maximumParentRating >= 0)
-            {
-                mustHaveParentRating = true; // we want to avoid showing unrated content when a user has a parental access limitation
-            }
+            // Avoid showing unrated content when a user has a parental access limitation.
+            mustHaveParentRating = maximumParentRating >= 0 ? true : null;
         }
         else
         {
             maximumParentRating = _config.MaximumParentRating;
             maximumParentRatingSubscore = _config.MaximumParentRatingSubscore;
-            mustHaveParentRating = true; // we want to avoid showing unrated content when a user has a parental access limitation
+            mustHaveParentRating = true;
         }
 
-        // Convert simple parental rating score to ParentalRatingScore with score and subscore.
-        MediaBrowser.Model.Entities.ParentalRatingScore? parentalRatingScore = null;
-        if (maximumParentRating != null)
-        {
-            parentalRatingScore = new MediaBrowser.Model.Entities.ParentalRatingScore((int)maximumParentRating, maximumParentRatingSubscore);
-        }
+        ParentalRatingScore? parentalRatingScore = maximumParentRating is { } score
+            ? new ParentalRatingScore(score, maximumParentRatingSubscore)
+            : null;
 
-        // If not showing random media, collect the editor user's favourited items
-        if (_config.Mode == "FAVOURITES")
-        {
-
-            // Use random fallback if no editor ID set
-            if (_config.EditorUserId == null || _config.EditorUserId == "" || _config.EditorUserId.Length < 16)
-            {
-                resultsEmpty = true;
-            }
-            else
-            {
-                Jellyfin.Database.Implementations.Entities.User? editorUser = _userManager.GetUserById(Guid.Parse(_config.EditorUserId));
-
-                // Get the favourites list
-                query = new InternalItemsQuery(editorUser)
-                {
-                    IsFavorite = true,
-                    IncludeItemsByName = true,
-                    IncludeItemTypes = [BaseItemKind.Series, BaseItemKind.Movie, BaseItemKind.Episode, BaseItemKind.Season], // Editor may have favourited individual episodes or seasons - we will handle this later
-                    MinCommunityRating = minimumRating,
-                    MinCriticRating = minimumCriticRating,
-                    MaxParentalRating = parentalRatingScore,
-                    HasParentalRating = mustHaveParentRating,
-                    OrderBy = new[] { (ItemSortBy.Random, SortOrder.Ascending) }
-                };
-                query.Limit = _config.RandomMediaCount * 2;
-                initialResult = _libraryManager.GetItemList(query).ToList();
-
-                // Get ids of items in the favourites list
-                List<Guid> itemIds = new List<Guid>();
-                foreach (var item in initialResult)
-                {
-                    if (!itemIds.Contains(item.Id))
-                    {
-                        // Only include if active user has parental access to this item
-                        if (item.IsVisible(activeUser))
-                        {
-                            itemIds.Add(item.Id);
-                        }
-                    }
-                }
-
-                // Query items from the active user to ensure access
-                query = new InternalItemsQuery(activeUser)
-                {
-                    ItemIds = [.. itemIds],
-                    IncludeItemTypes = [BaseItemKind.Series, BaseItemKind.Movie, BaseItemKind.Episode, BaseItemKind.Season], // Editor may have favourited individual episodes or seasons - we will handle this later
-                    IsPlayed = _config.ShowPlayed ? null : false
-                };
-                result = PrepareResult(query, activeUser);
-
-                // If the result is empty (i.e. the active user doesn't have access to any of the items), fallback to random mode.
-                resultsEmpty = result.Count == 0;
-            }
-
-        }
-
-        if (_config.Mode == "COLLECTIONS")
-        {
-            List<string> remainingCollections = _config.SelectedCollections.ToList();
-
-            while (result.Count == 0 && remainingCollections.Count > 0)
-            { // if a collection is totally inaccessible due to user visibility or excessive filters configured, we need to try another collection
-                int collectionR = new Random().Next(remainingCollections.Count);
-                string collectionId = remainingCollections[collectionR];
-                remainingCollections.RemoveAt(collectionR);
-                Guid collectionGuid = Guid.Parse(collectionId);
-
-                BaseItem collection = _libraryManager.GetParentItem(collectionGuid, activeUser.Id);
-                if (collection is Folder)
-                {
-                    Folder f = (Folder)collection;
-                    initialResult = f.GetChildren(activeUser, true).ToList();
-
-                    // Get ids of items in the collection
-                    List<Guid> itemIds = new List<Guid>();
-                    foreach (var item in initialResult)
-                    {
-                        if (!itemIds.Contains(item.Id))
-                        {
-                            itemIds.Add(item.Id);
-                        }
-                    }
-
-                    query = new InternalItemsQuery(activeUser)
-                    {
-                        ItemIds = [.. itemIds],
-                        IncludeItemTypes = [BaseItemKind.Series, BaseItemKind.Movie],
-                        MinCommunityRating = minimumRating,
-                        MinCriticRating = minimumCriticRating,
-                        MaxParentalRating = parentalRatingScore,
-                        HasParentalRating = mustHaveParentRating,
-                        OrderBy = new[] { (ItemSortBy.Random, SortOrder.Ascending) },
-                        IsPlayed = _config.ShowPlayed ? null : false
-                    };
-                    query.Limit = _config.RandomMediaCount * 2;
-                    result = PrepareResult(query, activeUser);
-                }
-
-                // If the result is empty (i.e. the active user doesn't have access to any of the items), fallback to random mode.
-                resultsEmpty = result.Count == 0;
-            }
-        }
-
-        if (_config.Mode == "NEW")
-        {
-            DateTime newEndDate = DateTime.Today.AddMonths(-1);
-
-            switch (_config.NewTimeLimit)
-            {
-                case "1month":
-                    newEndDate = DateTime.Today.AddMonths(-1);
-                    break;
-                case "2month":
-                    newEndDate = DateTime.Today.AddMonths(-2);
-                    break;
-                case "6month":
-                    newEndDate = DateTime.Today.AddMonths(-6);
-                    break;
-                case "1year":
-                    newEndDate = DateTime.Today.AddYears(-1);
-                    break;
-                case "2year":
-                    newEndDate = DateTime.Today.AddYears(-2);
-                    break;
-                case "5year":
-                    newEndDate = DateTime.Today.AddYears(-5);
-                    break;
-            }
-
-            // Query all series that meet user criteria
-            InternalItemsQuery queryItems = new InternalItemsQuery(activeUser)
-            {
-                IncludeItemTypes = [BaseItemKind.Series],
-                MinCommunityRating = minimumRating,
-                MinCriticRating = minimumCriticRating,
-                MaxParentalRating = parentalRatingScore,
-                HasParentalRating = mustHaveParentRating,
-                OrderBy = new[] { (ItemSortBy.Random, SortOrder.Descending) },
-                IsPlayed = _config.ShowPlayed ? null : false
-            };
-            initialResult = _libraryManager.GetItemList(queryItems).ToList();
-
-            // Of TV series that meet those criteria, loop through to find items that are recent enough. These are already ordered by recency, so can quit on first item that is too old.
-            List<Guid> itemIds = new List<Guid>();
-            foreach (var item in initialResult)
-            {
-                // Get the latest season of the TV show
-                InternalItemsQuery querySeasons = new InternalItemsQuery(activeUser)
-                {
-                    IncludeItemTypes = [BaseItemKind.Season],
-                    ParentId = item.Id,
-                    OrderBy = new[] { (ItemSortBy.IndexNumber, SortOrder.Descending )}
-                };
-                List<BaseItem> seasons = _libraryManager.GetItemList(querySeasons).ToList();
-
-                if (seasons.Count > 0) {
-                    Guid latestSeasonId = seasons[0].Id;
-                    //_logger.LogInformation("Season of {0}: {1}", item.Name, latestSeasonId);
-
-                    // Get the latest episode of the latest season
-                    InternalItemsQuery queryEpisodes = new InternalItemsQuery(activeUser)
-                    {
-                        IncludeItemTypes = [BaseItemKind.Episode],
-                        ParentId = latestSeasonId,
-                        OrderBy = new[] { (ItemSortBy.IndexNumber, SortOrder.Descending) }
-                    };
-                    List<BaseItem> episodes = _libraryManager.GetItemList(queryEpisodes).ToList();
-                    
-                    //_logger.LogInformation("Contains {0} episodes.", episodes.Count);
-
-                    // Check if the most recent episode was released within the user's time period
-                    if (episodes.Count > 0) { // TODO: for some reason, some seasons come up with no episodes...
-                        BaseItem episode = episodes[0];
-                        if (episode.PremiereDate is not null) {
-                            DateTime episodePremiere = (DateTime) episode.PremiereDate;
-                            if (DateTime.Compare(episodePremiere, newEndDate) >= 0 )
-                            {
-                                itemIds.Add(item.Id);
-                            }
-                        }
-                    }
-                }
-
-                if (itemIds.Count == _config.RandomMediaCount ) break; // Stop looking once we have enough episodes
-
-            }
-
-            // Query movies that premiered within the user's time period
-            InternalItemsQuery queryMovies = new InternalItemsQuery(activeUser)
-            {
-                IncludeItemTypes = [BaseItemKind.Movie],
-                MinCommunityRating = minimumRating,
-                MinCriticRating = minimumCriticRating,
-                MaxParentalRating = parentalRatingScore,
-                HasParentalRating = mustHaveParentRating,
-                MinPremiereDate = newEndDate,
-                OrderBy = new[] { (ItemSortBy.Random, SortOrder.Ascending) },
-                IsPlayed = _config.ShowPlayed ? null : false
-            };
-            queryMovies.Limit = _config.RandomMediaCount;
-            List<BaseItem> resultMovies = _libraryManager.GetItemList(queryMovies).ToList();
-
-            // Join the lists of recent films and recent series
-            foreach (BaseItem item in resultMovies) itemIds.Add(item.Id);
-
-            InternalItemsQuery finalQuery = new InternalItemsQuery(activeUser)
-            {
-                ItemIds = [.. itemIds],
-                OrderBy = new[] { (ItemSortBy.Random, SortOrder.Ascending) }
-            };
-            finalQuery.Limit = _config.RandomMediaCount;
-
-            result = PrepareResult(finalQuery, activeUser);
-
-            resultsEmpty = result.Count == 0;
-        }
-
-        // If showing random media is enabled OR the results list is currently empty, collect a random selection from the entire library
-        if (_config.Mode == "RANDOM" || resultsEmpty)
-        {
-            Guid[] filteredLibraryIds = GetFilteredLibraryIds();
-
-            // Get all shows and movies
-            query = new InternalItemsQuery(activeUser)
-            {
-                IncludeItemTypes = [BaseItemKind.Series, BaseItemKind.Movie],
-                AncestorIds = filteredLibraryIds,
-                MinCommunityRating = minimumRating,
-                MinCriticRating = minimumCriticRating,
-                MaxParentalRating = parentalRatingScore,
-                HasParentalRating = mustHaveParentRating,
-                OrderBy = new[] { (ItemSortBy.Random, SortOrder.Ascending) },
-                IsPlayed = _config.ShowPlayed ? null : false
-            };
-            query.Limit = _config.RandomMediaCount * 2;
-            result = PrepareResult(query, activeUser);
-        }
-
-
-        return result;
+        return new Filters(minimumRating, minimumCriticRating, parentalRatingScore, mustHaveParentRating);
     }
 
-    private List<BaseItem> PrepareResult(InternalItemsQuery query, Jellyfin.Database.Implementations.Entities.User? activeUser)
-    {
-        List<BaseItem> initialResult = _libraryManager.GetItemList(query).ToList();
-        List<BaseItem> result = [];
-
-        // Randomly add items until we run out or reach the admin-set cap
-        var random = new Random();
-        int max = initialResult.Count;
-
-        for (int i = 0; i < _config.RandomMediaCount && i < max; i++)
+    private InternalItemsQuery FilteredQuery(User user, Filters filters, HashSet<Guid> exclude, params BaseItemKind[] types) =>
+        new(user)
         {
-            BaseItem initItem = initialResult[random.Next(initialResult.Count)];
-            var shiftItem = initItem;
+            IncludeItemTypes = types,
+            MinCommunityRating = filters.MinimumRating,
+            MinCriticRating = filters.MinimumCriticRating,
+            MaxParentalRating = filters.MaximumParentalRating,
+            HasParentalRating = filters.MustHaveParentalRating,
+            ExcludeItemIds = [.. exclude],
+            OrderBy = [(ItemSortBy.Random, SortOrder.Ascending)],
+            IsPlayed = _config.ShowPlayed ? null : false,
+        };
 
-            // Deal with episodes or seasons
-            if (shiftItem.GetBaseItemKind() == BaseItemKind.Episode || shiftItem.GetBaseItemKind() == BaseItemKind.Season)
+    private List<BaseItem> RandomCandidates(int count, User user, Filters filters, HashSet<Guid> exclude)
+    {
+        var query = FilteredQuery(user, filters, exclude, BaseItemKind.Series, BaseItemKind.Movie);
+        query.AncestorIds = GetFilteredLibraryIds();
+        query.Limit = count * 2;
+        return Finalize(_libraryManager.GetItemList(query), count, user, exclude);
+    }
+
+    private List<BaseItem> FavouriteCandidates(int count, User user, Filters filters, HashSet<Guid> exclude)
+    {
+        if (!Guid.TryParse(_config.EditorUserId, out Guid editorId) || editorId == Guid.Empty) return [];
+        if (_userManager.GetUserById(editorId) is not { } editor) return [];
+
+        // The editor may have favourited episodes or seasons; Finalize maps them to their series.
+        // No limit: favourites lists are small, and the whole list is needed to find unseen titles.
+        var favourites = FilteredQuery(editor, filters, [],
+            BaseItemKind.Series, BaseItemKind.Movie, BaseItemKind.Episode, BaseItemKind.Season);
+        favourites.IsFavorite = true;
+        favourites.IncludeItemsByName = true;
+        favourites.IsPlayed = null;
+        var ids = _libraryManager.GetItemList(favourites)
+            .Where(item => item.IsVisible(user))
+            .Select(item => item.Id)
+            .Distinct()
+            .ToArray();
+        // An empty ItemIds query can mean "all items" in Jellyfin.
+        if (ids.Length == 0) return [];
+
+        // Query again as the active user to ensure access.
+        var accessible = _libraryManager.GetItemList(new InternalItemsQuery(user)
+        {
+            ItemIds = ids,
+            IncludeItemTypes = [BaseItemKind.Series, BaseItemKind.Movie, BaseItemKind.Episode, BaseItemKind.Season],
+            IsPlayed = _config.ShowPlayed ? null : false,
+        });
+        return Finalize(accessible, count, user, exclude);
+    }
+
+    private List<BaseItem> CollectionCandidates(int count, User user, Filters filters, HashSet<Guid> exclude)
+    {
+        var remaining = (_config.SelectedCollections ?? [])
+            .Select(id => Guid.TryParse(id, out Guid parsed) ? parsed : Guid.Empty)
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
+
+        // One collection is shown at a time. Try another if a collection is inaccessible,
+        // filtered out entirely, or already featured this cycle.
+        while (remaining.Count > 0)
+        {
+            int index = System.Random.Shared.Next(remaining.Count);
+            Guid collectionId = remaining[index];
+            remaining.RemoveAt(index);
+
+            if (_libraryManager.GetItemById(collectionId) is not Folder collection) continue;
+
+            var ids = collection.GetChildren(user, true).Select(item => item.Id).Distinct().ToArray();
+            if (ids.Length == 0) continue;
+
+            var query = FilteredQuery(user, filters, exclude, BaseItemKind.Series, BaseItemKind.Movie);
+            query.ItemIds = ids;
+            query.Limit = count * 2;
+            var result = Finalize(_libraryManager.GetItemList(query), count, user, exclude);
+            if (result.Count > 0) return result;
+        }
+
+        return [];
+    }
+
+    private List<BaseItem> NewCandidates(int count, User user, Filters filters, HashSet<Guid> exclude)
+    {
+        DateTime cutoff = NewCutoff(_config.NewTimeLimit, DateTime.Today);
+
+        // One episode query finds every series with a recent episode, instead of
+        // querying seasons and episodes for each series in the library.
+        var seriesIds = _libraryManager.GetItemList(new InternalItemsQuery(user)
             {
-                shiftItem = shiftItem.GetParent();
+                IncludeItemTypes = [BaseItemKind.Episode],
+                MinPremiereDate = cutoff,
+                MaxPremiereDate = DateTime.UtcNow,
+                IsVirtualItem = false,
+                GroupBySeriesPresentationUniqueKey = true,
+                DtoOptions = new DtoOptions(false) { EnableImages = false },
+            })
+            .OfType<Episode>()
+            .Select(episode => episode.SeriesId)
+            .Where(id => id != Guid.Empty && !exclude.Contains(id))
+            .Distinct()
+            .ToArray();
 
-                // If the parent is a season (i.e. the favourited item was an episode) then we need to get the season's parent show
-                if (shiftItem.GetBaseItemKind() == BaseItemKind.Season)
-                {
-                    shiftItem = shiftItem.GetParent();
-                }
+        var candidates = new List<BaseItem>();
+        if (seriesIds.Length > 0)
+        {
+            var series = FilteredQuery(user, filters, exclude, BaseItemKind.Series);
+            series.ItemIds = seriesIds;
+            series.Limit = count * 2;
+            candidates.AddRange(_libraryManager.GetItemList(series));
+        }
+
+        var movies = FilteredQuery(user, filters, exclude, BaseItemKind.Movie);
+        movies.MinPremiereDate = cutoff;
+        movies.Limit = count * 2;
+        candidates.AddRange(_libraryManager.GetItemList(movies));
+
+        // Both lists are already random; shuffle so neither type is favoured.
+        var shuffled = candidates.ToArray();
+        System.Random.Shared.Shuffle(shuffled);
+        return Finalize(shuffled, count, user, exclude);
+    }
+
+    public static DateTime NewCutoff(string? timeLimit, DateTime today) => timeLimit switch
+    {
+        "2month" => today.AddMonths(-2),
+        "6month" => today.AddMonths(-6),
+        "1year" => today.AddYears(-1),
+        "2year" => today.AddYears(-2),
+        "5year" => today.AddYears(-5),
+        _ => today.AddMonths(-1),
+    };
+
+    // Maps episodes and seasons to their series, then keeps up to count titles the
+    // user can see, with a backdrop, not yet chosen, and unplayed when required.
+    private List<BaseItem> Finalize(IEnumerable<BaseItem> candidates, int count, User user, HashSet<Guid> exclude)
+    {
+        var result = new List<BaseItem>();
+        var shuffled = candidates.ToArray();
+        System.Random.Shared.Shuffle(shuffled);
+
+        foreach (var candidate in shuffled)
+        {
+            if (result.Count >= count) break;
+
+            BaseItem? item = candidate;
+            while (item is not null && item.GetBaseItemKind() is BaseItemKind.Episode or BaseItemKind.Season)
+            {
+                item = item.GetParent();
             }
 
-            // Only include if active user has parental access to this item, not already in the results, if only unplayed items should be shown & this is unplayed, and if has a backdrop image
-            if (shiftItem.IsVisible(activeUser) && !result.Contains(shiftItem) && !(shiftItem.IsPlayed(activeUser, null) && !_config.ShowPlayed) && shiftItem.HasImage(MediaBrowser.Model.Entities.ImageType.Backdrop))
+            if (item is null
+                || exclude.Contains(item.Id)
+                || result.Any(existing => existing.Id == item.Id)
+                || !item.IsVisible(user)
+                || (!_config.ShowPlayed && item.IsPlayed(user, null))
+                || !item.HasImage(ImageType.Backdrop))
             {
-                result.Add(shiftItem);
+                continue;
             }
-            else
-            {
-                i--; // reset increment so we make up for non-inclusion
-                max--;
-            }
-            initialResult.Remove(initItem);
+
+            result.Add(item);
         }
 
         return result;
     }
 
-    private Guid[] GetFilteredLibraryIds()
+    // Round-robin keeps sources alternating, e.g. favourite, new, random, favourite, new.
+    private static List<BaseItem> Arrange(List<List<BaseItem>> groups, string? order)
     {
-        List<Guid> libraryIds = [];
+        if (order == "grouped") return groups.SelectMany(group => group).ToList();
 
-        foreach (string libraryId in _config.FilteredLibraries ?? [])
+        if (order == "shuffle")
         {
-            if (Guid.TryParse(libraryId, out Guid parsedId) && !libraryIds.Contains(parsedId))
-            {
-                libraryIds.Add(parsedId);
-            }
+            var all = groups.SelectMany(group => group).ToArray();
+            System.Random.Shared.Shuffle(all);
+            return [.. all];
         }
 
-        return [.. libraryIds];
+        var result = new List<BaseItem>();
+        for (int index = 0; groups.Any(group => index < group.Count); index++)
+        {
+            result.AddRange(groups.Where(group => index < group.Count).Select(group => group[index]));
+        }
+
+        return result;
     }
+
+    private Guid[] GetFilteredLibraryIds() =>
+        (_config.FilteredLibraries ?? [])
+            .Select(id => Guid.TryParse(id, out Guid parsed) ? parsed : Guid.Empty)
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToArray();
 }

@@ -313,14 +313,21 @@ export default function (view) {
     }
 
     function normalizeMode(mode) {
-        return ["FAVOURITES", "RANDOM", "COLLECTIONS", "NEW"].includes(mode) ? mode : "RANDOM";
+        return ["FAVOURITES", "RANDOM", "COLLECTIONS", "NEW", "MIXED"].includes(mode) ? mode : "RANDOM";
     }
 
     function getSelectedMode() {
         if (field("FavouritesMode").checked) return "FAVOURITES";
         if (field("CollectionsMode").checked) return "COLLECTIONS";
         if (field("NewMode").checked) return "NEW";
+        if (field("MixedMode").checked) return "MIXED";
         return "RANDOM";
+    }
+
+    const mixedCountFields = ["MixedFavouritesCount", "MixedNewCount", "MixedCollectionsCount", "MixedRandomCount"];
+
+    function mixedCount(id) {
+        return Number(field(id).value) > 0;
     }
 
     /* ===== Tabs ===== */
@@ -644,10 +651,14 @@ export default function (view) {
         field("OpeningSlideBackgroundItemId").required = openingType === "message" && backgroundType === "media";
         setVisible("SelectionRefreshMinutes-container", field("EnableSelectionCache").checked);
         const mode = getSelectedMode();
-        setVisible("EditorUserId-container", mode === "FAVOURITES");
-        setVisible("LibraryList-container", mode === "RANDOM");
-        setVisible("CollectionsList-container", mode === "COLLECTIONS");
-        setVisible("NewTimeLimit-container", mode === "NEW");
+        const mixed = mode === "MIXED";
+        setVisible("MixedSources-container", mixed);
+        setVisible("RandomMediaCount-container", !mixed);
+        setVisible("EditorUserId-container", mode === "FAVOURITES" || (mixed && mixedCount("MixedFavouritesCount")));
+        setVisible("LibraryList-container", mode === "RANDOM"
+            || (mixed && (mixedCount("MixedRandomCount") || field("MixedFillWithRandom").checked)));
+        setVisible("CollectionsList-container", mode === "COLLECTIONS" || (mixed && mixedCount("MixedCollectionsCount")));
+        setVisible("NewTimeLimit-container", mode === "NEW" || (mixed && mixedCount("MixedNewCount")));
         setVisible("AutoplayInterval-container", field("EnableAutoplay").checked);
         setVisible("ShowAutoplayButton-container", field("EnableAutoplay").checked);
         setVisible("PauseOnHover-container", field("EnableAutoplay").checked);
@@ -1232,6 +1243,9 @@ export default function (view) {
             case "RANDOM":
                 await loadLibraries();
                 break;
+            case "MIXED":
+                await Promise.all([loadUsers(), loadCollections(), loadLibraries()]);
+                break;
         }
     }
 
@@ -1243,6 +1257,14 @@ export default function (view) {
         field("RandomMode").checked = mode === "RANDOM";
         field("CollectionsMode").checked = mode === "COLLECTIONS";
         field("NewMode").checked = mode === "NEW";
+        field("MixedMode").checked = mode === "MIXED";
+        field("MixedFavouritesCount").value = config.MixedFavouritesCount ?? 2;
+        field("MixedNewCount").value = config.MixedNewCount ?? 2;
+        field("MixedCollectionsCount").value = config.MixedCollectionsCount ?? 0;
+        field("MixedRandomCount").value = config.MixedRandomCount ?? 1;
+        field("MixedOrder").value = ["grouped", "shuffle"].includes(config.MixedOrder) ? config.MixedOrder : "interleave";
+        field("MixedFillWithRandom").checked = config.MixedFillWithRandom ?? true;
+        field("AvoidRepeats").checked = config.AvoidRepeats ?? true;
         field("RandomMediaCount").value = config.RandomMediaCount;
         field("MinimumRating").value = config.MinimumRating;
         field("MinimumCriticRating").value = config.MinimumCriticRating;
@@ -1365,7 +1387,13 @@ export default function (view) {
         config.HeroBackdropPosition = field("HeroBackdropPositionSelect").value;
         config.Mode = mode;
         config.ShowRandomMedia = mode === "RANDOM";
-        config.RandomMediaCount = boundedNumber("RandomMediaCount", 5, 1, Number.MAX_SAFE_INTEGER, true);
+        if (mode !== "MIXED") {
+            config.RandomMediaCount = boundedNumber("RandomMediaCount", 5, 1, Number.MAX_SAFE_INTEGER, true);
+        }
+        for (const id of mixedCountFields) config[id] = boundedNumber(id, 0, 0, 50, true);
+        config.MixedOrder = field("MixedOrder").value;
+        config.MixedFillWithRandom = field("MixedFillWithRandom").checked;
+        config.AvoidRepeats = field("AvoidRepeats").checked;
         config.MinimumRating = boundedNumber("MinimumRating", 0, 0, 10);
         config.MinimumCriticRating = boundedNumber("MinimumCriticRating", 0, 0, 100, true);
         if (state.rendered.ratings) {
@@ -1449,6 +1477,11 @@ export default function (view) {
 
     async function handleSubmit(event) {
         event.preventDefault();
+        if (getSelectedMode() === "MIXED" && !mixedCountFields.some(mixedCount)) {
+            selectTab("content");
+            Dashboard.alert("Mixed mode needs at least one source with one or more titles.");
+            return;
+        }
         Dashboard.showLoadingMsg();
         try {
             const config = state.config || await ApiClient.getPluginConfiguration(pluginId);

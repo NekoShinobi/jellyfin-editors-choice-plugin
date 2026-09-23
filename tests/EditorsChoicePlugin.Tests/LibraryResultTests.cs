@@ -164,4 +164,44 @@ public class LibraryResultTests
         Assert.Equal(85, config.OpeningSlideSecondaryButtonOpacity);
         Assert.False(config.UseCustomPlayButtonColors);
     }
+
+    [Fact]
+    public void UserIsFoundByIdClaimAndTheEditorFlagIsSent()
+    {
+        var user = new User("viewer", "authentication", "password-reset");
+        var config = new PluginConfiguration { Mode = "RANDOM", EditorUserId = user.Id.ToString() };
+        var paths = new Mock<IApplicationPaths>();
+        paths.SetupGet(p => p.PluginsPath).Returns(Path.GetTempPath());
+        paths.SetupGet(p => p.PluginConfigurationsPath).Returns(Path.GetTempPath());
+        var serializer = new Mock<IXmlSerializer>();
+        serializer.Setup(s => s.DeserializeFromFile(typeof(PluginConfiguration), It.IsAny<string>())).Returns(config);
+        _ = new Plugin(paths.Object, serializer.Object, NullLogger<Plugin>.Instance,
+            Mock.Of<IServiceProvider>(), Mock.Of<IServerConfigurationManager>());
+        // Only the ID lookup is set up: a renamed user must still be found.
+        var users = new Mock<IUserManager>();
+        users.Setup(u => u.GetUserById(user.Id)).Returns(user);
+        var library = new Mock<ILibraryManager>();
+        library.Setup(l => l.GetItemList(It.IsAny<InternalItemsQuery>())).Returns(Array.Empty<BaseItem>());
+        var controller = new EditorsChoiceActivityController(users.Object, Mock.Of<IUserDataManager>(),
+            library.Object, Mock.Of<ITVSeriesManager>(), NullLogger<EditorsChoiceActivityController>.Instance,
+            new HeroSelectionCache(users.Object, library.Object, new RotatingSelectionStore(), NullLogger<HeroSelectionCache>.Instance))
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                    {
+                        new Claim(ClaimTypes.Name, "old-name"),
+                        new Claim("Jellyfin-UserId", user.Id.ToString("N")),
+                    }, "test"))
+                }
+            }
+        };
+
+        var response = Assert.IsType<OkObjectResult>(controller.GetFavourites().Result);
+        var body = Assert.IsType<Dictionary<string, object>>(response.Value);
+        Assert.Equal(true, body["isEditor"]);
+        users.Verify(u => u.GetUserByName(It.IsAny<string>()), Times.Never);
+    }
 }
