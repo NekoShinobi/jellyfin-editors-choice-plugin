@@ -73,6 +73,32 @@ reduced-motion preference suppresses animated transitions, backdrop motion,
 theme video playback, and automatic slide advancement.
 
 Separate font dropdowns on the Style tab control titles, metadata, descriptions, and buttons.
+
+### Theming
+
+Jellyfin themes (Dashboard > Branding > Custom CSS) and the Advanced custom CSS
+style the banner through CSS custom properties set on `.editorsChoiceContainer`:
+
+```css
+.editorsChoiceContainer {
+    --ec-accent: #bba1e5;          /* indicators, progress, primary fallback */
+    --ec-accent-text: #21162f;
+    --ec-primary-bg: #bba1e5;      /* Play and primary opening-slide actions */
+    --ec-primary-fg: #21162f;
+    --ec-secondary-bg: rgba(255, 255, 255, 0.14); /* Info, Trailer, other actions */
+    --ec-secondary-fg: #fff;
+    --ec-button-radius: 9px;
+}
+```
+
+Each token is optional. Tokens that aren't set leave those buttons with the
+theme's native Jellyfin styling. Tokens that are set apply in every state, so
+global rules such as `.raised:hover` or `.emby-button.show-focus:focus` can't
+repaint the banner. Plugin settings take priority over tokens: an accent color,
+custom Play button colors, a button shape, or the Outline or Glass style
+replaces the matching token. Buttons have `.editorsChoiceButton` plus
+`.editorsChoiceButton--primary` or `.editorsChoiceButton--secondary` for other
+styling, such as borders or shadows.
 Choices use fonts installed on the device with standard fallbacks; no external
 font downloads are required. Image logos retain their original lettering.
 

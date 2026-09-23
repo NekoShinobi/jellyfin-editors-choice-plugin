@@ -339,12 +339,6 @@ const container = `
     flex-wrap: wrap;
   }
 
-  .editorsChoiceCustomButton {
-    background-color: var(--ec-button-background) !important;
-    color: var(--ec-button-text) !important;
-    opacity: var(--ec-button-opacity, 1);
-  }
-
   @keyframes banner {
     0% { background-position-y: 52%; }
     100% { background-position-y: 48%; }
@@ -1277,16 +1271,58 @@ const container = `
     font-size: 1em;
   }
 
-  /* Buttons */
-  .editorsChoiceContainer[data-ec-accent]:not([data-ec-button-variant]) :is(.editorsChoiceItemButton, .editorsChoiceOpeningAction.button-submit):not(.editorsChoiceCustomButton) {
-    background-color: var(--ec-accent) !important;
-    color: var(--ec-accent-text, #fff) !important;
-  }
+  /* ===== Theming tokens =====
+     The public styling surface. A Jellyfin theme (Branding > Custom CSS) or the
+     Advanced custom CSS sets these on .editorsChoiceContainer; the plugin's own
+     settings write them inline, so a setting outranks a theme:
+       --ec-accent, --ec-accent-text         indicators, progress; primary fallback
+       --ec-primary-bg, --ec-primary-fg      Play and primary opening-slide actions
+       --ec-secondary-bg, --ec-secondary-fg  Info, Trailer, other opening-slide actions
+       --ec-button-radius                    every banner button
+     applyBannerTokens() marks each group with a data-ec-* attribute only once it
+     resolves, so an untouched banner keeps the theme's native Jellyfin buttons.
+     Buttons carry .editorsChoiceButton plus --primary or --secondary. */
   .editorsChoiceContainer[data-ec-accent] .editorsChoicePlaybackProgressFill { background: var(--ec-accent); }
   .editorsChoiceContainer[data-ec-accent] .splide__pagination__page.is-active { background-color: var(--ec-accent); }
-  .editorsChoiceContainer[data-ec-button-shape="rounded"] .editorsChoiceItemActions .emby-button { border-radius: 0.6em; }
-  .editorsChoiceContainer[data-ec-button-shape="pill"] .editorsChoiceItemActions .emby-button { border-radius: 999px; }
-  .editorsChoiceContainer[data-ec-button-shape="square"] .editorsChoiceItemActions .emby-button { border-radius: 0; }
+  .editorsChoiceContainer[data-ec-button-radius] .editorsChoiceItemActions .emby-button { border-radius: var(--ec-button-radius); }
+
+  /* Buttons paint from --ec-button-bg/-fg/-opacity: the role rules map them from
+     the tokens, and per-button colors (.editorsChoiceCustomButton) set them inline. */
+  .editorsChoiceContainer[data-ec-primary] .editorsChoiceButton--primary {
+    --ec-button-bg: var(--ec-primary-bg, var(--ec-accent));
+    --ec-button-fg: var(--ec-primary-fg, var(--ec-accent-text, #fff));
+  }
+  .editorsChoiceContainer[data-ec-secondary] .editorsChoiceButton--secondary {
+    --ec-button-bg: var(--ec-secondary-bg);
+    --ec-button-fg: var(--ec-secondary-fg, #fff);
+  }
+  /* :is() lends every arm specificity 0,3,0, so with .emby-button these rules
+     outrank global theme rules like .raised:hover or .emby-button.show-focus:focus
+     in every interaction state. */
+  :is(
+    .editorsChoiceContainer[data-ec-primary] .editorsChoiceButton--primary,
+    .editorsChoiceContainer[data-ec-secondary] .editorsChoiceButton--secondary,
+    .editorsChoiceContainer .editorsChoiceCustomButton
+  ).emby-button {
+    background: var(--ec-button-bg) !important;
+    color: var(--ec-button-fg) !important;
+    opacity: var(--ec-button-opacity, 1);
+    transition: filter 160ms ease;
+  }
+  :is(
+    .editorsChoiceContainer[data-ec-primary] .editorsChoiceButton--primary,
+    .editorsChoiceContainer[data-ec-secondary] .editorsChoiceButton--secondary,
+    .editorsChoiceContainer .editorsChoiceCustomButton
+  ).emby-button:is(:hover, :focus-visible, .show-focus:focus) { filter: brightness(1.12); }
+  /* The theme's focus background no longer shows, so keyboard and TV focus get a ring. */
+  :is(
+    .editorsChoiceContainer[data-ec-primary] .editorsChoiceButton--primary,
+    .editorsChoiceContainer[data-ec-secondary] .editorsChoiceButton--secondary,
+    .editorsChoiceContainer .editorsChoiceCustomButton
+  ).emby-button:is(:focus-visible, .show-focus:focus) {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
   .editorsChoiceContainer[data-ec-button-size="small"] .editorsChoiceItemActions { font-size: 0.88em; }
   .editorsChoiceContainer[data-ec-button-size="large"] .editorsChoiceItemActions { font-size: 1.15em; }
   .editorsChoiceContainer[data-ec-button-variant="outline"] .editorsChoiceItemActions .emby-button:not(.editorsChoiceCustomButton) {
@@ -1493,7 +1529,7 @@ function buildCustomButtonStyle(backgroundColor, textColor, opacity = 100) {
     const alpha = Number.isFinite(normalizedOpacity) ? normalizedOpacity / 100 : 1;
     return {
         className: " editorsChoiceCustomButton",
-        attribute: ` style="--ec-button-background:${backgroundColor};--ec-button-text:${textColor};--ec-button-opacity:${alpha}"`,
+        attribute: ` style="--ec-button-bg:${backgroundColor};--ec-button-fg:${textColor};--ec-button-opacity:${alpha}"`,
     };
 }
 
@@ -1660,18 +1696,18 @@ function buildPlayButton(item, data) {
         ? buildCustomButtonStyle(data.playButtonBackgroundColor, data.playButtonTextColor)
         : { className: "", attribute: "" };
 
-    return `<div class="editorsChoicePlayAction"><button type="button" is="emby-button" class="editorsChoiceItemButton itemAction raised button-submit emby-button${customStyle.className}"${customStyle.attribute} data-action="${nativeAction}" data-id="${escapeHtml(playItemId)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(playItemType)}" data-mediatype="Video" data-isfolder="${item.play_is_folder ? "true" : "false"}" data-positionticks="${positionTicks}" aria-label="${escapeHtml(buttonText)}: ${escapeHtml(item.name)}"><span class="material-icons editorsChoicePlayIcon play_arrow" aria-hidden="true"></span><span>${escapeHtml(buttonText)}</span></button>${progressBar}</div>`;
+    return `<div class="editorsChoicePlayAction"><button type="button" is="emby-button" class="editorsChoiceItemButton editorsChoiceButton editorsChoiceButton--primary itemAction raised button-submit emby-button${customStyle.className}"${customStyle.attribute} data-action="${nativeAction}" data-id="${escapeHtml(playItemId)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(playItemType)}" data-mediatype="Video" data-isfolder="${item.play_is_folder ? "true" : "false"}" data-positionticks="${positionTicks}" aria-label="${escapeHtml(buttonText)}: ${escapeHtml(item.name)}"><span class="material-icons editorsChoicePlayIcon play_arrow" aria-hidden="true"></span><span>${escapeHtml(buttonText)}</span></button>${progressBar}</div>`;
 }
 
 function buildInfoButton(item, data) {
     if (data.showInfoButton === false) return "";
-    return `<button type="button" is="emby-button" class="editorsChoiceInfoButton itemAction raised emby-button" data-action="link" data-id="${escapeHtml(item.id)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(item.item_type)}" data-mediatype="Video" data-isfolder="${item.play_is_folder ? "true" : "false"}" aria-label="More information: ${escapeHtml(item.name)}"><span class="material-icons editorsChoiceInfoIcon info" aria-hidden="true"></span></button>`;
+    return `<button type="button" is="emby-button" class="editorsChoiceInfoButton editorsChoiceButton editorsChoiceButton--secondary itemAction raised emby-button" data-action="link" data-id="${escapeHtml(item.id)}" data-serverid="${escapeHtml(ApiClient.serverId())}" data-type="${escapeHtml(item.item_type)}" data-mediatype="Video" data-isfolder="${item.play_is_folder ? "true" : "false"}" aria-label="More information: ${escapeHtml(item.name)}"><span class="material-icons editorsChoiceInfoIcon info" aria-hidden="true"></span></button>`;
 }
 
 function buildTrailerButton(item, data) {
     if (!data.showTrailerButton || !item.has_trailer) return "";
     const label = getLocalizedString("trailer");
-    return `<button type="button" is="emby-button" class="editorsChoiceTrailerButton itemAction raised emby-button" ${trailerAttributes(item)} aria-label="${escapeHtml(label)}: ${escapeHtml(item.name)}"><span class="material-icons movie" aria-hidden="true"></span><span>${escapeHtml(label)}</span></button>`;
+    return `<button type="button" is="emby-button" class="editorsChoiceTrailerButton editorsChoiceButton editorsChoiceButton--secondary itemAction raised emby-button" ${trailerAttributes(item)} aria-label="${escapeHtml(label)}: ${escapeHtml(item.name)}"><span class="material-icons movie" aria-hidden="true"></span><span>${escapeHtml(label)}</span></button>`;
 }
 
 function buildActions(item, data) {
@@ -1975,6 +2011,7 @@ function bannerContrastText(hex) {
 }
 
 const bannerMotionScales = { subtle: 1.008, strong: 1.05 };
+const bannerButtonRadii = { rounded: "0.6em", pill: "999px", square: "0" };
 const defaultBannerEasing = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 // The server sends a normalized cubic-bezier(); anything else keeps the default.
@@ -2029,10 +2066,13 @@ function applyBannerAppearance(data, element, autoplay) {
     const scrimStrength = bannerNumber(data.heroScrimStrength, 100, 0, 100);
     property("scrim-strength", scrimStrength !== 100 ? String(scrimStrength / 100) : null);
 
+    // Inline tokens outrank a theme's; applyBannerTokens() then enables them.
     const accent = bannerColor(data.heroAccentColor);
-    attribute("accent", accent ? "custom" : null);
+    const accentText = accent ? bannerContrastText(accent) : null;
     property("accent", accent);
-    property("accent-text", accent ? bannerContrastText(accent) : null);
+    property("accent-text", accentText);
+    property("primary-bg", accent);
+    property("primary-fg", accentText);
 
     const titleSize = option(data.heroTitleSize, "medium", ["small", "large", "xlarge"]);
     attribute("title-size", titleSize);
@@ -2051,7 +2091,9 @@ function applyBannerAppearance(data, element, autoplay) {
     attribute("overview-size", option(data.heroOverviewSize, "medium", ["small", "large"]));
     attribute("mobile-overview", data.mobileHideDescription ? "hidden" : null);
 
-    attribute("button-shape", option(data.heroButtonShape, "default", ["rounded", "pill", "square"]));
+    const buttonShape = option(data.heroButtonShape, "default", ["rounded", "pill", "square"]);
+    attribute("button-shape", buttonShape);
+    property("button-radius", buttonShape ? bannerButtonRadii[buttonShape] : null);
     attribute("button-variant", option(data.heroButtonVariant, "filled", ["outline", "glass"]));
     attribute("button-size", option(data.heroButtonSize, "medium", ["small", "large"]));
 
@@ -2064,6 +2106,23 @@ function applyBannerAppearance(data, element, autoplay) {
     property("easing", easing !== defaultBannerEasing ? easing : null);
     const motion = option(data.backgroundMotionIntensity, "normal", ["subtle", "strong"]);
     property("motion-scale", motion ? String(bannerMotionScales[motion]) : null);
+}
+
+// A theme or the Advanced custom CSS can also set the public --ec-* tokens, so
+// each group is enabled from its resolved value rather than from the settings.
+// Call it once the element is in the document and any custom CSS is attached.
+function applyBannerTokens(element) {
+    const styles = getComputedStyle(element);
+    const has = (name) => styles.getPropertyValue(`--ec-${name}`).trim() !== "";
+    const flag = (name, enabled) => enabled
+        ? element.setAttribute(`data-ec-${name}`, "custom")
+        : element.removeAttribute(`data-ec-${name}`);
+    // Outline and glass are explicit settings, so theme fills don't override them.
+    const filled = !element.hasAttribute("data-ec-button-variant");
+    flag("accent", has("accent"));
+    flag("primary", filled && (has("primary-bg") || has("accent")));
+    flag("secondary", filled && has("secondary-bg"));
+    flag("button-radius", has("button-radius"));
 }
 
 // An autoplay progress bar has nothing to show without autoplay, so fall back to dots.
@@ -2122,6 +2181,7 @@ function createBannerShell(parent, data) {
     parent.prepend(template.content);
     applyBannerFonts(data, element);
     applyBannerAppearance(data, element, !!data.autoplay);
+    applyBannerTokens(element);
     const update = () => applyBannerGeometry(data, element);
     update();
     const frame = requestAnimationFrame(update);
@@ -2293,12 +2353,12 @@ function renderOpeningActions(actions) {
 
     const buttons = actions.map((action) => {
         if (!action?.label || !action?.url) return "";
-        const primaryClass = action.primary ? " button-submit" : "";
+        const roleClass = action.primary ? "editorsChoiceButton--primary button-submit" : "editorsChoiceButton--secondary";
         const external = /^https?:\/\//i.test(action.url);
         const externalAttributes = external ? ' target="_blank" rel="noopener noreferrer"' : "";
         const icon = action.primary ? "arrow_forward" : "help_outline";
         const customStyle = buildCustomButtonStyle(action.backgroundColor, action.textColor, action.opacity);
-        return `<a is="emby-linkbutton" class="editorsChoiceOpeningAction raised emby-button${primaryClass}${customStyle.className}"${customStyle.attribute} href="${escapeHtml(action.url)}"${externalAttributes}><span class="material-icons" aria-hidden="true">${icon}</span><span>${escapeHtml(action.label)}</span></a>`;
+        return `<a is="emby-linkbutton" class="editorsChoiceOpeningAction editorsChoiceButton ${roleClass} raised emby-button${customStyle.className}"${customStyle.attribute} href="${escapeHtml(action.url)}"${externalAttributes}><span class="material-icons" aria-hidden="true">${icon}</span><span>${escapeHtml(action.label)}</span></a>`;
     }).join("");
 
     return buttons ? `<div class="editorsChoiceItemActions">${buttons}</div>` : "";
@@ -2422,6 +2482,7 @@ async function setup() {
                     customCss.textContent = `#${containerId} {\n${data.heroCustomCss}\n}`;
                     containerElem.append(customCss);
                 }
+                applyBannerTokens(containerElem);
 
                 containerElem.classList.add(`editorsChoiceHeight-${data.bannerHeight}`);
                 containerElem.style.setProperty("--ec-dimming", data.enableBackgroundDimming

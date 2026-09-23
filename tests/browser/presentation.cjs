@@ -27,6 +27,8 @@ async function home(browser, data = {}, options = {}) {
     }); });
     await page.setContent('<!DOCTYPE html><base href="http://banner.test/web/"><style>body{margin:0;padding-top:120px;min-height:2000px}.skinHeader{position:fixed;top:0;height:80px;width:100%}</style><header class="skinHeader"></header><div id="reactRoot"><div id="indexPage"><div id="homeTab" class="is-active"><div class="homeSectionsContainer"><div id="following">Library</div></div></div></div></div>');
     await page.addStyleTag({ path: path.join(splideRoot, 'dist/css/splide.min.css') });
+    // Stands in for Branding > Custom CSS, which Jellyfin loads before the banner.
+    if (options.themeCss) await page.addStyleTag({ content: options.themeCss });
     await page.addScriptTag({ path: require.resolve('jquery') });
     if (!options.failLibrary) await page.addScriptTag({ path: path.join(splideRoot, 'dist/js/splide.min.js') });
     await page.evaluate(({ data, options }) => {
@@ -374,6 +376,56 @@ async function expectHeight(page, expected) {
         assert.equal(await accented.locator('.splide__slide.is-active:not(.splide__slide--clone) .editorsChoiceItemButton').first().evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 0, 0)');
         assert.equal(await accented.locator('.editorsChoiceProgress').evaluate(el => getComputedStyle(el).display), 'block');
         await accented.close();
+
+        // Global theme rules like these used to win over the banner's button colors.
+        const hostileTheme = `
+            .raised { background: rgba(40, 40, 40, 0.8) !important; }
+            .raised:hover { background: rgb(1, 2, 3) !important; }
+            .emby-button.show-focus:focus { background: rgb(1, 2, 3) !important; }
+            .editorsChoicePlayAction .editorsChoiceItemButton,
+            .editorsChoicePlayAction .editorsChoiceItemButton:is(:hover, :focus-visible, :active) { color: #fff !important; }`;
+        const paint = el => [getComputedStyle(el).backgroundColor, getComputedStyle(el).color];
+        const customOverTheme = await home(browser, {
+            enableThemeVideos: false, useCustomPlayButtonColors: true,
+            playButtonBackgroundColor: '#345678', playButtonTextColor: '#fedcba',
+        }, { themeCss: hostileTheme });
+        const themedPlay = customOverTheme.locator('.splide__slide.is-active:not(.splide__slide--clone) .editorsChoiceItemButton').first();
+        assert.deepEqual(await themedPlay.evaluate(paint), ['rgb(52, 86, 120)', 'rgb(254, 220, 186)']);
+        await themedPlay.hover();
+        assert.equal(await themedPlay.evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(52, 86, 120)');
+        await themedPlay.evaluate(el => el.classList.add('show-focus'));
+        await themedPlay.focus();
+        assert.equal(await themedPlay.evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(52, 86, 120)');
+        await customOverTheme.close();
+
+        const themeTokens = await home(browser, { enableThemeVideos: false, showTrailerButton: false }, { themeCss: hostileTheme + `
+            .editorsChoiceContainer { --ec-primary-bg: #112233; --ec-primary-fg: #ddeeff;
+                --ec-secondary-bg: #445566; --ec-button-radius: 3px; }` });
+        const tokenSlide = themeTokens.locator('.splide__slide.is-active:not(.splide__slide--clone)');
+        assert.deepEqual(await tokenSlide.locator('.editorsChoiceItemButton').evaluate(paint), ['rgb(17, 34, 51)', 'rgb(221, 238, 255)']);
+        assert.deepEqual(await tokenSlide.locator('.editorsChoiceInfoButton').evaluate(paint), ['rgb(68, 85, 102)', 'rgb(255, 255, 255)']);
+        assert.equal(await tokenSlide.locator('.editorsChoiceInfoButton').evaluate(el => getComputedStyle(el).borderRadius), '3px');
+        await themeTokens.close();
+
+        const settingOverToken = await home(browser, { enableThemeVideos: false, heroAccentColor: '#ff0000', heroButtonShape: 'pill' },
+            { themeCss: '.editorsChoiceContainer { --ec-primary-bg: #112233; --ec-button-radius: 3px; }' });
+        const settingPlay = settingOverToken.locator('.splide__slide.is-active:not(.splide__slide--clone) .editorsChoiceItemButton').first();
+        assert.equal(await settingPlay.evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 0, 0)');
+        assert.equal(await settingPlay.evaluate(el => getComputedStyle(el).borderRadius), '999px');
+        await settingOverToken.close();
+
+        const outlineOverToken = await home(browser, { enableThemeVideos: false, heroButtonVariant: 'outline' },
+            { themeCss: '.editorsChoiceContainer { --ec-primary-bg: #112233; }' });
+        const outlinePlay = outlineOverToken.locator('.splide__slide.is-active:not(.splide__slide--clone) .editorsChoiceItemButton').first();
+        assert.equal(await outlinePlay.evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)');
+        await outlineOverToken.close();
+
+        const untouched = await home(browser, { enableThemeVideos: false }, { themeCss: hostileTheme });
+        const nativePlay = untouched.locator('.splide__slide.is-active:not(.splide__slide--clone) .editorsChoiceItemButton').first();
+        assert.equal(await nativePlay.evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(40, 40, 40, 0.8)');
+        assert.equal(await untouched.locator('.editorsChoiceContainer').evaluate(el => el.hasAttribute('data-ec-primary')), false);
+        await untouched.close();
+        console.log('PASS theming tokens outrank global theme rules and settings outrank tokens');
         const eased = await home(browser, { enableThemeVideos: false, transitionEffect: 'zoom', transitionEasing: 'cubic-bezier(0.36, 0, 0.66, -0.56)' });
         assert.equal(await eased.evaluate(() => testSlider.options.easing), 'cubic-bezier(0.36, 0, 0.66, -0.56)');
         assert.equal(await eased.locator('.editorsChoiceContainer').evaluate(el => el.style.getPropertyValue('--ec-easing')), 'cubic-bezier(0.36, 0, 0.66, -0.56)');
